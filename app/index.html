@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--ARTIFACT-START-->
+<title>Fieldwise Crop Planner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Plan your next three seasons of crops with 25 years of NASA weather for your field.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one calm column (max 980px) of large cards, a 3-step wizard; every control is at least 52px tall. */
+:root {
+  --bg: #f2f5ef; --surface: #ffffff; --surface-2: #f7f9f5;
+  --ink: #13241a; --ink-2: #405046; --muted: #67756b; --line: rgba(19,36,26,0.13);
+  --green: #1d6f3a; --green-ink: #ffffff; --green-wash: #e2efe4;
+  --sky: #2a6fc4; --sky-wash: #e3eefa;
+  --soil: #8a5a2b; --soil-wash: #f0e4d6;
+  --snow: #dde7f1; --sun: #b77900;
+  --good: #1e8a2e; --ok: #b77900; --bad: #c43a3a;
+  --good-wash: #e3f3e5; --ok-wash: #fbf0d6; --bad-wash: #f8e1e1;
+  --focus: #2a6fc4;
+  --font: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1511; --surface: #16211a; --surface-2: #1b2820;
+    --ink: #e8f0ea; --ink-2: #bccbc0; --muted: #8fa195; --line: rgba(255,255,255,0.12);
+    --green: #3fa862; --green-ink: #07130b; --green-wash: #1d3424;
+    --sky: #6aa6ec; --sky-wash: #182a3d; --soil: #c79563; --soil-wash: #3a2a1b; --snow: #2a3540; --sun: #e3a93a;
+    --good: #4cc061; --ok: #e3a93a; --bad: #ec6b6b; --good-wash: #183420; --ok-wash: #3a2f15; --bad-wash: #3d1d1d;
+    --focus: #8fc0ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1511; --surface: #16211a; --surface-2: #1b2820;
+  --ink: #e8f0ea; --ink-2: #bccbc0; --muted: #8fa195; --line: rgba(255,255,255,0.12);
+  --green: #3fa862; --green-ink: #07130b; --green-wash: #1d3424;
+  --sky: #6aa6ec; --sky-wash: #182a3d; --soil: #c79563; --soil-wash: #3a2a1b; --snow: #2a3540; --sun: #e3a93a;
+  --good: #4cc061; --ok: #e3a93a; --bad: #ec6b6b; --good-wash: #183420; --ok-wash: #3a2f15; --bad-wash: #3d1d1d;
+  --focus: #8fc0ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.stack { display: flex; flex-direction: column; gap: 20px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 18px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 64px; }
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+h1, h2, h3 { margin: 0; line-height: 1.2; text-wrap: balance; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); }
+h2 { font-size: clamp(1.35rem, 3vw, 1.75rem); }
+h3 { font-size: 1.15rem; }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+header.top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-block: 18px 6px; }
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+.brand .logo { width: 40px; height: 40px; border-radius: 12px; background: var(--green); color: var(--green-ink); display: grid; place-items: center; font-size: 22px; }
+.brand b { font-size: 1.3rem; display: block; line-height: 1.1; }
+.brand small { color: var(--muted); font-size: 0.85rem; }
+.pill-btn { border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; min-height: 44px; padding: 6px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+.pill-btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.lang { display: inline-flex; gap: 4px; }
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.steps button { border: 2px solid var(--line); background: var(--surface); border-radius: 14px; min-height: 60px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left; font-weight: 700; }
+.steps button .n { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); border: 1.5px solid var(--line); flex: none; font-size: 1rem; }
+.steps button[aria-current="step"] { border-color: var(--green); background: var(--green-wash); }
+.steps button[aria-current="step"] .n { background: var(--green); color: var(--green-ink); border-color: var(--green); }
+.steps button:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 560px) { .steps button { flex-direction: column; text-align: center; gap: 4px; font-size: 0.85rem; } }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: clamp(18px, 3vw, 28px); display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.lead { color: var(--ink-2); }
+.muted { color: var(--muted); }
+.small { font-size: 0.9rem; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid > * { min-width: 0; }
+
+.big-btn { min-height: 56px; border-radius: 14px; border: 0; background: var(--green); color: var(--green-ink); font-weight: 700; font-size: 1.1rem; padding: 12px 24px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.big-btn.secondary { background: var(--surface); color: var(--ink); border: 2px solid var(--line); }
+.big-btn:disabled { opacity: 0.55; cursor: wait; }
+.nav { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+.choice { border: 2px solid var(--line); background: var(--surface); border-radius: 16px; padding: 14px 16px; cursor: pointer; text-align: left; display: flex; gap: 12px; align-items: center; min-height: 64px; width: 100%; }
+.choice .ico { font-size: 2rem; line-height: 1; flex: none; width: 44px; text-align: center; }
+.choice b { display: block; }
+.choice small { color: var(--muted); display: block; font-size: 0.88rem; line-height: 1.35; }
+.choice[aria-pressed="true"], .choice[aria-checked="true"] { border-color: var(--green); background: var(--green-wash); box-shadow: inset 0 0 0 1px var(--green); }
+.choice .tick { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; flex: none; font-size: 0.9rem; }
+.choice[aria-pressed="true"] .tick, .choice[aria-checked="true"] .tick { background: var(--green); border-color: var(--green); color: var(--green-ink); }
+.crop-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.crop-grid .choice { flex-direction: column; text-align: center; gap: 4px; padding: 12px 8px; position: relative; }
+.crop-grid .choice .tick { position: absolute; top: 8px; right: 8px; margin: 0; width: 24px; height: 24px; }
+.fitchip { font-size: 0.75rem; font-weight: 700; border-radius: 999px; padding: 1px 8px; }
+
+details.coords { border: 1px dashed var(--line); border-radius: 14px; padding: 10px 14px; }
+details.coords summary { cursor: pointer; font-weight: 700; min-height: 36px; display: flex; align-items: center; }
+.coords .row label { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 0.95rem; }
+.coords input { font: inherit; min-height: 48px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); padding: 8px 12px; width: 150px; }
+.status { border-radius: 12px; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--line); }
+.status.warn { background: var(--ok-wash); }
+.status.err { background: var(--bad-wash); }
+
+.facts { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.fact { background: var(--surface-2); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
+.fact .ico { font-size: 1.9rem; line-height: 1; flex: none; }
+.fact p + p { margin-top: 4px; }
+.rainchart { width: 100%; max-width: 680px; }
+.rainchart svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+.gauge { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 0.85rem; color: var(--muted); }
+.gauge .bar { flex: 1; height: 10px; border-radius: 6px; background: linear-gradient(90deg, var(--soil-wash), var(--surface-2) 50%, var(--sky-wash)); border: 1px solid var(--line); position: relative; }
+.gauge .bar i { position: absolute; top: -5px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); border: 3px solid var(--surface); transform: translateX(-50%); }
+
+.hero-plan { background: var(--green-wash); border: 2px solid var(--green); border-radius: 22px; padding: clamp(18px, 3vw, 28px); display: flex; flex-direction: column; gap: 14px; }
+.seq { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.seq .s { background: var(--surface); border-radius: 14px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); }
+.seq .s .ico { font-size: 1.8rem; line-height: 1; }
+.seq .s small { display: block; color: var(--muted); font-size: 0.78rem; }
+.seq .arr { color: var(--muted); font-size: 1.3rem; }
+.plans { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.plan { border: 2px solid var(--line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: var(--surface); min-width: 0; }
+.plan.sel { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
+.plan .badge { align-self: flex-start; background: var(--green); color: var(--green-ink); font-weight: 700; font-size: 0.8rem; border-radius: 999px; padding: 2px 10px; }
+.plan .seq .s { padding: 6px 8px; }
+.plan .seq .s .ico { font-size: 1.4rem; }
+.rating { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; font-size: 0.95rem; }
+.rating .lvl { display: inline-flex; gap: 3px; }
+.rating .lvl i { width: 16px; height: 10px; border-radius: 3px; background: var(--line); }
+.rating .lvl.high i { background: var(--good); }
+.rating .lvl.mid i:nth-child(-n+2) { background: var(--ok); }
+.rating .lvl.low i:nth-child(1) { background: var(--bad); }
+.rating b { font-size: 0.85rem; min-width: 64px; text-align: right; }
+.years10 { display: flex; gap: 4px; flex-wrap: wrap; }
+.years10 span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; color: #fff; }
+.y-good { background: var(--good); } .y-ok { background: var(--ok); } .y-bad { background: var(--bad); }
+:root[data-theme="dark"] .years10 span, .years10 span { color: #fff; }
+
+.cal-wrap { overflow-x: auto; }
+.cal { display: grid; grid-template-columns: 74px repeat(12, minmax(34px, 1fr)); gap: 3px; min-width: 560px; font-size: 0.85rem; }
+.cal .mh { text-align: center; color: var(--muted); font-weight: 700; }
+.cal .yl { font-weight: 700; display: flex; align-items: center; }
+.cal .cell { height: 46px; border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative; }
+.cal .cell.bare { background: repeating-linear-gradient(135deg, var(--soil-wash) 0 6px, transparent 6px 10px); border: 1px dashed var(--soil); }
+.cal .cell.snow { background: var(--snow); }
+.cal .cell.crop { background: var(--green-wash); border: 1.5px solid var(--green); }
+.cal .cell.crop.first { font-size: 1.4rem; }
+.cal .rainrow .cell { height: 54px; align-items: flex-end; }
+.cal .rainrow .cell i { display: block; width: 60%; background: var(--sky); border-radius: 4px 4px 0 0; }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--ink-2); }
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.cal-legend i { width: 22px; height: 14px; border-radius: 4px; display: inline-block; }
+.dates { display: grid; gap: 6px; font-size: 0.95rem; }
+
+.outlook { display: flex; flex-direction: column; gap: 12px; }
+.dots26 { display: flex; flex-wrap: wrap; gap: 5px; }
+.dots26 span { width: 26px; height: 26px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 0.8rem; font-weight: 700; }
+.legend3 { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.92rem; }
+.legend3 span { display: inline-flex; align-items: center; gap: 6px; }
+.legend3 i { width: 16px; height: 16px; border-radius: 4px; display: inline-grid; place-items: center; color: #fff; font-size: 0.65rem; font-style: normal; font-weight: 700; }
+.toggles { display: flex; gap: 10px; flex-wrap: wrap; }
+ul.why { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+ul.why li { display: flex; gap: 12px; align-items: flex-start; background: var(--surface-2); border-radius: 12px; padding: 12px 14px; }
+ul.why li .ico { font-size: 1.4rem; line-height: 1.2; flex: none; }
+ul.check { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+details.src summary { cursor: pointer; font-weight: 700; min-height: 40px; display: flex; align-items: center; }
+details.src ul { margin: 8px 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; font-size: 0.92rem; color: var(--ink-2); }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 12px; font-weight: 700; z-index: 30; max-width: calc(100% - 32px); }
+.spinner { width: 20px; height: 20px; border-radius: 50%; border: 3px solid currentColor; border-right-color: transparent; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } * { scroll-behavior: auto !important; } }
+footer { color: var(--muted); font-size: 0.85rem; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="logo" aria-hidden="true">🌱</span><div><b>Fieldwise</b><small data-t="appTag"></small></div></div>
+    <button class="pill-btn" id="listen" type="button" aria-pressed="false"><span aria-hidden="true">🔊</span><span data-t="listen"></span></button>
+    <div class="lang" role="group" aria-label="Language">
+      <button class="pill-btn" type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button class="pill-btn" type="button" data-lang="ru" aria-pressed="false">RU</button>
+    </div>
+  </header>
+
+  <nav class="steps" aria-label="Steps">
+    <button type="button" data-step="1" aria-current="step"><span class="n">1</span><span><span aria-hidden="true">📍</span> <span data-t="step1"></span></span></button>
+    <button type="button" data-step="2"><span class="n">2</span><span><span aria-hidden="true">🌾</span> <span data-t="step2"></span></span></button>
+    <button type="button" data-step="3"><span class="n">3</span><span><span aria-hidden="true">📅</span> <span data-t="step3"></span></span></button>
+  </nav>
+
+  <!-- STEP 1 -->
+  <section id="s1" class="stack">
+    <div class="card">
+      <div><h1 data-t="whereTitle"></h1><p class="lead" data-t="whereHelp"></p></div>
+      <div class="grid" id="presets"></div>
+      <div class="row">
+        <button class="big-btn secondary" type="button" id="geo"><span aria-hidden="true">📍</span><span data-t="useMyLocation"></span></button>
+      </div>
+      <details class="coords" id="coordsBox">
+        <summary data-t="typeCoords"></summary>
+        <div class="row" style="margin-top:10px;align-items:flex-end">
+          <label><span data-t="lat"></span><input id="lat" type="number" step="0.01" min="-60" max="70" value="52.60" inputmode="decimal"></label>
+          <label><span data-t="lon"></span><input id="lon" type="number" step="0.01" min="-180" max="180" value="69.90" inputmode="decimal"></label>
+          <button class="big-btn" type="button" id="fetch"><span aria-hidden="true">🛰️</span><span data-t="getData"></span></button>
+        </div>
+      </details>
+      <p class="status" id="status1" hidden></p>
+    </div>
+    <div class="card" id="nasa" hidden></div>
+    <div class="nav"><span></span><button class="big-btn" type="button" id="to2" disabled><span data-t="next"></span> →</button></div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section id="s2" class="stack" hidden>
+    <div class="card">
+      <h2 data-t="lastCropQ"></h2>
+      <div class="crop-grid" id="lastCrop" role="radiogroup"></div>
+    </div>
+    <div class="card">
+      <div><h2 data-t="canGrowQ"></h2><p class="muted small" data-t="canGrowHelp"></p></div>
+      <div class="crop-grid" id="canGrow"></div>
+    </div>
+    <div class="card">
+      <div><h2 data-t="soilQ"></h2><p class="muted small" id="soilMap"></p></div>
+      <div class="grid" id="soilPick" role="radiogroup"></div>
+    </div>
+    <div class="card">
+      <h2 data-t="priorityQ"></h2>
+      <div class="grid" id="prio" role="radiogroup"></div>
+    </div>
+    <div class="nav"><button class="big-btn secondary" type="button" data-goto="1">← <span data-t="back"></span></button><button class="big-btn" type="button" id="make"><span aria-hidden="true">✨</span><span data-t="makePlan"></span></button></div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section id="s3" class="stack" hidden>
+    <div class="hero-plan" id="hero"></div>
+    <div class="card"><h2 data-t="planTitle"></h2><div class="plans" id="plans"></div></div>
+    <div class="card"><div><h2 data-t="calTitle"></h2><p class="muted small" data-t="calHelp"></p></div><div id="calendar"></div></div>
+    <div class="card"><h2 data-t="outlookTitle"></h2><div id="outlook" class="outlook"></div></div>
+    <div class="card"><h2 data-t="whatIf"></h2>
+      <div class="toggles"><button class="pill-btn" type="button" id="hot" aria-pressed="false"><span aria-hidden="true">🔥</span><span data-t="hotter"></span></button><button class="pill-btn" type="button" id="dry" aria-pressed="false"><span aria-hidden="true">🌵</span><span data-t="drier"></span></button></div>
+      <p class="muted small" id="whatIfNote"></p>
+    </div>
+    <div class="card"><h2 data-t="whyTitle"></h2><ul class="why" id="why"></ul></div>
+    <div class="card"><h2 data-t="checkTitle"></h2><ul class="check"><li data-t="check1"></li><li data-t="check2"></li><li data-t="check3"></li><li data-t="check4"></li></ul>
+      <div class="row"><button class="big-btn secondary" type="button" id="copy"><span aria-hidden="true">📋</span><span data-t="copy"></span></button></div>
+    </div>
+    <div class="card"><details class="src"><summary data-t="sourcesTitle"></summary><ul id="sources"></ul></details></div>
+    <div class="nav"><button class="big-btn secondary" type="button" data-goto="2">← <span data-t="back"></span></button><span></span></div>
+  </section>
+
+  <footer>Fieldwise · NASA POWER weather · screening estimates, not a forecast · check with your local agronomist</footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="data/presets.js"></script>
+<script src="crops.js"></script>
+<script src="i18n.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+<!--ARTIFACT-END-->
+</body>
+</html>

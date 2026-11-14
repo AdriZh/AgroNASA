@@ -1,0 +1,17 @@
+{
+ "north_kz": {
+  "name": "Akmola steppe, North Kazakhstan",
+  "lat": 52.6,
+  "lon": 69.9
+ },
+ "south_kz": {
+  "name": "Turkistan irrigated belt, South Kazakhstan",
+  "lat": 42.9,
+  "lon": 68.3
+ },
+ "iowa": {
+  "name": "Central Iowa, USA (reference)",
+  "lat": 42.0,
+  "lon": -93.6
+ }
+}

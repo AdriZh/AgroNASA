@@ -46,6 +46,14 @@ Plus ISRIC SoilGrids (sand, clay, organic carbon) → plant-available water (Sax
    - **SMAP L4** soil moisture (9 km) and **IMERG** rain (10 km) for sharper "soil now" and rain; these need a free Earthdata login.
    - **HLS / MODIS NDVI** greenness to detect the crop calendar and bare months on the actual field.
 
+### Update (v2.1): the forecast formula, and what changed after review
+
+- **Forecast formula (built).** For the first crop of the selected plan, `ŷ = ȳ + Σ βᵢ·zᵢ`: ridge regression of the season outcome index on NASA predictors observed the same number of days before sowing in each past year: root-zone soil moisture (`GWETROOT`), profile soil moisture (`GWETPROF`), 90-day precipitation (`PRECTOTCORR`) and snow depth (`SNODP`). Coefficients are constrained to the physical sign (more water can't lower a water-limited outcome). Skill is measured by leave-one-year-out cross-validation as `1 − MSE/MSE(climatology)`. The forecast is shown only if skill > 0.1; otherwise the app shows the historical range.
+- **Skill by lead time.** At the Akmola pilot, skill for spring wheat rises from about 0.1 six months before sowing to about 0.3 at 3 months and about 0.4 at sowing. The app plots this, so judges can see it is an honest, validated forecast.
+- **NASA climate projections.** POWER has a beta projection API (NEX-GDDP-CMIP6, SSP1-2.6/2-4.5/3-7.0). It returned values for a test point in Virginia but only missing values (−999) for Kazakhstan and Senegal on 14 Nov 2026, so the app uses +2 °C and −20 % rain scenarios instead.
+- **Review points adopted.** Baseline = the farmer's usual rotation (last two seasons), not continuous monoculture. Irrigation asked as Yes / No / Not sure, and irrigation water need is reported for typical and dry years. Data availability is shown per variable (radiation lags about 2 days). Professional chart style: hairline grids, real axes, tables with tabular figures, no emoji.
+- **Review points not adopted, and why.** Fertiliser application records and money budgets: no verified local price data for any pilot region, and long forms lose low-tech users. The plan keeps a relative income index and says "confirm prices locally". Open-Meteo 16-day forecasts: not NASA data and not needed for a plan made months before sowing.
+
 ## 4. Design rules for farmers who rarely use apps
 
 1. **One question per card.** Big text (18 px), big buttons, nothing to type except optional coordinates.

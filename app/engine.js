@@ -57,7 +57,7 @@
   function buildSite(raw) {
     const s = raw.series, n = s.t.length, t0 = parseYMD(raw.start);
     const site = { id: raw.id, name: raw.name, lat: raw.lat, lon: raw.lon, elev: raw.elev, t0, n, end: raw.end, soilRaw: raw.soil,
-      t: s.t, tx: s.tx, tn: s.tn, p: s.p, w: s.w, rs: s.rs, rh: s.rh, u: s.u, doy: new Int16Array(n), month: new Int8Array(n), year: new Int16Array(n), _scen: {} };
+      t: s.t, tx: s.tx, tn: s.tn, p: s.p, w: s.w, wp: s.wp, sn: s.sn, rs: s.rs, rh: s.rh, u: s.u, doy: new Int16Array(n), month: new Int8Array(n), year: new Int16Array(n), _scen: {} };
     for (let i = 0; i < n; i++) {
       const d = new Date(t0 + i * DAY);
       site.year[i] = d.getUTCFullYear(); site.month[i] = d.getUTCMonth();
@@ -194,12 +194,12 @@
 
   function climate(site, sc) {
     const y0 = site.firstYear, y1 = site.lastFullYear, ny = y1 - y0 + 1;
-    const P = Array(12).fill(0), E = Array(12).fill(0), T = Array(12).fill(0), Tn = Array(12).fill(0), cnt = Array(12).fill(0);
+    const P = Array(12).fill(0), E = Array(12).fill(0), T = Array(12).fill(0), Tn = Array(12).fill(0), Tx = Array(12).fill(0), cnt = Array(12).fill(0);
     const yearly = {};
     for (let i = 0; i < site.n; i++) {
       const y = site.year[i]; if (y > y1) break;
       const m = site.month[i];
-      P[m] += sc.p[i]; E[m] += sc.et0[i]; T[m] += site.t[i] + sc.dT; Tn[m] += site.tn[i] + sc.dT; cnt[m]++;
+      P[m] += sc.p[i]; E[m] += sc.et0[i]; T[m] += site.t[i] + sc.dT; Tn[m] += site.tn[i] + sc.dT; Tx[m] += site.tx[i] + sc.dT; cnt[m]++;
       const Y = yearly[y] || (yearly[y] = { rain: 0, lastFrost: 0, firstFrost: 366, hot: 0, tSummer: 0, nSummer: 0 });
       Y.rain += sc.p[i];
       const tn = site.tn[i] + sc.dT, tx = site.tx[i] + sc.dT, doy = site.doy[i];
@@ -207,7 +207,7 @@
       if (tn < 0) { if ((north && doy < 182) || (!north && doy >= 182)) Y.lastFrost = Math.max(Y.lastFrost, doy); else Y.firstFrost = Math.min(Y.firstFrost, doy); }
       if (summer) { Y.tSummer += site.t[i] + sc.dT; Y.nSummer++; if (tx >= 30) Y.hot++; }
     }
-    const months = P.map((_, m) => ({ rain: P[m] / ny, et0: E[m] / ny, t: T[m] / cnt[m], tmin: Tn[m] / cnt[m] }));
+    const months = P.map((_, m) => ({ rain: P[m] / ny, et0: E[m] / ny, t: T[m] / cnt[m], tmin: Tn[m] / cnt[m], tmax: Tx[m] / cnt[m] }));
     const ys = Object.keys(yearly).map(Number).sort();
     const rains = ys.map(y => yearly[y].rain);
     const frostYears = ys.filter(y => yearly[y].lastFrost > 0);
@@ -217,6 +217,11 @@
     let now = 0, norm = 0, k = 0;
     for (let i = site.n - 30; i < site.n; i++) { if (i < 0) continue; now += site.w[i]; norm += site.wClim[site.doy[i]]; k++; }
     const anomaly = k ? (now - norm) / k : 0;
+    // standard deviation of 30-day means around this date in past years, for an anomaly in SD units
+    const endDoy = site.doy[site.n - 1], past = [];
+    for (let y = site.firstYear; y < site.year[site.n - 1]; y++) { const i = dayIndex(site, y, 1, 1) + endDoy - 1; if (i >= 29 && i < site.n) past.push(winMean(site.w, i, 30)); }
+    const sdPast = Math.sqrt(mean(past.map(v => (v - mean(past)) ** 2))) || 0.01;
+    const zNow = k ? (now / k - mean(past)) / sdPast : 0;
     return {
       months, years: ys, rains,
       annualRain: mean(rains), driestYear: ys[rains.indexOf(Math.min(...rains))], wettestYear: ys[rains.indexOf(Math.max(...rains))],
@@ -225,8 +230,87 @@
       frost: frostYears.length > ny / 2 ? { lastSpring: median(frostYears.map(y => yearly[y].lastFrost)), firstAutumn: median(frostYears.map(y => yearly[y].firstFrost).filter(v => v < 366)) } : null,
       hotDays: median(ys.map(y => yearly[y].hot)),
       summerTrend: theilSen(summerT), rainTrend: theilSen(rains),
-      soilNow: { anomaly, now: k ? now / k : NaN, normal: k ? norm / k : NaN, asOf: site.end },
+      soilNow: { anomaly, z: zNow, now: k ? now / k : NaN, normal: k ? norm / k : NaN, asOf: site.end },
     };
+  }
+
+
+  // ---------- statistical outlook: ridge regression on NASA pre-season predictors, leave-one-out validated ----------
+  function solve(A, b) { // Gauss-Jordan for small systems
+    const n = b.length, M = A.map((r, i) => [...r, b[i]]);
+    for (let c = 0; c < n; c++) {
+      let piv = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r;
+      [M[c], M[piv]] = [M[piv], M[c]];
+      const d = M[c][c] || 1e-12;
+      for (let k = c; k <= n; k++) M[c][k] /= d;
+      for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c]; for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k]; }
+    }
+    return M.map(r => r[n]);
+  }
+  function ridgeFit(X, y, lambda) {
+    const n = X.length, k = X[0].length;
+    const mu = Array.from({ length: k }, (_, j) => mean(X.map(r => r[j])));
+    const sd = Array.from({ length: k }, (_, j) => Math.sqrt(mean(X.map(r => (r[j] - mu[j]) ** 2))) || 1);
+    const Z = X.map(r => r.map((v, j) => (v - mu[j]) / sd[j])), ym = mean(y);
+    const A = Array.from({ length: k }, (_, a) => Array.from({ length: k }, (_, b) => Z.reduce((s, r) => s + r[a] * r[b], 0) + (a === b ? lambda : 0)));
+    const rhs = Array.from({ length: k }, (_, a) => Z.reduce((s, r, i) => s + r[a] * (y[i] - ym), 0));
+    const beta = solve(A, rhs);
+    return { mu, sd, ym, beta, predict: x => ym + x.reduce((s, v, j) => s + beta[j] * (v - mu[j]) / sd[j], 0) };
+  }
+  const PRED = [
+    { id: 'rootSM', unit: '', get: (site, i) => winMean(site.w, i, 30) },
+    { id: 'profileSM', unit: '', get: (site, i) => winMean(site.wp, i, 30) },
+    { id: 'rain90', unit: 'mm', get: (site, i, sc) => winSum(sc.p, i, 90) },
+    { id: 'snow', unit: 'cm', get: (site, i) => winMean(site.sn, i, 30), needsSnow: true },
+  ];
+  function winMean(a, i, n) { let s = 0, k = 0; for (let j = Math.max(0, i - n + 1); j <= i; j++) { s += a[j]; k++; } return k ? s / k : NaN; }
+  function winSum(a, i, n) { let s = 0; for (let j = Math.max(0, i - n + 1); j <= i; j++) s += a[j]; return s; }
+
+  /** Build a lead-specific model: predict the season outcome from NASA predictors observed `lead` days before sowing. */
+  function outlookModel(site, sc, runs, m, d, lead, rotF) {
+    const hasSnow = site.sn && Math.max(...site.sn) > 2;
+    let preds = PRED.filter(p => (p.id !== 'profileSM' || site.wp) && (!p.needsSnow || hasSnow));
+    const lambda = 2;
+    const build = ps => runs.map(r => { const i = dayIndex(site, r.year, m, d) - lead; return i < 90 ? null : { year: r.year, x: ps.map(p => p.get(site, i, sc)), y: Math.min(1, r.yi * rotF) }; }).filter(Boolean);
+    // Physical sign constraint: more water (soil moisture, snow, rain) must not lower a water-limited outcome.
+    // Drop any predictor whose fitted effect is negative, then refit.
+    let rows = build(preds);
+    if (rows.length < 12) return null;
+    for (let it = 0; it < preds.length; it++) {
+      const f = ridgeFit(rows.map(r => r.x), rows.map(r => r.y), lambda);
+      const keep = preds.filter((_, j) => f.beta[j] > 0);
+      if (keep.length === preds.length || !keep.length) break;
+      preds = keep; rows = build(preds);
+    }
+    const loo = rows.map((row, j) => { const tr = rows.filter((_, k) => k !== j); const f = ridgeFit(tr.map(r => r.x), tr.map(r => r.y), lambda); return { pred: f.predict(row.x), clim: mean(tr.map(r => r.y)), obs: row.y }; });
+    const mseCv = mean(loo.map(o => (o.pred - o.obs) ** 2)), mseCl = mean(loo.map(o => (o.clim - o.obs) ** 2));
+    const po = loo.map(o => o.pred), ob = loo.map(o => o.obs), mp = mean(po), mo = mean(ob);
+    const r = po.reduce((s, v, i) => s + (v - mp) * (ob[i] - mo), 0) / Math.sqrt(po.reduce((s, v) => s + (v - mp) ** 2, 0) * ob.reduce((s, v) => s + (v - mo) ** 2, 0) || 1);
+    const fit = ridgeFit(rows.map(r => r.x), rows.map(r => r.y), lambda);
+    return { lead, preds, fit, rows, skill: 1 - mseCv / mseCl, r, residuals: loo.map(o => o.obs - o.pred), n: rows.length };
+  }
+
+  /** Outlook for the next sowing of `crop`, issued on the latest NASA day. */
+  function seasonOutlook(site, sc, crop, ev, rotF) {
+    const lastIdx = site.n - 1, lastDate = new Date(site.t0 + lastIdx * DAY);
+    let year = lastDate.getUTCFullYear();
+    if (dayIndex(site, year, ev.m, ev.d) <= lastIdx) year++;
+    const lead = dayIndex(site, year, ev.m, ev.d) - lastIdx;
+    const model = outlookModel(site, sc, ev.runs, ev.m, ev.d, lead, rotF);
+    const clim = ev.runs.map(r => Math.min(1, r.yi * rotF));
+    const leads = [240, 180, 150, 120, 90, 60, 30, 0].map(L => { const mo = outlookModel(site, sc, ev.runs, ev.m, ev.d, L, rotF); return mo ? { lead: L, skill: mo.skill, r: mo.r } : null; }).filter(Boolean);
+    const probs = vals => ({ good: vals.filter(v => v >= 0.75).length / vals.length, ok: vals.filter(v => v >= 0.5 && v < 0.75).length / vals.length, bad: vals.filter(v => v < 0.5).length / vals.length });
+    const base = { crop, year, m: ev.m, d: ev.d, lead, issued: site.end, leads, climProbs: probs(clim), climMedian: median(clim) };
+    if (!model) return { ...base, skilful: false, probs: probs(clim) };
+    // clamp today's predictors to ±2 SD of the training years so the line is not extrapolated far outside the record
+    const xNow = model.preds.map((p, j) => clamp(p.get(site, lastIdx, sc), model.fit.mu[j] - 2 * model.fit.sd[j], model.fit.mu[j] + 2 * model.fit.sd[j]));
+    const xRaw = model.preds.map(p => p.get(site, lastIdx, sc));
+    const yhat = clamp(model.fit.predict(xNow), 0, 1);
+    const skilful = model.skill > 0.1;
+    const ens = skilful ? model.residuals.map(e => clamp(yhat + e, 0, 1)) : clim;
+    const q = a => { const v = [...a].sort((x, y) => x - y); return [v[Math.floor(0.1 * (v.length - 1))], v[Math.round(0.9 * (v.length - 1))]]; };
+    const contrib = model.preds.map((p, j) => ({ id: p.id, unit: p.unit, now: xRaw[j], normal: model.fit.mu[j], z: (xNow[j] - model.fit.mu[j]) / model.fit.sd[j], beta: model.fit.beta[j], effect: model.fit.beta[j] * (xNow[j] - model.fit.mu[j]) / model.fit.sd[j] }));
+    return { ...base, skilful, skill: model.skill, r: model.r, n: model.n, yhat: skilful ? yhat : median(clim), range: q(ens), probs: probs(ens), intercept: model.fit.ym, contrib };
   }
 
   // ---------- rotations ----------
@@ -246,34 +330,39 @@
     return set;
   }
 
-  /** Evaluate a 3-season plan. evals: {cropId: bestSowing result}. */
-  function evalPlan(seq, last, evals, cropsById, clim) {
+  /** Evaluate a 3-season plan. evals: {cropId: bestSowing result}. irrigated: water shortage is topped up, and the water needed is reported. */
+  function evalPlan(seq, last, evals, cropsById, clim, irrigated) {
     let prev = cropsById[last];
+    const pct = (a, q) => { const v = [...a].sort((x, y) => x - y); return v[Math.min(v.length - 1, Math.floor(q * v.length))]; };
     const seasons = seq.map(id => {
       const c = cropsById[id], ev = evals[id], rm = rotationMultiplier(prev, c);
-      const yis = ev.runs.map(r => Math.min(1, r.yi * rm.f));
+      const base = r => (irrigated ? r.growth * r.heatF * (r.frostHit ? 0.4 : 1) : r.yi);
+      const yis = ev.runs.map(r => Math.min(1, base(r) * rm.f));
+      const need = ev.runs.map(r => Math.max(0, r.etc - r.eta));
       prev = c;
       const cover = coveredMonths(ev, c);
       const snow = clim.months.map((v, i) => v.t < -2 && !cover.has(i));
       const bare = clim.months.map((v, i) => !cover.has(i) && !snow[i]);
-      return { id, crop: c, ev, rot: rm, median: median(yis), bad: yis.filter(v => v < 0.5).length / yis.length,
+      return { id, crop: c, ev, rot: rm, yis, median: median(yis), bad: yis.filter(v => v < 0.5).length / yis.length,
         counts: { good: yis.filter(v => v >= 0.75).length, ok: yis.filter(v => v >= 0.5 && v < 0.75).length, bad: yis.filter(v => v < 0.5).length, n: yis.length },
-        cover: [...cover], bare, snow };
+        water: { typical: median(need), dry: pct(need, 0.8) }, cover: [...cover], bare, snow };
     });
     const fams = new Set(seq.map(id => cropsById[id].family)).size;
     const legumes = seq.filter(id => cropsById[id].legume).length;
     const bareMonths = mean(seasons.map(s => s.bare.filter(Boolean).length));
     const repeats = seasons.filter(s => s.rot.why.includes('repeat')).length;
-    const safety = clamp(1 - mean(seasons.map(s => s.bad)) * 1.6, 0, 1);
+    const waterTypical = seasons.reduce((a, s) => a + s.water.typical, 0), waterDry = seasons.reduce((a, s) => a + s.water.dry, 0);
+    let safety = clamp(1 - mean(seasons.map(s => s.bad)) * 1.6, 0, 1);
+    if (irrigated) safety *= 1 - Math.min(0.4, waterTypical / 2000); // needing lots of irrigation water is itself a risk and a cost
     const soil = clamp(0.4 * Math.min(1, legumes) + 0.35 * (fams - 1) / 2 + 0.25 * (1 - bareMonths / 9) - 0.15 * repeats, 0, 1);
     const income = clamp(mean(seasons.map(s => s.median * s.crop.value / 3)) / 0.8, 0, 1);
-    return { seq, seasons, safety, soil, income, families: fams, legumes, bareMonths };
+    return { seq, seasons, safety, soil, income, families: fams, legumes, bareMonths, waterTypical, waterDry, irrigated: !!irrigated };
   }
 
   const WEIGHTS = { safety: { safety: 0.6, soil: 0.2, income: 0.2 }, soil: { safety: 0.25, soil: 0.55, income: 0.2 }, income: { safety: 0.25, soil: 0.15, income: 0.6 } };
   const planScore = (p, pri) => { const w = WEIGHTS[pri] || WEIGHTS.safety; return w.safety * p.safety + w.soil * p.soil + w.income * p.income; };
 
-  /** Main entry: returns everything the UI needs. opts: {lastCrop, priority, exclude:Set, soilSrc, dT, rainMult} */
+  /** Main entry: returns everything the UI needs. opts: {lastCrop, prevCrop, irrigated, priority, exclude:Set, soilSrc, dT, rainMult} */
   function analyse(site, crops, opts) {
     const sc = scenario(site, opts.dT || 0, opts.rainMult || 1);
     const soil = soilFrom(opts.soilSrc || site.soilRaw);
@@ -286,15 +375,18 @@
     const usable = allowed.filter(c => fit[c.id] !== 'poor');
     const pri = opts.priority || 'safety';
 
-    const plans = [];
-    // A: keep as now
-    plans.push({ kind: 'keep', ...evalPlan([last, last, last], last, evals, cropsById, clim) });
-    // B: one break crop in year 2
-    const lastC = cropsById[last];
-    const breakPool = usable.filter(c => c.family !== lastC.family && (lastC.legume ? !c.legume : c.legume));
-    const breakPool2 = breakPool.length ? breakPool : usable.filter(c => c.family !== lastC.family);
+    const plans = [], irr = !!opts.irrigated;
+    const EP = seq => evalPlan(seq, last, evals, cropsById, clim, irr);
+    // A: keep as now — continue the farmer's usual pattern (two-crop rotation, or the same crop every year)
+    const prevC = opts.prevCrop && evals[opts.prevCrop] ? opts.prevCrop : last;
+    const keepSeq = prevC !== last ? [prevC, last, prevC] : [last, last, last];
+    plans.push({ kind: 'keep', ...EP(keepSeq) });
+    // B: small change — swap the middle season of the usual pattern for a break crop
+    const keepFams = new Set(keepSeq.map(id => cropsById[id].family)), keepHasLegume = keepSeq.some(id => cropsById[id].legume);
+    const breakPool = usable.filter(c => !keepFams.has(c.family) && (keepHasLegume ? !c.legume : c.legume));
+    const breakPool2 = breakPool.length ? breakPool : usable.filter(c => !keepFams.has(c.family));
     let bestB = null;
-    for (const c of breakPool2) { const p = evalPlan([last, c.id, last], last, evals, cropsById, clim); if (!bestB || planScore(p, pri) > planScore(bestB, pri)) bestB = p; }
+    for (const c of breakPool2) { const p = EP([keepSeq[0], c.id, keepSeq[2]]); if (!bestB || planScore(p, pri) > planScore(bestB, pri)) bestB = p; }
     if (bestB) plans.push({ kind: 'small', ...bestB });
     // C: best 3-crop sequence with at least two families, different from A and B
     let bestC = null;
@@ -302,8 +394,8 @@
     for (const a of pool) for (const b of pool) for (const c of pool) {
       if (a.id === b.id || b.id === c.id) continue;
       const seq = [a.id, b.id, c.id];
-      if (bestB && seq.join() === bestB.seq.join()) continue;
-      const p = evalPlan(seq, last, evals, cropsById, clim);
+      if ((bestB && seq.join() === bestB.seq.join()) || seq.join() === keepSeq.join()) continue;
+      const p = EP(seq);
       if (p.families < 2) continue;
       if (!bestC || planScore(p, pri) > planScore(bestC, pri)) bestC = p;
     }
@@ -321,10 +413,10 @@
     const outlook = { crop: first.crop, m: ev.m, d: ev.d, n: oy.length,
       good: oy.filter(v => v >= 0.75).length, ok: oy.filter(v => v >= 0.5 && v < 0.75).length, bad: oy.filter(v => v < 0.5).length, anomaly: clim.soilNow.anomaly };
 
-    return { site, soil, clim, evals, fit, plans, recommended, outlook, last, priority: pri, scenario: { dT: sc.dT, rainMult: sc.rainMult } };
+    return { site, soil, clim, evals, fit, plans, recommended, outlook, last, prev: prevC, irrigated: irr, priority: pri, scenario: { dT: sc.dT, rainMult: sc.rainMult } };
   }
 
-  const api = { buildSite, analyse, soilFrom, scenario, runSeason, bestSowing, evalCropAt, climate, classify, seasonLength, theilSen, ROT, median, mean };
+  const api = { seasonOutlook, outlookModel, buildSite, analyse, soilFrom, scenario, runSeason, bestSowing, evalCropAt, climate, classify, seasonLength, theilSen, ROT, median, mean };
   root.Engine = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

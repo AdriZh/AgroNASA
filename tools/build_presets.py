@@ -9,12 +9,12 @@ CA = "/root/.ccr/ca-bundle.crt"
 CTX = ssl.create_default_context(cafile=CA) if pathlib.Path(CA).exists() else ssl.create_default_context()
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PRESETS = [
-    {"id": "akmola", "name": {"en": "Akmola, Kazakhstan", "ru": "Акмолинская обл., Казахстан"}, "lat": 52.60, "lon": 69.90, "lastCrop": "spring_wheat"},
-    {"id": "bambey", "name": {"en": "Bambey, Senegal", "ru": "Бамбей, Сенегал"}, "lat": 14.71, "lon": -16.46, "lastCrop": "millet"},
-    {"id": "iowa", "name": {"en": "Central Iowa, USA", "ru": "Айова, США"}, "lat": 42.00, "lon": -93.60, "lastCrop": "maize"},
+    {"id": "akmola", "name": {"en": "Akmola, Kazakhstan", "ru": "Акмолинская обл., Казахстан"}, "lat": 52.60, "lon": 69.90, "lastCrop": "spring_wheat", "prevCrop": "spring_wheat"},
+    {"id": "bambey", "name": {"en": "Bambey, Senegal", "ru": "Бамбей, Сенегал"}, "lat": 14.71, "lon": -16.46, "lastCrop": "millet", "prevCrop": "groundnut"},
+    {"id": "iowa", "name": {"en": "Central Iowa, USA", "ru": "Айова, США"}, "lat": 42.00, "lon": -93.60, "lastCrop": "maize", "prevCrop": "soybean"},
 ]
-PARAMS = ["T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR", "GWETROOT", "ALLSKY_SFC_SW_DWN", "RH2M", "WS2M"]
-SHORT = {"T2M": "t", "T2M_MAX": "tx", "T2M_MIN": "tn", "PRECTOTCORR": "p", "GWETROOT": "w", "ALLSKY_SFC_SW_DWN": "rs", "RH2M": "rh", "WS2M": "u"}
+PARAMS = ["T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR", "GWETROOT", "GWETPROF", "SNODP", "ALLSKY_SFC_SW_DWN", "RH2M", "WS2M"]
+SHORT = {"T2M": "t", "T2M_MAX": "tx", "T2M_MIN": "tn", "PRECTOTCORR": "p", "GWETROOT": "w", "GWETPROF": "wp", "SNODP": "sn", "ALLSKY_SFC_SW_DWN": "rs", "RH2M": "rh", "WS2M": "u"}
 
 def get(url):
     with urllib.request.urlopen(url, context=CTX, timeout=180) as r:
@@ -28,17 +28,20 @@ for s in PRESETS:
     d = get(url)
     par = d["properties"]["parameter"]
     dates = sorted(par["T2M"].keys())
+    # last date with a real value, per variable (reported in the app instead of one blanket "loaded" message)
+    last_valid = {SHORT[k]: max((dt for dt in dates if par[k][dt] != -999), default=None) for k in PARAMS}
     # drop trailing days where any parameter is still missing (near-real-time lag)
     while dates and any(par[k][dates[-1]] == -999 for k in PARAMS):
         dates.pop()
-    series = {}
+    series, filled = {}, 0
     for k in PARAMS:
         vals, last = [], 0.0
         for dt in dates:
             v = par[k][dt]
-            if v == -999: v = last  # rare gap: carry forward
+            if v == -999:  # rare gap inside the record: carry the previous day forward, and count it
+                v = last; filled += 1
             last = v
-            vals.append(round(v, 2 if k == "GWETROOT" else 1))
+            vals.append(round(v, 2 if k in ("GWETROOT", "GWETPROF") else 1))
         series[SHORT[k]] = vals
     soil = None
     try:
@@ -49,7 +52,7 @@ for s in PRESETS:
         time.sleep(13)
     except Exception as e:
         print("soil failed", s["id"], e)
-    out.append({**s, "elev": d["geometry"]["coordinates"][2], "start": dates[0], "end": dates[-1], "soil": soil, "series": series,
+    out.append({**s, "elev": d["geometry"]["coordinates"][2], "start": dates[0], "end": dates[-1], "soil": soil, "lastValid": last_valid, "filled": filled, "series": series,
                 "source": "NASA POWER daily, community AG (MERRA-2 meteorology, CERES radiation); soil: ISRIC SoilGrids 2.0"})
     print(s["id"], dates[0], "->", dates[-1], len(dates), "days; soil", soil)
 

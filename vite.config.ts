@@ -1,0 +1,10 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+// `base` is relative so the static build works on GitHub Pages sub-paths and any static host.
+export default defineConfig({
+  base: './',
+  plugins: [react()],
+  build: { chunkSizeWarningLimit: 2000 },
+  test: { environment: 'node', include: ['tests/**/*.test.ts'] },
+} as any);

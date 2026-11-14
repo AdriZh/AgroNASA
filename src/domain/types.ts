@@ -1,0 +1,213 @@
+// Core data model for Field Shift. Mirrors the schema in 03_Step_by_Step_Implementation_Plan §3.
+
+export type SourceTag =
+  | 'farmer'      // reported by the farmer / extension worker
+  | 'nasa'        // NASA observation or reanalysis (POWER, GIBS)
+  | 'soilgrids'   // ISRIC SoilGrids modeled soil map (non-NASA)
+  | 'forecast'    // Open-Meteo numerical forecast (non-NASA)
+  | 'rule'        // regional rule pack entry
+  | 'modeled'     // computed by Field Shift's models (FAO-56 / FAO-33)
+  | 'synthetic';  // illustrative demo value — not a real quote
+
+export type AreaUnit = 'ha' | 'acre' | 'm2';
+export type Priority = 'cost' | 'climate' | 'continuity' | 'return';
+export type LaborLevel = 'low' | 'medium' | 'high';
+export type Tri = 'yes' | 'no' | 'unknown';
+export type SoilTexture = 'sand' | 'loamy-sand' | 'sandy-loam' | 'loam' | 'silt-loam' | 'clay-loam' | 'clay' | 'unknown';
+
+export interface LatLon { lat: number; lon: number }
+
+export interface CropSeason {
+  id: string;
+  cropId: string;
+  year: number;               // calendar year of sowing
+  plantedOn?: string;         // ISO date
+  harvestedOn?: string;       // ISO date
+  approximateDate: boolean;
+  variety?: string;
+  outcome?: 'good' | 'average' | 'poor' | 'failed' | 'unknown';
+  yieldTHa?: number | null;   // farmer-reported, optional
+  notes?: string;
+  residueUse?: 'left' | 'grazed' | 'removed' | 'burned' | 'unknown';
+}
+
+export interface FertilizerApplication {
+  id: string;
+  cropSeasonId: string;
+  productId: string;          // key into the fertilizer product library or 'custom'
+  productName: string;
+  type: 'mineral' | 'organic';
+  applicationDate?: string;
+  approximateDate: boolean;
+  quantity: number | null;    // total product applied
+  quantityUnit: 'kg' | 'bag' | 't' | 'L';
+  bagMassKg?: number | null;
+  treatedAreaHa?: number | null; // null = unknown (never assume whole field)
+  n?: number | null;          // label N %  (null = unknown)
+  p2o5?: number | null;       // label P2O5 %
+  k2o?: number | null;        // label K2O %
+  method?: string;
+  paidCost?: number | null;
+  currency?: string;
+  source: 'receipt' | 'recall' | 'unknown';
+}
+
+export interface SoilEvidence {
+  texture: SoilTexture;       // farmer-known texture
+  labPh?: number | null;
+  labSocPct?: number | null;
+  labDate?: string;
+  notes?: string;
+}
+
+export interface ConfirmedInflow { id: string; date: string; amount: number; label: string }
+
+export interface PriceOverride { [itemKey: string]: number | null }
+
+export interface FarmScenario {
+  id: string;
+  name: string;
+  regionPackId?: string;      // auto-detected from location if absent
+  location: LatLon & { label?: string };
+  area: number;
+  areaUnit: AreaUnit;
+  currency: string;
+  availableFunds: number;
+  reserve: number;
+  confirmedInflows: ConfirmedInflow[];
+  firstSeasonYear: number;    // year of the first planned season
+  irrigation: Tri;
+  irrigationCapacityMm: number; // usable seasonal irrigation water (mm) if irrigation = yes
+  laborAvailable: LaborLevel;
+  unavailableCrops: string[]; // seed not obtainable
+  marketCrops: string[];      // crops the farmer can sell/use (empty = no restriction)
+  needsResidue: boolean;      // livestock residue needs
+  allowFallow: boolean;       // consider a fallow / rest season as an option
+  priority: Priority;
+  baselineOverride?: [string, string] | null;
+  history: CropSeason[];
+  fertilizer: FertilizerApplication[];
+  soil: SoilEvidence;
+  priceOverrides: PriceOverride;
+  synthetic: boolean;         // whole scenario is a demo fixture
+}
+
+// ---------- Regional knowledge ----------
+
+export interface CropDef {
+  id: string;
+  name: string;
+  family: string;             // botanical family
+  group: 'cereal' | 'legume' | 'oilseed' | 'tuber' | 'fallow';
+  emoji: string;
+  // FAO-56 single crop coefficient model
+  kc: [number, number, number];      // Kc ini, mid, end (FAO-56 Table 12)
+  stages: [number, number, number, number]; // L ini, dev, mid, late (days)
+  rootDepthM: number;         // max effective rooting depth (FAO-56 Table 22)
+  p: number;                  // depletion fraction (FAO-56 Table 22)
+  ky: number;                 // seasonal yield response factor (FAO-33 / analogue)
+  heatThresholdC: number;     // exploratory Tmax threshold around flowering
+  frostSensitive: boolean;
+  sowTempC: number;           // 5-day mean T2M needed to sow (temperature-driven sowing)
+  tMeanRange: [number, number]; // season mean air temperature range for screening (°C)
+  phRange: [number, number];
+  minReturnSeasons: number;   // seasons that must pass before the same crop again
+  diseaseGroups: string[];    // shared pathogen groups (e.g. sclerotinia)
+  labor: LaborLevel;
+  residueForLivestock: boolean;
+  irrigationRequired: boolean;
+  sources: string[];          // evidence ids
+}
+
+export interface RotationRule {
+  id: string;
+  kind: 'exclude' | 'warn' | 'benefit';
+  text: string;
+  sources: string[];
+  reviewed: boolean;          // locally reviewed by an agronomist?
+}
+
+export interface CostItemDef {
+  key: string;                // unique within crop (used for overrides)
+  category: 'seed' | 'fertilizer' | 'labor' | 'land-prep' | 'protection' | 'irrigation' | 'other';
+  label: string;
+  qtyPerHa: number;
+  unit: string;
+  unitPrice: number | null;   // null = price missing
+  dueOffsetDays: number;      // relative to sowing (negative = before)
+  essential: boolean;
+  cash: boolean;              // cash vs non-cash (family labor)
+}
+
+export interface CropEconomics {
+  attainableYieldTHa: number; // illustrative water-unlimited attainable yield under farmer management
+  pricePerT: number | null;   // illustrative farm-gate price
+  items: CostItemDef[];
+}
+
+export interface RegionPack {
+  id: string;
+  version: string;
+  name: string;
+  short: string;
+  description: string;
+  bbox: [number, number, number, number]; // minLat, minLon, maxLat, maxLon
+  currency: string;
+  sowingMethod: 'rain-onset' | 'temperature';
+  seasonLabel: string;
+  earliestSowing: string;     // MM-DD
+  latestSowing: string;       // MM-DD
+  crops: string[];
+  rules: RotationRule[];
+  economics: Record<string, CropEconomics>;
+  reviewStatus: 'demo-unreviewed' | 'reviewed';
+  demoDataset?: string;       // bundled NASA dataset key
+  sources: string[];
+}
+
+// ---------- Weather ----------
+
+export interface DailySeries {
+  meta: {
+    lat: number; lon: number; elevation: number;
+    start: string; end: string; // ISO
+    retrievedAt: string; query: string; sources: string[];
+    fillValue: number; cached: boolean; label: string;
+  };
+  n: number;
+  P: (number | null)[];   // PRECTOTCORR mm/day
+  TX: (number | null)[];  // T2M_MAX °C
+  TN: (number | null)[];  // T2M_MIN °C
+  T: (number | null)[];   // T2M °C
+  RH: (number | null)[];  // RH2M %
+  WS: (number | null)[];  // WS2M m/s
+  RS: (number | null)[];  // ALLSKY_SFC_SW_DWN MJ/m2/day
+  GWR: (number | null)[]; // GWETROOT 0-1
+  GWT: (number | null)[]; // GWETTOP 0-1
+}
+
+export interface SoilProfile {
+  source: 'soilgrids' | 'farmer' | 'default';
+  clayPct: number | null; sandPct: number | null; siltPct: number | null;
+  socPct: number | null; ph: number | null; nitrogenGKg: number | null; cec: number | null; bulkDensity: number | null;
+  texture: SoilTexture;
+  awcMmPerM: number;      // available water capacity, mm water per m soil
+  retrievedAt?: string;
+  cached?: boolean;
+}
+
+// ---------- Results ----------
+
+export type ReasonCode =
+  | 'BUDGET_EXCEEDED' | 'BUDGET_OK' | 'PRICE_MISSING' | 'CASH_TIMING'
+  | 'PRIOR_CROP_RULE' | 'RETURN_INTERVAL' | 'DISEASE_GROUP' | 'LEGUME_BENEFIT' | 'FALLOW_BENEFIT'
+  | 'IRRIGATION_REQUIRED' | 'SEED_UNAVAILABLE' | 'MARKET_CONSTRAINT' | 'LABOR_LIMIT' | 'RESIDUE_NEED'
+  | 'CLIMATE_UNSUITABLE' | 'CLIMATE_RISK_HIGH' | 'HEAT_EXPOSURE' | 'FROST_RISK' | 'SOIL_PH'
+  | 'HISTORY_INCOMPLETE' | 'CLIMATE_CONTEXT_ONLY' | 'UNREVIEWED_RULES' | 'SYNTHETIC_PRICES';
+
+export interface Reason {
+  code: ReasonCode;
+  severity: 'block' | 'warn' | 'info' | 'good';
+  text: string;
+  refs: string[];             // rule / evidence / input ids
+}

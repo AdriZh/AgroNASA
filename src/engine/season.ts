@@ -8,12 +8,17 @@
 // Method notes
 // - Season year: 1 Jan – 31 Dec in the northern hemisphere, 1 Jul – 30 Jun in the southern one. Frost in the
 //   first 196 days of the season year is "spring" frost, frost after that "autumn" frost (as in frostDates).
-// - Crop need: the crop library has no calibrated base temperatures or thermal-time requirements, so the
-//   blocking check compares the crop's cycle length (sum of the FAO-56 stage lengths, R8 Table 11 as used by the
+// - Crop need: the crop library has no calibrated base temperatures or thermal-time requirements, so by default
+//   the check compares the crop's cycle length (sum of the FAO-56 stage lengths, R8 Table 11 as used by the
 //   water balance) with the days from that year's sowing to the first autumn frost. GDD (McMaster & Wilhelm
 //   1997, R40: Σ max(0, Tmean − Tbase)) is reported alongside, with a conventional Tbase of 10 °C for
 //   warm-season (frost-sensitive) crops and 5 °C for cool-season crops unless a crop defines `tbaseC`.
-//   A crop that defines both `tbaseC` and `gddToMaturity` is checked on thermal time instead of days.
+// - Tropical crops (frost-sensitive, ECOCROP minimum season mean ≥ 15 °C: pearl millet, sorghum, groundnut,
+//   cowpea, sesame, rice, cotton, pigeon pea) have FAO-56 cycles that hold at tropical temperatures; in a cool
+//   summer they develop more slowly and a day count would wave them through. For them the cycle is converted to
+//   thermal time, need = cycle days × (mid-range season mean − Tbase), and the crop matures in a year when the GDD
+//   from sowing to the first autumn frost reach that need. A crop that defines both `tbaseC` and
+//   `gddToMaturity` is always checked on thermal time with its own need.
 // - Overwintering crops (frost-tolerant with a cycle of more than 200 days, e.g. winter wheat) and crops sown in
 //   the autumn half of the season year (rabi, Australian autumn break) are not checked: frost during their
 //   season is expected and they are not limited by the first autumn frost.
@@ -37,6 +42,7 @@ export interface FrostYear {
 /** Minimal crop shape the season check needs (CropDef satisfies it). */
 export interface SeasonCrop {
   stages: number[]; frostSensitive: boolean;
+  tMeanRange?: [number, number];
   tbaseC?: number; gddToMaturity?: number;
 }
 
@@ -121,6 +127,8 @@ export function gdd(s: DailySeries, fromIso: string, days: number, tbaseC: numbe
 
 export const cropTbase = (c: SeasonCrop) => c.tbaseC ?? (c.frostSensitive ? 10 : 5);
 export const cycleDays = (c: SeasonCrop) => c.stages.reduce((a, b) => a + b, 0);
+/** Tropical crop: frost-sensitive with an ECOCROP minimum season mean of 15 °C or more (checked on thermal time). */
+export const isTropical = (c: SeasonCrop) => c.frostSensitive && !!c.tMeanRange && c.tMeanRange[0] >= 15;
 
 /**
  * Does the crop mature before the first autumn frost? `sowings` maps a calendar year to that year's sowing date
@@ -130,7 +138,7 @@ export const cycleDays = (c: SeasonCrop) => c.stages.reduce((a, b) => a + b, 0);
 export function seasonLengthCheck(s: DailySeries, crop: SeasonCrop, sowings?: Record<number, string>): SeasonLengthCheck {
   const fy = frostYears(s);
   const days = cycleDays(crop), tb = cropTbase(crop);
-  const gddNeed = crop.tbaseC != null && crop.gddToMaturity != null ? crop.gddToMaturity : null;
+  const gddNeed = crop.tbaseC != null && crop.gddToMaturity != null ? crop.gddToMaturity : isTropical(crop) ? Math.round(days * ((crop.tMeanRange![0] + crop.tMeanRange![1]) / 2 - tb)) : null;
   const frostFree = fy.length > 0 && fy.filter((f) => f.firstAutumnFrost == null).length > fy.length / 2;
   const base: SeasonLengthCheck = {
     applicable: false, frostFree, cycleDays: days, tbaseC: tb, gddNeed, years: 0, okYears: 0, pass: true,

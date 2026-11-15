@@ -26,9 +26,9 @@ const nb = (x: number) => (Math.abs(x) >= 1e6 ? `${(x / 1e6).toLocaleString('en-
 export function Seq({ crops, size }: { crops: [string, string]; size?: 'sm' }) {
   return (
     <p className={`seq ${size ?? ''}`} aria-label={`${cropName(crops[0])} then ${cropName(crops[1])}`}>
-      <span className="crop"><CropIcon id={crops[0]} size={size ? 18 : 22} />{cropName(crops[0])}</span>
+      <span className="crop"><CropIcon id={crops[0]} size={size ? 20 : 24} />{cropName(crops[0])}</span>
       <span className="arrow" aria-hidden><ArrowRight size={size ? 14 : 18} /></span>
-      <span className="crop"><CropIcon id={crops[1]} size={size ? 18 : 22} />{cropName(crops[1])}</span>
+      <span className="crop"><CropIcon id={crops[1]} size={size ? 20 : 24} />{cropName(crops[1])}</span>
     </p>
   );
 }

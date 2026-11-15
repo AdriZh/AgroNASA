@@ -81,7 +81,7 @@ export function CropIcon({ id, size = 20, title, className }: { id: string; size
   const glyph = G[id] ?? GROUP_FALLBACK[group];
   return (
     <span className={`crop-ic crop-ic-${group}${className ? ` ${className}` : ''}`} style={{ width: size, height: size }} {...(title ? { role: 'img', 'aria-label': cropName(id), title: cropName(id) } : { 'aria-hidden': true })}>
-      <svg viewBox="0 0 20 20" width={Math.round(size * 0.82)} height={Math.round(size * 0.82)} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" focusable="false">
+      <svg viewBox="0 0 20 20" width={Math.round(size * 0.84)} height={Math.round(size * 0.84)} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" focusable="false">
         {glyph}
       </svg>
     </span>

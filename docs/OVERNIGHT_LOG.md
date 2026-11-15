@@ -4,6 +4,13 @@
 
 https://adrizh.github.io/AgroNASA/  (work in progress — final status below)
 
+> ⚠️ **Deadline:** search results for the official 2026 page say submissions close **Sun 15 Nov 2026, 23:59 local time** (judging from 16 Nov). spaceappschallenge.org returned HTTP 503 when checked on 2026-11-15, so this is unverified. **Submit today.**
+
+## Space Apps rules (checked 2026-11-15; official site down, secondary sources)
+
+- Video ≤ 30 s **or** ≤ 7 slides including the title slide, hosted externally (2025 guide; 2020 agrees). 2026 guide reportedly released 13 Nov. Re-check the Project tab before submitting.
+- Criteria: Impact, Creativity, Validity, Relevance, Presentation, scored 1–5 each (judging-awards-guide page; definitions from the 2022 guide PDF).
+
 ## Decisions made (running)
 
 - **Deploy via `gh-pages` branch, not the Actions Pages artifact.** Pages was not enabled; `actions/deploy-pages` returned 404. Pushing a `gh-pages` branch auto-enabled Pages (the "pages build and deployment" run succeeded at 07:44 UTC). The workflow now tests, builds and force-pushes `dist/` to `gh-pages` on every push to `main`.

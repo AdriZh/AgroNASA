@@ -3,7 +3,7 @@ import { CropIcon, CropPair } from '../components/CropIcon';
 import type { Route } from '../../App';
 import { ArrowDown, ArrowLeft, ArrowRight, Ban, CloudSunRain, Coins, Pencil } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
-import { planValue, type EngineOutput, type PlanResult } from '../../engine/plan';
+import { planScores, planValue, type EngineOutput, type PlanResult, type PlanScore, type ScoreKey } from '../../engine/plan';
 import { CROPS, cropName } from '../../data/crops';
 import { fmtApprox, fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDayMonth, fmtDate } from '../../domain/dates';
@@ -89,6 +89,44 @@ export function ProfitBlock({ p, cur, compact }: { p: PlanResult; cur: string; c
   );
 }
 
+const SCORE_LABEL: Record<ScoreKey, string> = {
+  profit: 'Discounted profit', climate: 'Bad-year resilience', cost: 'Cash in hand', continuity: 'Familiar crops', soil: 'Soil sustainability',
+};
+const weightText = (k: ScoreKey, w: number) => (k === 'profit' ? `δ ${Math.round(w * 100)}%` : w === 0 ? 'off' : `${Math.round(w * 100)}%`);
+const pts = (x: number) => (Math.abs(x) < 0.05 ? '0' : `${x > 0 ? '+' : '−'}${Math.abs(x) < 10 ? Math.abs(x).toFixed(1) : Math.round(Math.abs(x))}`);
+
+/**
+ * Expandable score: final score (best fit = 100) and, per preference, how the plan grades on it (0–100 among the
+ * feasible plans), your slider weight and the points it adds. Points add up to the final score.
+ */
+export function ScoreDetails({ score, best }: { score: PlanScore; best?: boolean }) {
+  return (
+    <details className="plan-score">
+      <summary>
+        <span className="caption">Score</span>
+        <b className="score-num">{Math.round(score.final)}</b>
+        <span className="mini">{best ? 'best fit = 100' : 'vs best fit = 100'}</span>
+      </summary>
+      <table className="score-table">
+        <colgroup><col /><col style={{ width: 64 }} /><col style={{ width: 52 }} /><col style={{ width: 48 }} /></colgroup>
+        <thead><tr><th>Preference</th><th className="num" title="How this plan does on this alone, 0–100 among the feasible plans">Grade</th><th className="num" title="Your slider setting">Weight</th><th className="num" title="Points added to the score">Points</th></tr></thead>
+        <tbody>
+          {score.parts.map((x) => (
+            <tr key={x.key}>
+              <td>{SCORE_LABEL[x.key]}</td>
+              <td className="num"><span className="grade-bar" aria-hidden><i style={{ width: `${x.grade}%` }} /></span>{x.grade}</td>
+              <td className="num">{weightText(x.key, x.weight)}</td>
+              <td className={`num ${x.points < -0.05 ? 'bad-t' : x.points > 0.05 && x.key !== 'profit' ? 'good-t' : ''}`}>{x.key !== 'profit' && x.weight === 0 ? '—' : pts(x.points)}</td>
+            </tr>
+          ))}
+          <tr className="total"><td>Score</td><td /><td /><td className="num">{Math.round(score.final)}</td></tr>
+        </tbody>
+      </table>
+      <p className="mini">Grades compare the plans on each preference alone. Points are that preference’s share of the plan’s discounted value, scaled so the best fit scores 100. Move the sliders to see them change.</p>
+    </details>
+  );
+}
+
 /** How the ranking value is built: discounted cash flows, then each concern as a money adjustment. */
 function ValueBreakdown({ p, cur }: { p: PlanResult; cur: string }) {
   const { scenario } = useApp();
@@ -114,7 +152,7 @@ function ValueBreakdown({ p, cur }: { p: PlanResult; cur: string }) {
 }
 
 /** The plan card: one hero number (cash cost), budget bar, three stat rows, sowing lines. Used by Compare, Overview and Report. */
-export function PlanCard({ p, cur, label, sub, tone, best, onWhy, selected, compact, risk, showNet }: { p: PlanResult; cur: string; label: string; sub?: string; tone?: 'brand'; best?: boolean; onWhy?: () => void; selected?: boolean; compact?: boolean; risk?: PlanStress | null; showNet?: boolean }) {
+export function PlanCard({ p, cur, label, sub, tone, best, onWhy, selected, compact, risk, showNet, score }: { p: PlanResult; cur: string; label: string; sub?: string; tone?: 'brand'; best?: boolean; onWhy?: () => void; selected?: boolean; compact?: boolean; risk?: PlanStress | null; showNet?: boolean; score?: PlanScore }) {
   const severe = Math.round(p.outcome.pSevereAny * p.outcome.pairs);
   return (
     <article className={`card plan ${best ? 'best' : ''} ${compact ? 'preview' : ''}`} aria-label={`${label}: ${cropName(p.crops[0])} then ${cropName(p.crops[1])}`}>
@@ -127,8 +165,10 @@ export function PlanCard({ p, cur, label, sub, tone, best, onWhy, selected, comp
         </div>
         <BudgetBar cost={p.budget.totalCash} cap={p.budget.cap + p.budget.inflowsTotal} status={p.budget.status} />
         <BudgetLine p={p} cur={cur} />
+        {/* inside the cost block so every card keeps the same subgrid rows (Compare, Overview, slides) */}
+        <ProfitBlock p={p} cur={cur} compact={compact} />
+        {score && <ScoreDetails score={score} best={best} />}
       </div>
-      <ProfitBlock p={p} cur={cur} compact={compact} />
       {compact && risk !== undefined && <RiskRow p={p} s={risk} net={showNet ? fmtApprox(p.outcome.net?.median, cur) : undefined} />}
       {!compact && <>
         <div className="group" style={{ marginTop: 0 }}>
@@ -191,6 +231,8 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
   if (!engine) return <div>{head}{data.weatherStatus === 'error' ? <WeatherError /> : <NasaLoading place={sc.location.label} />}</div>;
 
   const plans = [engine.baseline, ...engine.alternatives];
+  // scores across every feasible plan and the usual plan; recomputed whenever the sliders change the weights
+  const scores = planScores([engine.baseline, ...engine.allPlans.filter((p) => p.feasible)], engine.alternatives[0] ?? null, sc.weights);
   const chosen = plans.find((p) => p.id === sel) ?? engine.allPlans.find((p) => p.id === sel) ?? (engine.alternatives[0] ?? engine.baseline);
   const cur = sc.currency;
   const edited = Object.keys(sc.priceOverrides).length > 0;
@@ -234,7 +276,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
 
       <div className="plan-row" ref={rowRef} onScroll={onRowScroll} style={{ marginTop: 24 }}>
         {plans.map((p, i) => (
-          <PlanCard key={p.id} p={p} cur={cur} label={labelOf(p, i)} tone={i === 1 ? 'brand' : undefined} best={i === 1} selected={chosen.id === p.id} onWhy={() => showWhy(p.id)} />
+          <PlanCard key={p.id} p={p} cur={cur} label={labelOf(p, i)} tone={i === 1 ? 'brand' : undefined} best={i === 1} selected={chosen.id === p.id} onWhy={() => showWhy(p.id)} score={scores.get(p.id)} />
         ))}
       </div>
       <div className="plan-dots" aria-hidden>{plans.map((p, i) => <i key={p.id} className={i === dot ? 'on' : ''} />)}</div>

@@ -2,7 +2,7 @@
 // group alternation (cereal ↔ legume ↔ oilseed) is credited; the usual plan stays the baseline, flagged.
 import { describe, expect, it } from 'vitest';
 import type { FarmScenario, Priority, PriorityWeights } from '../src/domain/types';
-import { DEFAULT_WEIGHTS, planValue, PRIORITY_KEYS, rotationBenefit, rotationPenalty, weightsFromPriority } from '../src/engine/plan';
+import { DEFAULT_WEIGHTS, planScores, planValue, PRIORITY_KEYS, rotationBenefit, rotationPenalty, weightsFromPriority } from '../src/engine/plan';
 import { isRepeat, runEngine } from '../src/engine/plan';
 import { detectPack, SENEGAL } from '../src/data/regionPacks';
 import { effectiveSoil } from '../src/soil/soil';
@@ -161,4 +161,32 @@ describe('ranking = discounted expected profit', () => {
     expect(weightsFromPriority('soil')).toEqual({ delta: DEFAULT_WEIGHTS.delta, cost: 0.2, climate: 0.2, continuity: 0.2, soil: 1 });
     expect(weightsFromPriority('return')).toEqual({ delta: DEFAULT_WEIGHTS.delta, cost: 0.2, climate: 0.2, continuity: 0.2, soil: 0.2 });
   });
+});
+
+describe('plan scores (expandable breakdown on each card)', () => {
+  const sets = [[DEMO_SENEGAL, bambey], [DEMO_KAZAKHSTAN, kostanay]] as const;
+  for (const [demo, d] of sets) {
+    const out = run(structuredClone(demo), d);
+    const plans = [out.baseline, ...out.allPlans.filter((p) => p.feasible)];
+    const scores = planScores(plans, out.alternatives[0], demo.weights);
+    it(`${demo.id}: points add up to the score, the best fit scores 100, grades stay 0–100`, () => {
+      expect(scores.get(out.alternatives[0].id)!.final).toBeCloseTo(100, 9);
+      for (const [, s] of scores) {
+        expect(s.parts.reduce((a, x) => a + x.points, 0)).toBeCloseTo(s.final, 9);
+        for (const x of s.parts) { expect(x.grade).toBeGreaterThanOrEqual(0); expect(x.grade).toBeLessThanOrEqual(100); }
+      }
+      for (const k of ['profit', 'climate', 'cost', 'continuity', 'soil'] as const) expect(Math.max(...[...scores.values()].map((s) => s.parts.find((x) => x.key === k)!.grade))).toBe(100);
+    });
+    it(`${demo.id}: scores order the plans exactly like the ranking`, () => {
+      const [a, b] = out.alternatives;
+      if (b) expect(scores.get(a.id)!.final).toBeGreaterThanOrEqual(scores.get(b.id)!.final);
+      for (const p of plans) expect(Math.sign(scores.get(p.id)!.final - scores.get(a.id)!.final)).toBe(Math.sign(planValue(p, demo.weights).value - planValue(a, demo.weights).value));
+    });
+    it(`${demo.id}: a slider at zero gives its preference no points; raising it changes the scores`, () => {
+      const off = planScores(plans, out.alternatives[0], { ...demo.weights, soil: 0 });
+      for (const [, s] of off) expect(s.parts.find((x) => x.key === 'soil')!.points).toBe(0);
+      const on = planScores(plans, out.alternatives[0], { ...demo.weights, soil: 1 });
+      expect([...on].some(([id, s]) => Math.abs(s.final - off.get(id)!.final) > 0.01)).toBe(true);
+    });
+  }
 });

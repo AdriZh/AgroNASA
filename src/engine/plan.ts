@@ -618,6 +618,58 @@ export function planValue(p: PlanResult, w: PriorityWeights): PlanValue {
   return { value, revenuePV, costPV, climateAdj, liquidityAdj, continuityAdj, soilAdj };
 }
 
+export type ScoreKey = 'profit' | Priority;
+export interface ScorePart {
+  key: ScoreKey;
+  /** 0–100: how well the plan does on this dimension among the compared plans (100 = best of them). */
+  grade: number;
+  /** The slider setting behind this part (δ for profit, 0–1 for the concerns). */
+  weight: number;
+  /** Contribution to the final score; the parts add up to `final`. */
+  points: number;
+}
+export interface PlanScore { final: number; parts: ScorePart[] }
+
+/**
+ * Additive scores that agree exactly with the ranking. The final score is the plan's discounted value as a share of
+ * the reference plan's (the best fit = 100); each part is one term of that value on the same scale, so changing a
+ * slider changes the points and the final score together. Grades (0–100) compare the plans on each dimension alone:
+ *   profit      discounted expected profit            climate  bad-year profit (20th-percentile revenue − cost)
+ *   cost        less cash tied up (discounted costs)  continuity  fewer crops you have not grown
+ *   soil        more rotation benefits (legume, break crop, rest)
+ * When no plan has a positive value the scale is the largest discounted revenue instead.
+ */
+export function planScores(plans: PlanResult[], ref: PlanResult | null, w: PriorityWeights): Map<string, PlanScore> {
+  const vals = new Map(plans.map((p) => [p.id, planValue(p, w)]));
+  const ok = plans.filter((p) => Number.isFinite(vals.get(p.id)!.value));
+  const refV = ref ? vals.get(ref.id)?.value ?? planValue(ref, w).value : -Infinity;
+  const bestV = Math.max(-Infinity, ...ok.map((p) => vals.get(p.id)!.value));
+  const scale = Number.isFinite(refV) && refV > 0 ? refV : bestV > 0 ? bestV : Math.max(1, ...ok.map((p) => vals.get(p.id)!.revenuePV));
+  const raw: Record<ScoreKey, (p: PlanResult, v: PlanValue) => number> = {
+    profit: (_, v) => v.revenuePV - v.costPV,
+    climate: (p) => p.finance.seasons.reduce((a, s) => a + (s.revenueBad ?? 0), 0) - p.budget.totalCash,
+    cost: (_, v) => -v.costPV,
+    continuity: (p) => -p.newCrops,
+    soil: (p) => rotationBenefit(p),
+  };
+  const keys: ScoreKey[] = ['profit', ...PRIORITY_KEYS];
+  const range = Object.fromEntries(keys.map((k) => {
+    const xs = ok.map((p) => raw[k](p, vals.get(p.id)!));
+    return [k, [Math.min(...xs), Math.max(...xs)]];
+  })) as Record<ScoreKey, [number, number]>;
+  const out = new Map<string, PlanScore>();
+  for (const p of ok) {
+    const v = vals.get(p.id)!;
+    const term: Record<ScoreKey, number> = { profit: v.revenuePV - v.costPV, climate: v.climateAdj, cost: v.liquidityAdj, continuity: v.continuityAdj, soil: v.soilAdj };
+    const parts = keys.map((k) => {
+      const [lo, hi] = range[k], x = raw[k](p, v);
+      return { key: k, grade: hi - lo < 1e-9 ? 100 : Math.round((100 * (x - lo)) / (hi - lo)), weight: k === 'profit' ? yearWeight(w) : w[k], points: (100 * term[k]) / scale };
+    });
+    out.set(p.id, { final: (100 * v.value) / scale, parts });
+  }
+  return out;
+}
+
 /** How much a cash flow one year away is worth today at this discount factor, e.g. 0.85 → "85 %". */
 export const yearWeight = (w: PriorityWeights) => Math.min(DELTA_RANGE[1], Math.max(DELTA_RANGE[0], w.delta ?? DEFAULT_WEIGHTS.delta));
 

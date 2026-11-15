@@ -77,7 +77,7 @@ export function MethodsPage() {
           <p>{TEAM.join(' · ')}. Developed alongside the team's Fieldwise prototype, which inspired some ideas.</p>
 
           <h2>10. AI disclosure and limits</h2>
-          <p>AI assistance was used for research synthesis, documents and code. Recommendations are produced by fixed rules and published formulas, not by a language model. Not validated agronomic advice: rule packs await local review; no user tests or field validation are claimed. NASA data is credited; NASA does not endorse this project.</p>
+          <p>AI-assisted: Claude (Anthropic) was used for research synthesis, documents, code, design and analysis; the 30-second video narration uses the Kokoro TTS AI voice and the video is labeled “AI-generated”. Recommendations are produced by fixed rules and published formulas, not by a language model. Not validated agronomic advice: rule packs await local review; no user tests or field validation are claimed. NASA data is credited; NASA does not endorse this project.</p>
         </div>
       </article>
 

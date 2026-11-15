@@ -159,7 +159,7 @@ export default function App() {
           {route === 'video' && <VideoPage go={go} />}
           </Suspense>
           <p className="disclaimer">
-            Field Shift is a decision-support prototype for NASA Space Apps 2026 (Field Shift challenge); it informs rather than decides, and NASA does not endorse it. Default prices, yields and demo farms are synthetic; rule packs await local agronomist review. Data: NASA POWER, NASA GIBS, ISRIC SoilGrids, Open-Meteo, maps © OpenStreetMap contributors. AI assistance was used in research, documents, code and media. <a href="#/methods">Methods & sources</a>
+            Field Shift is a decision-support prototype for NASA Space Apps 2026 (Field Shift challenge); it informs rather than decides, and NASA does not endorse it. Default prices, yields and demo farms are synthetic; rule packs await local agronomist review. Data: NASA POWER, NASA GIBS, ISRIC SoilGrids, Open-Meteo, maps © OpenStreetMap contributors. AI-assisted: built with Claude (Anthropic) for research, documents, code and design; the video narration voice is Kokoro TTS. <a href="#/methods">Methods & sources</a>
           </p>
         </main>
       </div>

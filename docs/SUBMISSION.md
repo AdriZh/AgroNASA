@@ -32,4 +32,4 @@ Ayu Ogura, Zhamilya Toleukhan, Fernando Stoll, Francisco Correia, Iuliia Zakhart
 
 ## AI disclosure (if the form asks)
 
-AI assistance (Claude) was used for research synthesis, documents and code. Recommendations are produced by fixed, published rules and models — no AI in the decision path. NASA does not endorse this project.
+AI-assisted: Claude (Anthropic) was used for research synthesis, documents, code, design and analysis. The 30-second video is labeled “AI-generated” on screen; its narration voice is Kokoro TTS (AI text-to-speech). Recommendations are produced by fixed, published rules and models — no AI in the decision path. NASA does not endorse this project.

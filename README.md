@@ -197,4 +197,4 @@ Developed alongside the team's Fieldwise prototype (https://fieldwise-rotation-s
 ## Credits & disclosure
 
 Weather and soil-wetness data: NASA POWER Project (NASA Langley Research Center). Satellite imagery: NASA EOSDIS GIBS / Worldview. Soil: ISRIC SoilGrids. Forecast: Open-Meteo. Maps © OpenStreetMap contributors. **NASA does not endorse this project.**
-Planning pack (specification, research, implementation plan) prepared by the team; AI assistance was used for research synthesis, documents and code, as disclosed per the Space Apps submission guide.
+Planning pack (specification, research, implementation plan) prepared by the team; **AI disclosure:** AI-assisted — built with Claude (Anthropic) for research synthesis, documents, code, design and analysis; the 30-second video is labeled “AI-generated” and its narration voice is Kokoro TTS. Decisions in the app come from fixed, published rules and models, not from an AI.

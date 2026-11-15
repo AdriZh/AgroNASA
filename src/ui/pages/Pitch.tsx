@@ -358,11 +358,11 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
             const drought = hs.flatMap((h) => h.hits.filter((x) => x.hit).map((x) => x.year));
             return (<>
               <b><Check size={16} style={{ verticalAlign: -3 }} /> Hindcast against real harvests (FAOSTAT, detrended)</b>
-              <HindcastChart h={kz} height={150} />
-              <p style={{ marginTop: 4, fontSize: 14 }}>Kazakhstan wheat r = {kz.r.toFixed(2)} (n = {kz.n}); {hs.filter((h) => h !== kz).map((h) => `${h.c.label.replace('Senegal · ', 'Senegal ')} r = ${h.r.toFixed(2)}`).join(', ')}. Drought years {[...new Set(drought)].sort().join(', ')} all fall in the model’s driest third. One grid cell vs a national yield is a weak test, and we say so. Plus automated tests: the archived NASA query, the FAO-56 ET₀ example, budget boundaries.</p>
+              <HindcastChart h={kz} height={138} compact />
+              <p style={{ marginTop: 2, fontSize: 13, lineHeight: 1.35 }}>Kazakhstan wheat r = {kz.r.toFixed(2)} (n = {kz.n}); {hs.filter((h) => h !== kz).map((h) => `${h.c.label.replace('Senegal · ', 'Senegal ')} r = ${h.r.toFixed(2)}`).join(', ')}. Drought years {[...new Set(drought)].sort().join(', ')} all fall in the model’s driest third. One grid cell vs a whole country is a weak test, and we say so.</p>
             </>);
           })()}</Panel>
-          <Panel d={0.6}><b><Ban size={16} style={{ verticalAlign: -3 }} /> Never claimed</b><p style={{ marginTop: 8, fontSize: 15 }}>Guaranteed yields or profit · why a crop failed · fertilizer doses · soil N–P–K from purchases.</p></Panel>
+          <Panel d={0.6}><b><Ban size={16} style={{ verticalAlign: -3 }} /> Never claimed</b><p style={{ marginTop: 8, fontSize: 15 }}>Guaranteed yields or profit · why a crop failed · fertilizer doses · soil N–P–K from purchases.</p><p style={{ marginTop: 14, fontSize: 15 }}><b><Check size={16} style={{ verticalAlign: -3 }} /> Tested</b><br />Automated tests reproduce the archived NASA query, the FAO-56 ET₀ worked example and every budget boundary.</p></Panel>
         </div>
       </>
     ) },
@@ -372,12 +372,12 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         <div className="impact-grid">
           <div style={{ minWidth: 0 }}>
             <div className="grid g3">
-              {([[<Globe2 size={20} />, 'Global', '14 regional farming systems on 6 continents + a global fallback; FAOSTAT prices for 240 countries.'], [<WifiOff size={20} />, '≈ $0 to run', 'Static web app on free hosting. Demo farms work offline; other places are cached after the first download.'], [<FileDown size={20} />, 'Shareable', 'Printable plan with sources for farmers, extension workers and lenders.']] as const).map(([ic, title, d], k) => (
+              {([[<Globe2 size={20} />, 'Global', '16 regional farming systems on 6 continents + a global fallback; FAOSTAT prices for 240 countries.'], [<WifiOff size={20} />, '≈ $0 to run', 'Static web app on free hosting. Demo farms work offline; other places are cached after the first download.'], [<FileDown size={20} />, 'Shareable', 'Printable plan with sources for farmers, extension workers and lenders.']] as const).map(([ic, title, d], k) => (
                 <Panel key={title} d={0.2 + k * 0.1}><div className="row" style={{ gap: 8 }}><span className="muted">{ic}</span><b className="impact-t">{title}</b></div><p style={{ marginTop: 8, fontSize: 15 }}>{d}</p></Panel>
               ))}
             </div>
             <motion.div {...up(0.5)} className="timeline">
-              {[['Now', 'Working prototype, 14 regional packs, automated tests'], ['Next 90 days', 'Pilot: 3–5 farmer interviews, agronomist review of every rule, dated local price pack'], ['v2', 'French · Wolof · Kazakh · Russian, SMS summary, NDVI per field'], ['Scale', 'Co-op dashboards & input-credit programmes']].map(([title, d], k) => (
+              {[['Now', 'Working prototype, 16 regional packs, automated tests'], ['Next 90 days', 'Pilot: 3–5 farmer interviews, agronomist review of every rule, dated local price pack'], ['v2', 'French · Wolof · Kazakh · Russian, SMS summary, NDVI per field'], ['Scale', 'Co-op dashboards & input-credit programmes']].map(([title, d], k) => (
                 <div key={title}>
                   <i className={k === 0 ? 'on' : ''} />
                   <b>{title}</b><p style={{ fontSize: 14, marginTop: 4 }}>{d}</p>

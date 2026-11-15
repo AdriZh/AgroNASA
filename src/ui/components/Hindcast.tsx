@@ -12,25 +12,29 @@ function verdict(h: HindcastResult): string {
   return `r = ${r} over ${h.n} seasons — ${strength} year-to-year match. ${hit.length ? `Drought year${hit.length > 1 ? 's' : ''} ${hit.join(' and ')} ${hit.length > 1 ? 'fall' : 'falls'} in the model’s driest third.` : 'The known drought years are not among the model’s driest third.'}`;
 }
 
-export function HindcastChart({ h, height = 200 }: { h: HindcastResult; height?: number }) {
+export function HindcastChart({ h, height = 200, compact = false }: { h: HindcastResult; height?: number; compact?: boolean }) {
   const t = useChartTheme();
   const ht = useChartHeight(height);
   const data = h.points.map((p) => ({ year: p.year, model: +p.zModel.toFixed(2), national: +p.zNational.toFixed(2) }));
-  return (
+  const chart = (
     <ResponsiveContainer width="100%" height={ht}>
       <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
         <CartesianGrid {...gridProps(t)} />
         <XAxis dataKey="year" {...xAxisProps(t)} />
-        <YAxis {...axisProps(t)} width={32} domain={[-3, 3]} ticks={[-2, 0, 2]} />
+        <YAxis {...axisProps(t)} width={32} domain={compact ? [-2.5, 2.5] : [-3, 3]} ticks={[-2, 0, 2]} allowDataOverflow />
         <Tooltip {...tipProps(t, (v) => `${Number(v).toFixed(2)} σ`)} />
-        <Legend {...legendProps} />
-        {h.c.droughtYears.map((y) => <ReferenceLine key={y} x={y} stroke={t.c4} strokeDasharray="3 3" label={{ value: `${y} drought`, fontSize: 11, fill: t.axis, position: 'insideTopRight' }} />)}
+        {!compact && <Legend {...legendProps} />}
+        {h.c.droughtYears.map((y) => <ReferenceLine key={y} x={y} stroke={t.c4} strokeDasharray="3 3" label={{ value: compact ? `${y}` : `${y} drought`, fontSize: 11, fill: t.axis, position: 'insideTopRight' }} />)}
         <ReferenceLine y={0} stroke={t.border} />
         <Line isAnimationActive={false} type="monotone" dataKey="model" name="Modeled water-limited yield (grid cell)" stroke={t.c1} strokeWidth={2} dot={{ r: 2 }} />
         <Line isAnimationActive={false} type="monotone" dataKey="national" name={`${h.c.country} national yield, detrended (FAOSTAT)`} stroke={t.c3} strokeWidth={2} dot={{ r: 2 }} />
       </LineChart>
     </ResponsiveContainer>
   );
+  if (!compact) return chart;
+  // Slides: a one-line legend instead of Recharts' legend block, so the plot keeps its height.
+  const key = (c: string, label: string) => <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 16 }}><i style={{ width: 14, height: 3, borderRadius: 2, background: c, display: 'inline-block' }} />{label}</span>;
+  return (<div><div style={{ fontSize: 13, color: t.axis, margin: '6px 0 2px' }}>{key(t.c1, 'Modeled water-limited yield (grid cell)')}{key(t.c3, `${h.c.country} national yield, detrended`)}{key(t.c4, 'drought year')}</div>{chart}</div>);
 }
 
 /** Evidence-page hindcast: all three demo crops, with an honest one-line reading each. */

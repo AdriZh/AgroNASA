@@ -9,6 +9,7 @@ import { fmtDayMonth, fmtDate } from '../../domain/dates';
 import { CashTimeline, CostChart, RangeBar, ReplayChart } from '../components/charts';
 import { BudgetBar, CardTitle, Callout, Disclaimer, Money, NasaLoading, pct, ReasonList, Ref, Seg, StatRows, StatusBadge, Tag } from '../components/common';
 import { WhatIfPanel } from '../components/WhatIf';
+import { FieldWindowPanel } from '../components/FieldWindow';
 import { WeatherError } from '../components/NetStatus';
 import { RiskRow } from '../components/stress';
 import type { PlanStress } from '../../engine/whatif';
@@ -179,6 +180,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
       {tradeOff && <p className="mini trade-off">{tradeOff}</p>}
 
       <WhatIfPanel />
+      <FieldWindowPanel />
 
       <div className="grid g2 section">
         <div className="card">

@@ -215,11 +215,14 @@ export function fitWindow(s: DailySeries, pack: RegionPack, cropIds: string[] | 
 }
 
 /** A sensible default gap per region: after harvest in temperate packs, the dry season after the rains in tropical ones. */
-export function defaultWindow(pack: RegionPack): WindowSpec {
-  if (pack.id === 'kz-north-steppe') return { start: '08-15', end: '10-31' };
-  if (pack.id === 'sn-groundnut-basin') return { start: '10-01', end: '12-31' };
-  return { start: '07-15', end: '11-30' };
+export function defaultWindow(pack: RegionPack, lat = 0): WindowSpec & { label: string } {
+  if (pack.id === 'kz-north-steppe') return { start: '08-15', end: '10-31', label: 'After the wheat harvest' };
+  if (pack.id === 'sn-groundnut-basin') return { start: '10-01', end: '12-31', label: 'After the rains' };
+  return { ...skippedSeason(lat), label: 'Mid-summer to end of autumn' };
 }
+/** "I skipped the main season": free from mid-summer to the end of autumn (mid-Jul → Nov, or mid-Jan → May in the south). */
+export const skippedSeason = (lat = 0): WindowSpec & { label: string } =>
+  lat < 0 ? { start: '01-15', end: '05-31', label: 'Skipped the main season' } : { start: '07-15', end: '11-30', label: 'Skipped the main season' };
 
 /** Cover crops are never cash crops; anything else with a price is. Exposed for tests and UI. */
 export const isCashOption = (f: WindowFit) => f.tag === 'cash';

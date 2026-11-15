@@ -140,6 +140,13 @@ export const CROPS: Record<string, CropDef> = {
     minReturnSeasons: 0, diseaseGroups: ['cereal-root-rot'], labor: 'low', residueForLivestock: true, irrigationRequired: false,
     sources: ['R8', 'R18', 'R30'],
   },
+  winterrapeseed: {
+    id: 'winterrapeseed', name: 'Winter rapeseed', family: 'Brassicaceae', group: 'oilseed', emoji: '🌼',
+    kc: [0.35, 1.05, 0.35], stages: [40, 150, 45, 25], rootDepthM: 1.2, p: 0.6, ky: 1.0,
+    heatThresholdC: 30, frostSensitive: false, sowTempC: -99, tMeanRange: [3, 20], phRange: [5.8, 8.0],
+    minReturnSeasons: 3, diseaseGroups: ['sclerotinia'], labor: 'low', residueForLivestock: false, irrigationRequired: false,
+    sources: ['R8', 'R29'],
+  },
   pigeonpea: {
     id: 'pigeonpea', name: 'Pigeon pea', family: 'Fabaceae', group: 'legume', emoji: '🫛',
     kc: [0.4, 1.0, 0.4], stages: [20, 35, 50, 25], rootDepthM: 1.5, p: 0.55, ky: 0.9,

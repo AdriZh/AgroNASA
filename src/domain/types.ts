@@ -92,6 +92,15 @@ export interface FarmScenario {
   soil: SoilEvidence;
   priceOverrides: PriceOverride;
   synthetic: boolean;         // whole scenario is a demo fixture
+  /** Set while funds/reserve are app-generated placeholders (new or custom farm) the farmer has not edited yet. */
+  budgetPlaceholder?: BudgetPlaceholder | null;
+}
+
+/** Record of a generated starting budget, so the app can tell it apart from a farmer-entered one. */
+export interface BudgetPlaceholder {
+  funds: number; reserve: number; currency: string;
+  key: string;                // pack · currency · area · usual plan the placeholder was computed for
+  usualCost: number;          // cash cost of the usual plan it was derived from (scenario currency)
 }
 
 // ---------- Regional knowledge ----------
@@ -166,6 +175,7 @@ export interface RegionPack {
   countries: string[];        // ISO2 codes that select this pack (empty = by bbox only)
   bbox: [number, number, number, number][]; // fallback boxes: minLat, minLon, maxLat, maxLon
   latRange?: [number, number]; // optional restriction inside a country (e.g. Sahel part of Nigeria)
+  lonRange?: [number, number]; // optional longitude restriction inside a country (e.g. the US Corn Belt)
   currency: string;           // currency of the economics below
   mode: 'annual' | 'double';  // annual: one crop per year (each crop in its own season); double: two seasons in the same year
   seasons: SeasonDef[];
@@ -175,6 +185,11 @@ export interface RegionPack {
   economics: Record<string, CropEconomics>;
   reviewStatus: 'demo-unreviewed' | 'reviewed';
   demoDataset?: string;       // bundled NASA dataset key
+  /** Crops for which a same-crop sequence is an accepted local practice (e.g. irrigated rice–rice in paddy systems).
+   *  They are penalized (warning + lower rank) instead of excluded by the monoculture rule G-R6. */
+  continuousCrops?: string[];
+  /** Regionally typical two-season sequence assumed as the "usual plan" when the farmer has entered no history. */
+  usualRotation?: [string, string];
   irrigationTypical?: boolean; // most farms here irrigate; rainfed results will look poor
   sources: string[];
 }
@@ -215,6 +230,7 @@ export interface SoilProfile {
 export type ReasonCode =
   | 'BUDGET_EXCEEDED' | 'BUDGET_OK' | 'PRICE_MISSING' | 'CASH_TIMING'
   | 'PRIOR_CROP_RULE' | 'RETURN_INTERVAL' | 'DISEASE_GROUP' | 'LEGUME_BENEFIT' | 'FALLOW_BENEFIT'
+  | 'MONOCULTURE' | 'SAME_FAMILY' | 'BREAK_CROP' | 'BUDGET_PLACEHOLDER' | 'PRICE_IMPLAUSIBLE'
   | 'IRRIGATION_REQUIRED' | 'SEED_UNAVAILABLE' | 'MARKET_CONSTRAINT' | 'LABOR_LIMIT' | 'RESIDUE_NEED'
   | 'CLIMATE_UNSUITABLE' | 'CLIMATE_RISK_HIGH' | 'HEAT_EXPOSURE' | 'FROST_RISK' | 'SOIL_PH'
   | 'SEASON_OVERLAP' | 'HISTORY_INCOMPLETE' | 'CLIMATE_CONTEXT_ONLY' | 'UNREVIEWED_RULES' | 'SYNTHETIC_PRICES';

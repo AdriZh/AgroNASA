@@ -63,11 +63,15 @@ const G: Record<string, ReactNode> = {
   fallow: <><path d="M2 8.5c1.5-1.2 3-1.2 4.5 0s3 1.2 4.5 0 3-1.2 4.5 0 2.5 1 2.5 1" /><path d="M2 12.5h16M4 16.5h12" /></>,
 };
 
+/** Cover / green-manure entries reuse the glyph of the crop they are grown from (drawn in the cover colour). */
+const COVER_GLYPH: Record<string, string> = { 'cowpea-gm': 'cowpea', 'mustard-gm': 'mustard', 'oat-vetch': 'oats' };
+
 const GROUP_FALLBACK: Record<Group, ReactNode> = {
   cereal: LEAF, legume: LEAF, oilseed: LEAF, tuber: LEAF, cover: LEAF, fallow: G.fallow,
 };
 
 export function cropGroup(id: string): Group {
+  if (CROPS[id]?.cover) return 'cover';
   const g = (CROPS[id] as { group?: string } | undefined)?.group;
   return (g === 'cereal' || g === 'legume' || g === 'oilseed' || g === 'tuber' || g === 'fallow' || g === 'cover') ? g : 'cover';
 }
@@ -78,7 +82,7 @@ export function cropGroup(id: string): Group {
  */
 export function CropIcon({ id, size = 20, title, className }: { id: string; size?: number; title?: boolean; className?: string }) {
   const group = cropGroup(id);
-  const glyph = G[id] ?? GROUP_FALLBACK[group];
+  const glyph = G[id] ?? G[COVER_GLYPH[id]] ?? GROUP_FALLBACK[group];
   return (
     <span className={`crop-ic crop-ic-${group}${className ? ` ${className}` : ''}`} style={{ width: size, height: size }} {...(title ? { role: 'img', 'aria-label': cropName(id), title: cropName(id) } : { 'aria-hidden': true })}>
       <svg viewBox="0 0 20 20" width={Math.round(size * 0.84)} height={Math.round(size * 0.84)} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" focusable="false">

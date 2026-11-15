@@ -691,6 +691,45 @@ details.disclose > .body { margin-top: var(--s-3); }
 .map.route-fallback { min-height: 0; }
 .plan-sub { margin-left: var(--s-1); text-transform: none; letter-spacing: 0; font-weight: var(--w-regular); color: var(--text-muted); }
 .trade-off { margin-top: var(--s-2); }
+/* "Field free for a short window?" (FieldWindow.tsx) */
+.fw-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-2) var(--s-3); padding: var(--s-3); background: var(--surface-2); border-radius: var(--r); }
+.fw-field { display: flex; flex-direction: column; gap: var(--s-1); font-size: 13px; font-weight: var(--w-strong); color: var(--text); }
+.fw-field .input { width: 128px; }
+.fw-presets { display: flex; flex-wrap: wrap; gap: var(--s-1); flex-basis: 100%; }
+.fw-presets .btn { font-weight: var(--w-regular); }
+.fw-presets .btn.on { background: var(--brand-soft); border-color: var(--brand); color: var(--text); font-weight: var(--w-strong); }
+.fw-results { margin-top: var(--s-3); transition: opacity var(--t-fast) var(--ease); }
+.fw-results.pending { opacity: .55; }
+.fw-headline { margin: 0 0 var(--s-2); font-size: 16px; line-height: 24px; font-weight: var(--w-strong); color: var(--text); max-width: var(--measure); text-wrap: pretty; }
+.fw-list { list-style: none; margin: 0; padding: 0; }
+.fw-opt { display: grid; grid-template-columns: 40px minmax(240px, 1fr) minmax(300px, 1.3fr); grid-template-areas: "icon name key" "icon reason reason"; gap: 4px var(--s-3); align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--border); }
+.fw-icon { grid-area: icon; align-self: start; display: flex; }
+.fw-icon .crop-ic { border-radius: var(--r-pill); }
+.fw-opt.rec .fw-icon .crop-ic { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand); }
+.fw-name { grid-area: name; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 15px; line-height: 20px; min-width: 0; }
+.fw-tag { font-size: 12px; line-height: 16px; font-weight: var(--w-strong); padding: 2px 8px; border-radius: var(--r-pill); border: 1px solid var(--border); color: var(--text-muted); background: var(--surface); white-space: nowrap; }
+.fw-tag.cash { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: var(--accent-soft); }
+.fw-tag.cover { color: var(--brand); border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); background: var(--brand-soft); }
+.fw-key { grid-area: key; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 14px; line-height: 20px; color: var(--text); min-width: 0; }
+.fw-num { font-variant-numeric: tabular-nums; }
+.fw-meter { flex: 0 0 100px; display: flex; height: 8px; border-radius: var(--r-sm); background: var(--surface-2); overflow: hidden; box-shadow: inset 0 0 0 1px var(--border); }
+.fw-meter > i { display: block; height: 100%; }
+.fw-meter > i.ok { background: var(--good); }
+.fw-meter > i.warn { background: var(--warn); }
+.fw-reason { grid-area: reason; margin: 0; font-size: 13px; line-height: 20px; color: var(--text-muted); text-wrap: pretty; max-width: var(--measure); }
+.fw-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: var(--s-2); font-size: 12px; line-height: 16px; color: var(--text-muted); }
+.fw-legend i { display: inline-block; width: 12px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.fw-legend i.ok { background: var(--good); } .fw-legend i.warn { background: var(--warn); }
+.fw-caption { margin: var(--s-3) 0 var(--s-1); }
+.fw-method { margin: 0; max-width: var(--measure); }
+@media (max-width: 900px) { .fw-opt { grid-template-columns: 40px minmax(0, 1fr); grid-template-areas: "icon name" "icon key" "icon reason"; } }
+@media (max-width: 640px) {
+  .fw-controls { padding: 12px; }
+  .fw-field { flex: 1 1 120px; }
+  .fw-field .input { width: 100%; }
+  .fw-controls > .btn { flex-basis: 100%; height: 44px; }
+  .fw-presets .btn { height: auto; min-height: 40px; white-space: normal; text-align: left; padding: 6px 12px; }
+}
 /* ---------- near misses + "Try my own plan" (Compare) ---------- */
 .near-misses { margin-top: var(--s-4); }
 .near-misses .card-head { margin-bottom: var(--s-2); }

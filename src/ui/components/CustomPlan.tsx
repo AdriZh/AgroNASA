@@ -17,7 +17,7 @@ import { CropIcon } from './CropIcon';
 const GROUPS: { id: 'cereal' | 'legume' | 'oilseed' | 'other'; label: string }[] = [
   { id: 'cereal', label: 'Cereals' }, { id: 'legume', label: 'Legumes' }, { id: 'oilseed', label: 'Oilseeds' }, { id: 'other', label: 'Other: fallow, cover crops, tubers' },
 ];
-const groupOf = (c: CropDef) => (c.group === 'cereal' || c.group === 'legume' || c.group === 'oilseed' ? c.group : 'other');
+const groupOf = (c: CropDef) => (c.cover ? 'other' : c.group === 'cereal' || c.group === 'legume' || c.group === 'oilseed' ? c.group : 'other');
 
 /** Every crop in the library, grouped; crops of the local calendar first, the rest marked. */
 function cropOptions(engine: EngineOutput, slot: 0 | 1) {

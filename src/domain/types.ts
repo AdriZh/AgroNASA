@@ -130,6 +130,16 @@ export interface CropDef {
   residueForLivestock: boolean;
   irrigationRequired: boolean;
   sources: string[];          // evidence ids
+  /** Cover / catch crop: grown for soil benefit (green manure, cover), never ranked as a cash crop. */
+  cover?: boolean;
+  /** Base temperature for growing-degree days (°C), used by the short-window check (engine/window.ts). */
+  tbase?: number;
+  /** Growing-degree days above `tbase` from sowing to maturity — for green manures, to termination at flowering. */
+  gddToMaturity?: number;
+  /** Cover crops only: seed rate and an indicative seed price (USD/kg). Seed is their only cost; they earn no revenue. */
+  coverSeed?: { kgPerHa: number; usdPerKg: number };
+  /** Parameters not yet reviewed by a local agronomist. */
+  reviewStatus?: 'demo-unreviewed';
 }
 
 export interface RotationRule {

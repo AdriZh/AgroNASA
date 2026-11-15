@@ -21,7 +21,7 @@ export function ReportPage() {
   };
   const onImport = async (f: File) => {
     try {
-      const j = JSON.parse(await f.text());
+      if (f.size > 2_000_000) throw new Error('file is larger than 2 MB'); const j = JSON.parse(await f.text());
       const s: FarmScenario = j.scenario ?? j;
       if (!s.location || !Array.isArray(s.history)) throw new Error('not a Field Shift scenario');
       importScenario(s); setMsg(`Imported “${s.name}”.`);

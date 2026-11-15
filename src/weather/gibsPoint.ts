@@ -3,7 +3,7 @@
 //   MODIS Terra NDVI 16-day (MOD13, ~250 m → 305 m tile pixel), MODIS IGBP land cover (MCD12Q1),
 //   SMAP L4 root-zone soil moisture (~9 km), GRACE/GRACE-FO mascon water-storage anomaly.
 // Values are quantized to the colormap bins (e.g. NDVI 0.005, SMAP 0.003 m³/m³, GRACE 0.25 cm).
-import { idbGet, idbSet } from '../state/idb';
+import { idbGet, idbSet, looksLikePoint } from '../state/idb';
 import { fetchJson, fetchWithTimeout } from './net';
 
 const TILE_TIMEOUT_MS = 10_000;
@@ -116,7 +116,7 @@ export interface PointValue { date: string; value: number | null; label?: string
 export async function pointValue(def: GibsLayerDef, lat: number, lon: number, date: string): Promise<PointValue> {
   const { tx, ty, px, py } = tilePixel(lat, lon, def.level);
   const key = `gibs:${def.id}:${def.level}/${ty}/${tx}/${px}/${py}:${date}`;
-  const hit = await idbGet<PointValue>(key);
+  const hit = await idbGet<PointValue>(key, looksLikePoint);
   if (hit) return hit;
   const url = `${GIBS}/wmts/epsg3857/best/${def.layer}/default/${date}/GoogleMapsCompatible_Level${def.level}/${def.level}/${ty}/${tx}.png`;
   const [cm, px9] = await Promise.all([colormap(def.colormap), readPixels(url, px, py, def.id === 'ndvi' ? 1 : 0)]);
@@ -153,7 +153,13 @@ export async function pool<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>
 }
 
 // ---------- NASA EONET natural events ----------
-export interface EonetEvent { id: string; title: string; category: string; date: string; lat: number; lon: number; km: number; link: string; source?: string }
+export interface EonetEvent { id: string; title: string; category: string; date: string; lat: number; lon: number; km: number; link?: string; source?: string }
+
+/** The URL if it is an absolute http(s) URL, otherwise undefined (drops javascript:, data:, relative and non-string values). */
+export function safeHttpUrl(u: unknown): string | undefined {
+  if (typeof u !== 'string' || u.length > 2000) return undefined;
+  try { const url = new URL(u.trim()); return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : undefined; } catch { return undefined; }
+}
 
 function haversineKm(a: number, b: number, c: number, d: number) {
   const R = 6371, r = Math.PI / 180;
@@ -165,11 +171,22 @@ export async function fetchEonet(lat: number, lon: number, radiusDeg = 3, days =
   const bbox = [lon - radiusDeg, lat + radiusDeg, lon + radiusDeg, lat - radiusDeg].map((v) => v.toFixed(2)).join(',');
   const j = await fetchJson(`https://eonet.gsfc.nasa.gov/api/v3/events?bbox=${bbox}&days=${days}&status=all&limit=200`, { timeoutMs: 12_000, service: 'NASA EONET' });
   const out: EonetEvent[] = [];
-  for (const e of j.events ?? []) {
-    const g = (e.geometry ?? []).slice(-1)[0];
-    if (!g || g.type !== 'Point') continue;
+  // the payload is untrusted: every field is type-checked, links must be http(s), malformed events are skipped
+  const events: unknown[] = Array.isArray(j?.events) ? j.events.slice(0, 500) : [];
+  const text = (x: unknown, max = 200) => (typeof x === 'string' ? x.slice(0, max) : undefined);
+  for (const e of events as any[]) {
+    if (!e || typeof e !== 'object') continue;
+    const g = Array.isArray(e.geometry) ? e.geometry[e.geometry.length - 1] : null;
+    if (!g || g.type !== 'Point' || !Array.isArray(g.coordinates)) continue;
     const [elon, elat] = g.coordinates;
-    out.push({ id: e.id, title: e.title, category: e.categories?.[0]?.title ?? 'Event', date: String(g.date).slice(0, 10), lat: elat, lon: elon, km: Math.round(haversineKm(lat, lon, elat, elon)), link: e.sources?.[0]?.url ?? e.link, source: e.sources?.[0]?.id });
+    const title = text(e.title);
+    if (!title || typeof elat !== 'number' || typeof elon !== 'number' || !Number.isFinite(elat) || !Number.isFinite(elon)) continue;
+    const src0 = Array.isArray(e.sources) ? e.sources[0] : undefined;
+    out.push({
+      id: text(e.id, 80) ?? title, title, category: text(Array.isArray(e.categories) ? e.categories[0]?.title : undefined, 80) ?? 'Event',
+      date: (text(g.date, 40) ?? '').slice(0, 10), lat: elat, lon: elon, km: Math.round(haversineKm(lat, lon, elat, elon)),
+      link: safeHttpUrl(src0?.url) ?? safeHttpUrl(e.link), source: text(src0?.id, 80),
+    });
   }
   return out.filter((e) => e.km <= 300).sort((a, b) => b.date.localeCompare(a.date));
 }

@@ -1,6 +1,6 @@
 // Soil context from ISRIC SoilGrids 2.0 (250 m modeled soil map, non-NASA) or the farmer's known texture.
 import type { SoilProfile, SoilTexture } from '../domain/types';
-import { idbGet, idbSet } from '../state/idb';
+import { idbGet, idbSet, looksLikeSoil } from '../state/idb';
 import { fetchJson, isNetDown, NetError } from '../weather/net';
 
 /** FAO-56 Table 19 mid-range total available water (θFC − θWP) by texture, mm water per m soil. */
@@ -36,22 +36,24 @@ export function saxtonRawlsAwc(sandPct: number, clayPct: number, omPct: number):
 const DEPTH_W: Record<string, number> = { '0-5cm': 5, '5-15cm': 10, '15-30cm': 15, '30-60cm': 30 };
 
 export function parseSoilGrids(json: any, retrievedAt: string): SoilProfile | null {
-  const layers: any[] = json?.properties?.layers ?? [];
+  // untrusted payload: only finite numbers are used, anything else counts as missing
+  const layers: any[] = Array.isArray(json?.properties?.layers) ? json.properties.layers : [];
   const get = (name: string): number | null => {
-    const l = layers.find((x) => x.name === name);
+    const l = layers.find((x) => x && x.name === name);
     if (!l) return null;
-    const f = l.unit_measure?.d_factor ?? 1;
+    const df = l.unit_measure?.d_factor;
+    const f = typeof df === 'number' && Number.isFinite(df) && df > 0 ? df : 1;
     let sum = 0, w = 0;
-    for (const d of l.depths ?? []) {
-      const v = d.values?.mean;
-      const wt = DEPTH_W[d.label] ?? 0;
-      if (v == null || !wt) continue;
+    for (const d of Array.isArray(l.depths) ? l.depths : []) {
+      const v = d?.values?.mean;
+      const wt = typeof d?.label === 'string' && Object.prototype.hasOwnProperty.call(DEPTH_W, d.label) ? DEPTH_W[d.label] : 0;
+      if (typeof v !== 'number' || !Number.isFinite(v) || !wt) continue;
       sum += (v / f) * wt; w += wt;
     }
     return w ? sum / w : null;
   };
   const clay = get('clay'), sand = get('sand'), silt = get('silt');
-  if (clay == null || sand == null) return null;
+  if (clay == null || sand == null || clay < 0 || sand < 0 || clay + sand > 100.5) return null;
   // d_factor already converts to the target unit (%)
   const clayPct = clay, sandPct = sand, siltPct = silt != null ? silt : 100 - clayPct - sandPct;
   const socGKg = get('soc');
@@ -84,7 +86,7 @@ export const resetSoilGridsBackoff = () => { soilGridsDownUntil = 0; };
  */
 export async function fetchSoil(lat: number, lon: number, opts: { force?: boolean; signal?: AbortSignal; fetchImpl?: typeof fetch } = {}): Promise<SoilProfile | null> {
   const key = `soil:${lat.toFixed(3)}:${lon.toFixed(3)}`;
-  const hit = await idbGet<SoilProfile>(key);
+  const hit = await idbGet<SoilProfile>(key, looksLikeSoil);
   if (hit) return { ...hit, cached: true };
   if (!opts.force && Date.now() < soilGridsDownUntil) throw new NetError('SoilGrids', 'offline', 'SoilGrids offline (skipped after a recent failure)');
   const tries: [number, number][] = [[0, 0], [0.02, 0.02], [-0.02, -0.02]];

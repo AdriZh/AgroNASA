@@ -703,6 +703,8 @@ details.disclose > .body { margin-top: var(--s-3); }
 .near-fix b { font-weight: var(--w-strong); color: var(--text); }
 .custom-pick { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--s-2) var(--s-3); align-items: end; max-width: 720px; }
 .custom-pick .field { display: flex; flex-direction: column; gap: var(--s-1); font-size: 13px; font-weight: var(--w-strong); }
+.custom-select { display: flex; align-items: center; gap: var(--s-2); }
+.custom-select > .crop-ic { flex: none; }
 .custom-arrow { display: inline-flex; height: 40px; align-items: center; color: var(--text-muted); }
 .custom-verdict { margin: var(--s-3) 0 0; font-size: 14px; line-height: 26px; }
 .custom-verdict .chip.code { color: var(--text); margin-right: var(--s-1); }

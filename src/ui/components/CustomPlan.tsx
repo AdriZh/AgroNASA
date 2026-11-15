@@ -12,6 +12,7 @@ import { fmtApprox, fmtMoney } from '../../domain/units';
 import { BudgetBar, Money, ReasonList, Ref, StatRows, StatusBadge } from './common';
 import { DRIER_HOTTER, RiskRow } from './stress';
 import { BudgetLine, harvestText, Seq } from '../pages/Compare';
+import { CropIcon } from './CropIcon';
 
 const GROUPS: { id: 'cereal' | 'legume' | 'oilseed' | 'other'; label: string }[] = [
   { id: 'cereal', label: 'Cereals' }, { id: 'legume', label: 'Legumes' }, { id: 'oilseed', label: 'Oilseeds' }, { id: 'other', label: 'Other: fallow, cover crops, tubers' },
@@ -25,7 +26,7 @@ function cropOptions(engine: EngineOutput, slot: 0 | 1) {
     const crops = Object.values(CROPS).filter((c) => groupOf(c) === g.id);
     const local = (c: CropDef) => c.id === 'fallow' || cal.has(c.id);
     crops.sort((a, b) => Number(b.id === 'fallow') - Number(a.id === 'fallow') || Number(local(b)) - Number(local(a)) || a.name.localeCompare(b.name));
-    return { ...g, crops: crops.map((c) => ({ id: c.id, label: `${c.emoji} ${c.name}${local(c) ? '' : ' (not in local calendar)'}` })) };
+    return { ...g, crops: crops.map((c) => ({ id: c.id, label: `${c.name}${local(c) ? '' : ' (not in local calendar)'}` })) };
   }).filter((g) => g.crops.length);
 }
 
@@ -58,9 +59,12 @@ export function CustomPlan({ engine, value, onChange }: { engine: EngineOutput; 
   const pick = (slot: 0 | 1) => (
     <label className="field">
       <span>Season {slot + 1}{p ? ` · ${p.seasons[slot].year}` : ''}</span>
-      <select className="input" value={value[slot]} onChange={(e) => onChange(slot === 0 ? [e.target.value, value[1]] : [value[0], e.target.value])}>
-        {opts[slot].map((g) => <optgroup key={g.id} label={g.label}>{g.crops.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</optgroup>)}
-      </select>
+      <span className="custom-select">
+        <CropIcon id={value[slot]} size={24} />
+        <select className="input" value={value[slot]} onChange={(e) => onChange(slot === 0 ? [e.target.value, value[1]] : [value[0], e.target.value])}>
+          {opts[slot].map((g) => <optgroup key={g.id} label={g.label}>{g.crops.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</optgroup>)}
+        </select>
+      </span>
     </label>
   );
   return (

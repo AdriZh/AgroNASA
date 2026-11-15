@@ -171,6 +171,14 @@ describe('decision engine (demo farms)', () => {
     expect(rich.baseline.budget.status).toBe('affordable');
     expect(rich.baseline.reasons[0].code).toBe('BUDGET_OK');
   });
+  it('every plan is replayed on the same consecutive season pairs (fallow-first included)', () => {
+    // Kazakhstan fallow-first plans used to count 25 pairs (the fallow year 2000 needs no weather) while every
+    // other plan counted 24. Pairs (Y, Y + 1) now both lie inside the complete 2001–2025 record: 24 for all.
+    const kz = run({ ...DEMO_KAZAKHSTAN, allowFallow: true }, kostanay);
+    const counts = new Set([kz.baseline, ...kz.allPlans].filter((p) => p.outcome.medianRel === p.outcome.medianRel).map((p) => p.outcome.pairs));
+    expect(kz.allPlans.some((p) => p.crops[0] === 'fallow')).toBe(true);
+    expect([...counts]).toEqual([24]);
+  });
   it('deterministic: same inputs → same output', () => {
     const a = run(DEMO_KAZAKHSTAN, kostanay), b = run(DEMO_KAZAKHSTAN, kostanay);
     expect(a.alternatives.map((p) => p.id)).toEqual(b.alternatives.map((p) => p.id));

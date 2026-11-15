@@ -6,7 +6,7 @@ import { IRRIGATION_USD_PER_MM_HA } from '../data/regionPacks';
 import { countryInfo, cropPriceUsd, fxFactor, fxPerUsd, PRICE_PLAUSIBLE_FACTOR } from '../data/countries';
 import { toHectares } from '../domain/units';
 import { addDays, diffDays } from '../domain/dates';
-import { median, quantile } from '../weather/indicators';
+import { completeYears, median, quantile } from '../weather/indicators';
 import { evaluateBudget, costLine, placeholderBudget, PLACEHOLDER_SPEND_SHARE, type BudgetResult, type CostLine } from './budget';
 import { isSevere, replayCrop, resolveSeasons, type CropRisk, type SowingWindow } from './replay';
 
@@ -175,7 +175,7 @@ function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: R
 
 function stats(v: number[]) { return { p20: quantile(v, 0.2), median: median(v), p80: quantile(v, 0.8) }; }
 
-function outcomeFor(crops: [string, string], seasonRisks: [CropRisk | null, CropRisk | null], yearOffset: number, pack: RegionPack, sc: FarmScenario, areaHa: number, budget: BudgetResult, prices: Record<string, PriceInfo>): PlanOutcome {
+function outcomeFor(crops: [string, string], seasonRisks: [CropRisk | null, CropRisk | null], yearOffset: number, record: Set<number>, pack: RegionPack, sc: FarmScenario, areaHa: number, budget: BudgetResult, prices: Record<string, PriceInfo>): PlanOutcome {
   const r1 = seasonRisks[0] ?? undefined, r2 = seasonRisks[1] ?? undefined;
   const e1 = pack.economics[crops[0]], e2 = pack.economics[crops[1]];
   const pr1 = prices[crops[0]]?.perT ?? null, pr2 = prices[crops[1]]?.perT ?? null;
@@ -189,7 +189,10 @@ function outcomeFor(crops: [string, string], seasonRisks: [CropRisk | null, Crop
   const rels: number[] = [], severe: boolean[] = [], revs: number[] = [];
   const isF1 = crops[0] === 'fallow', isF2 = crops[1] === 'fallow';
   // replay coherent historical season pairs (Y, Y + offset): same weather sequence a farmer would have lived through
-  const years = [...new Set([...m1.keys(), ...[...m2.keys()].map((y) => y - yearOffset)])].sort();
+  // Both years of a pair must lie inside the complete NASA record (2001–2025 → 24 consecutive pairs for a
+  // cross-year rotation). Without this, a fallow-first plan also counted the pair (2000, 2001), because its
+  // fallow season needs no weather, and showed "of 25" while every other plan showed "of 24".
+  const years = [...new Set([...m1.keys(), ...[...m2.keys()].map((y) => y - yearOffset)])].filter((y) => record.has(y) && record.has(y + yearOffset)).sort();
   for (const y of years) {
     const a = m1.get(y), b = m2.get(y + yearOffset);
     if ((!isF1 && a === undefined) || (!isF2 && b === undefined)) continue;
@@ -282,6 +285,7 @@ export function refreshPlaceholder(sc: FarmScenario, out: EngineOutput): Partial
 export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, pack: RegionPack): EngineOutput {
   const areaHa = toHectares(sc.area, sc.areaUnit);
   const windows = resolveSeasons(pack, s);
+  const record = new Set(completeYears(s));
   const irrigation = { on: sc.irrigation === 'yes', capMm: sc.irrigationCapacityMm || 0 };
   const risks: Record<string, CropRisk> = {};
   const risksAfterFallow: Record<string, CropRisk> = {};
@@ -392,7 +396,7 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
     const newCrops = crops.filter((c) => c !== 'fallow' && !history.includes(c)).length;
     return {
       id: crops.join('→'), label: isBaseline ? 'Your usual plan' : '', isBaseline, crops, seasons, reasons, eligible, feasible, budget,
-      outcome: outcomeFor(crops, [seasons[0].risk, seasons[1].risk], y2 - y1, pack, sc, areaHa, budget, prices), newCrops,
+      outcome: outcomeFor(crops, [seasons[0].risk, seasons[1].risk], y2 - y1, record, pack, sc, areaHa, budget, prices), newCrops,
     };
   };
 
@@ -418,7 +422,7 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
     if (picked.some((q) => [...q.crops].sort().join('+') === set)) continue;
     picked.push(p);
   }
-  const alternatives = picked.map((p, i) => ({ ...p, rank: i + 1, label: i === 0 ? 'Option A' : 'Option B' }));
+  const alternatives = picked.map((p, i) => ({ ...p, rank: i + 1, label: i === 0 ? 'Best fit' : 'Option B' }));
   const excluded = all.filter((p) => !p.feasible);
   return { pack, window: windows[0], windows, areaHa, risks, risksAfterFallow, prices, fx, baseline, alternatives, allPlans: all, excluded, notes };
 }

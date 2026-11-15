@@ -652,3 +652,5 @@ details.disclose > .body { margin-top: var(--s-3); }
 .route-fallback { border-radius: var(--r); background: var(--surface-2); min-height: 60vh; animation: pulse 1.2s var(--ease) infinite; }
 .route-fallback.full { position: fixed; inset: 0; border-radius: 0; background: var(--bg); min-height: 0; animation: none; }
 .map.route-fallback { min-height: 0; }
+.plan-sub { margin-left: var(--s-1); text-transform: none; letter-spacing: 0; font-weight: var(--w-regular); color: var(--text-muted); }
+.trade-off { margin-top: var(--s-2); }

@@ -22,7 +22,8 @@ export function OrbitVisual() {
         {!reduce && <animateMotion dur="20s" repeatCount="indefinite" path={orbit} />}
       </g>
       <g className="ov-chips">
-        {[['POWER', 18, 18], ['SMAP', 330, 22], ['MODIS', 336, 92], ['IMERG', 22, 96]].map(([t, x, y]) => (
+        {/* chips sit in the corners, outside the orbit ellipse (x 40–380, y 28–96) and the satellite's path */}
+        {[['POWER', 10, 2], ['SMAP', 364, 2], ['MODIS', 356, 112], ['IMERG', 10, 112]].map(([t, x, y]) => (
           <g key={t as string} transform={`translate(${x} ${y})`}>
             <rect width={(t as string).length * 8 + 14} height={18} rx={4} className="ov-chip" />
             <text x={7} y={13} className="ov-chip-t">{t}</text>

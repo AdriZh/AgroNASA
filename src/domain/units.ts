@@ -67,6 +67,14 @@ export function fmtMoney(x: number | null | undefined, currency: string): string
   return `${x < 0 ? '−' : ''}${abs.toLocaleString('en-US', { maximumFractionDigits: digits, minimumFractionDigits: 0 })} ${currency}`;
 }
 
+/** Modeled amounts (net, revenue) rounded to 3 significant figures with "≈": "≈ 704,000 XOF". Cost lines stay exact. */
+export function fmtApprox(x: number | null | undefined, currency: string): string {
+  if (x == null || !Number.isFinite(x)) return '—';
+  const abs = Math.abs(x);
+  const r = abs === 0 ? 0 : Number(abs.toPrecision(3));
+  return `≈ ${x < 0 && r !== 0 ? '−' : ''}${r.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${currency}`;
+}
+
 export function fmtNum(x: number | null | undefined, d = 1): string {
   if (x == null || !Number.isFinite(x)) return '—';
   return x.toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: 0 });

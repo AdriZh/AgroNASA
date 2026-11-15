@@ -169,7 +169,7 @@ docs/          pitch kit, review log
 * No fertilizer dosing, no soil-nutrient inference from purchases, no causal diagnosis of past failures, no profit guarantees.
 * Input-cost templates are synthetic for every region; crop prices are national FAOSTAT averages, not farm-gate quotes.
 * GIBS-decoded values are quantized by the colormap and sit on 300 m–25 km pixels; land cover may misclassify small fields.
-* The team's `All_data_with_climate` trial dataset (cereal–legume field trials with NASA POWER weather) is not yet used: it was too large to transfer through the Drive connector. It is the obvious next step for validating yields.
+* The team's `All_data_with_climate` trial dataset (cereal–legume field trials with NASA POWER weather) is not yet used. It is the obvious next step for validating yields.
 
 ## Privacy
 

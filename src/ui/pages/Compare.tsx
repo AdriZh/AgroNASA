@@ -4,7 +4,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, Ban, CloudSunRain, Coins, Pencil } fr
 import { useApp } from '../../state/AppContext';
 import type { EngineOutput, PlanResult } from '../../engine/plan';
 import { CROPS, cropEmoji, cropName } from '../../data/crops';
-import { fmtMoney, fmtNum } from '../../domain/units';
+import { fmtApprox, fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDayMonth, fmtDate } from '../../domain/dates';
 import { CashTimeline, CostChart, RangeBar, ReplayChart } from '../components/charts';
 import { BudgetBar, CardTitle, Callout, Disclaimer, Money, NasaLoading, pct, ReasonList, Ref, Seg, StatRows, StatusBadge, Tag } from '../components/common';
@@ -13,8 +13,11 @@ import { WeatherError } from '../components/NetStatus';
 import { RiskRow } from '../components/stress';
 import type { PlanStress } from '../../engine/whatif';
 
-const PRIORITY_LABEL = { cost: 'lowest cost', climate: 'lowest climate exposure', continuity: 'continuity', return: 'modeled return' };
-const BEST_LABEL = { cost: 'Best for lowest cost', climate: 'Best for climate risk', continuity: 'Best for continuity', return: 'Best for modeled return' };
+export const PRIORITY_LABEL = { cost: 'lowest cost', climate: 'lowest climate exposure', continuity: 'continuity', return: 'modeled return' };
+/** The top-ranked alternative is "Best fit" everywhere (landing, Compare, slides, what-if text). */
+export const BEST_FIT = 'Best fit';
+/** Caption that defends the cash-cost headline (Compare header, landing card, slide 5). */
+export const CASH_CAPTION = 'Two-season cash cost before harvest, with no harvest income or credit assumed.';
 const n0 = (x: number) => Math.round(x).toLocaleString('en-US');
 /** Budget in the sub-line: compact above a million so the line never wraps. */
 const nb = (x: number) => (Math.abs(x) >= 1e6 ? `${(x / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1 })}M` : n0(x));
@@ -39,17 +42,34 @@ function BudgetLine({ p, cur }: { p: PlanResult; cur: string }) {
   return <span className="sub"><span className="good-t">{fmtMoney(b.headroom, cur)} left</span> of {nb(budget)} budget</span>;
 }
 
+const severeOf = (p: PlanResult) => (Number.isFinite(p.outcome.pSevereAny) ? Math.round(p.outcome.pSevereAny * p.outcome.pairs) : null);
+
+/**
+ * One trade-off line when the other feasible option out-earns the best fit in a typical year, e.g.
+ * "Option B earns ≈ 31,000 XOF more in a typical year, with more water-stress risk (1 vs 0 of 24 season pairs)."
+ * Null when the best fit also has the higher (or equal) modeled net, or when either net is unknown.
+ */
+export function tradeOffText(alternatives: PlanResult[], cur: string): string | null {
+  const [best, other] = alternatives;
+  const a = best?.outcome.net?.median, b = other?.outcome.net?.median;
+  if (a == null || b == null || !Number.isFinite(a) || !Number.isFinite(b) || b <= a) return null;
+  const diff = fmtApprox(b - a, cur);
+  const sa = severeOf(best), sb = severeOf(other), pairs = other.outcome.pairs;
+  const risk = sa == null || sb == null ? '' : sb > sa ? `, with more water-stress risk (${sb} vs ${sa} of ${pairs} season pairs)` : sb < sa ? `, with less water-stress risk (${sb} vs ${sa} of ${pairs} season pairs)` : `, with the same water-stress risk (${sb} of ${pairs} season pairs)`;
+  return `${other.label || 'Option B'} earns ${diff} more in a typical year${risk}.`;
+}
+
 function harvestText(p: PlanResult) {
   const parts = p.seasons.map((s, k) => (s.cropId === 'fallow' ? 'fallow' : `${fmtNum(p.outcome.yields[k]?.median, 1)} t`));
   return parts.join(' + ');
 }
 
 /** The plan card: one hero number (cash cost), budget bar, three stat rows, sowing lines. Used by Compare, Overview and Report. */
-export function PlanCard({ p, cur, label, tone, best, onWhy, selected, compact, risk, showNet }: { p: PlanResult; cur: string; label: string; tone?: 'brand'; best?: boolean; onWhy?: () => void; selected?: boolean; compact?: boolean; risk?: PlanStress | null; showNet?: boolean }) {
+export function PlanCard({ p, cur, label, sub, tone, best, onWhy, selected, compact, risk, showNet }: { p: PlanResult; cur: string; label: string; sub?: string; tone?: 'brand'; best?: boolean; onWhy?: () => void; selected?: boolean; compact?: boolean; risk?: PlanStress | null; showNet?: boolean }) {
   const severe = Math.round(p.outcome.pSevereAny * p.outcome.pairs);
   return (
     <article className={`card plan ${best ? 'best' : ''} ${compact ? 'preview' : ''}`} aria-label={`${label}: ${cropName(p.crops[0])} then ${cropName(p.crops[1])}`}>
-      <div className="plan-top"><span className={`caption ${tone === 'brand' ? 'brand' : ''}`}>{label}</span><StatusBadge status={p.budget.status} /></div>
+      <div className="plan-top"><span className={`caption ${tone === 'brand' ? 'brand' : ''}`}>{label}{sub && <span className="plan-sub">{sub}</span>}</span><StatusBadge status={p.budget.status} /></div>
       <Seq crops={p.crops} />
       <div className="plan-cost">
         <div className="stat">
@@ -59,13 +79,13 @@ export function PlanCard({ p, cur, label, tone, best, onWhy, selected, compact, 
         <BudgetBar cost={p.budget.totalCash} cap={p.budget.cap + p.budget.inflowsTotal} status={p.budget.status} />
         <BudgetLine p={p} cur={cur} />
       </div>
-      {compact && risk !== undefined && <RiskRow p={p} s={risk} net={showNet ? (p.outcome.net ? fmtMoney(p.outcome.net.median, cur) : '—') : undefined} />}
+      {compact && risk !== undefined && <RiskRow p={p} s={risk} net={showNet ? fmtApprox(p.outcome.net?.median, cur) : undefined} />}
       {!compact && <>
         <div className="group" style={{ marginTop: 0 }}>
           <StatRows rows={[
             ['Due before first sowing', fmtMoney(p.budget.upfront, cur)],
             ['Harvest, typical year', harvestText(p)],
-            ['Modeled net, typical year', p.outcome.net ? fmtMoney(p.outcome.net.median, cur) : '—'],
+            ['Modeled net, typical year', fmtApprox(p.outcome.net?.median, cur)],
             ['Severe water stress', `${severe} of ${p.outcome.pairs} season pairs`],
           ]} />
         </div>
@@ -112,6 +132,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
         <span className="caption">Step 3 of 4</span>
         <h1>Compare two-season plans</h1>
         {engine && <p>{engine.areaHa.toFixed(2)} ha · {engine.baseline.seasons[0].year === engine.baseline.seasons[1].year ? `${engine.baseline.seasons[0].year} ${engine.windows.map((w) => w.label).join(' + ')}` : `${engine.baseline.seasons[0].year}–${engine.baseline.seasons[1].year}`} · {fmtMoney(engine.baseline.budget.cap, sc.currency)} spendable{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, sc.currency)} confirmed inflows` : ''} · ranked by {PRIORITY_LABEL[sc.priority]}{engine.notes.some((n) => n.code === 'BUDGET_PLACEHOLDER') && <>{' '}<button type="button" className="badge warn budget-chip" onClick={() => go('resources')} title="This budget is a placeholder, not your money. Enter the cash you really have in Resources."><Pencil />Placeholder budget · set yours</button></>}</p>}
+        {engine && <p className="mini">{CASH_CAPTION}</p>}
       </div>
       <div className="page-actions"><button className="btn" onClick={() => go('resources')}><ArrowLeft /> Edit resources</button><button className="btn primary" onClick={() => go('evidence')}>Review evidence <ArrowRight /></button></div>
     </div>
@@ -125,7 +146,8 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
   const edited = Object.keys(sc.priceOverrides).length > 0;
   const risks = Object.values(engine.risks).sort((a, b) => b.medianRel - a.medianRel);
   const nSeasons = Object.values(engine.risks)[0]?.years.length ?? 0;
-  const labelOf = (p: PlanResult, i: number) => (p.isBaseline ? 'Your usual plan' : i === 1 ? BEST_LABEL[sc.priority] : p.label || 'Option B');
+  const labelOf = (p: PlanResult, i: number) => (p.isBaseline ? 'Your usual plan' : i === 1 ? BEST_FIT : p.label || 'Option B');
+  const tradeOff = tradeOffText(engine.alternatives, cur);
   const showWhy = (id: string) => { setSel(id); requestAnimationFrame(() => document.getElementById('detail')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })); };
   const onRowScroll = () => {
     const el = rowRef.current; if (!el) return;
@@ -150,10 +172,11 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
 
       <div className="plan-row" ref={rowRef} onScroll={onRowScroll} style={{ marginTop: 24 }}>
         {plans.map((p, i) => (
-          <PlanCard key={p.id} p={p} cur={cur} label={labelOf(p, i)} tone={i === 1 ? 'brand' : undefined} best={i === 1} selected={chosen.id === p.id} onWhy={() => showWhy(p.id)} />
+          <PlanCard key={p.id} p={p} cur={cur} label={labelOf(p, i)} sub={i === 1 ? `ranked by ${PRIORITY_LABEL[sc.priority]}` : undefined} tone={i === 1 ? 'brand' : undefined} best={i === 1} selected={chosen.id === p.id} onWhy={() => showWhy(p.id)} />
         ))}
       </div>
       <div className="plan-dots" aria-hidden>{plans.map((p, i) => <i key={p.id} className={i === dot ? 'on' : ''} />)}</div>
+      {tradeOff && <p className="mini trade-off">{tradeOff}</p>}
 
       <WhatIfPanel />
 
@@ -202,8 +225,8 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
                   ['Season 1 cash cost', fmtMoney(chosen.budget.bySeason[0], cur)],
                   ['Season 2 cash cost', fmtMoney(chosen.budget.bySeason[1], cur)],
                   ['Due before first sowing', fmtMoney(chosen.budget.upfront, cur)],
-                  chosen.outcome.net && ['Modeled net, typical year', fmtMoney(chosen.outcome.net.median, cur)],
-                  chosen.outcome.net && ['Modeled net, bad year', fmtMoney(chosen.outcome.net.p20, cur)],
+                  chosen.outcome.net && ['Modeled net, typical year', fmtApprox(chosen.outcome.net.median, cur)],
+                  chosen.outcome.net && ['Modeled net, bad year', fmtApprox(chosen.outcome.net.p20, cur)],
                 ]} />
                 <div>
                   <div className="spread" style={{ marginBottom: 8 }}><span className="caption">Harvest, whole field</span><Tag t="modeled" /></div>

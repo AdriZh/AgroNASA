@@ -15,7 +15,7 @@ import { BrandMark } from '../components/Logo';
 import { OrbitVisual } from '../components/OrbitVisual';
 import { Seg, ThemeToggle } from '../components/common';
 import { CAT_TOKEN, SeasonRainChart, useChartTheme } from '../components/charts';
-import { PlanCard } from './Compare';
+import { BEST_FIT, CASH_CAPTION, PlanCard, PRIORITY_LABEL, tradeOffText } from './Compare';
 import { HindcastChart } from '../components/Hindcast';
 import { allHindcasts } from '../../data/hindcast/hindcast';
 import type { PlanResult } from '../../engine/plan';
@@ -25,6 +25,8 @@ import { useDrierHotter } from '../components/stress';
 const ease = [0.2, 0.7, 0.2, 1] as const;
 const up = (d = 0) => ({ initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3, delay: d, ease } });
 const fade = (d = 0) => ({ initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.3, delay: d } });
+/** Key content: fully visible within ≈ 0.4 s of the slide appearing. */
+const quick = (d = 0) => ({ initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2, delay: d } });
 
 function Slide({ n, total, kicker, icon, title, children }: { n: number; total: number; kicker: string; icon?: ReactNode; title?: boolean; children: ReactNode }) {
   return (
@@ -202,20 +204,20 @@ function Funnel({ steps }: { steps: [string, number, string][] }) {
 function MiniCompare({ plans, cur, stress }: { plans: PlanResult[]; cur: string; stress: Map<string, PlanStress> | null }) {
   const pairs = plans[0]?.outcome.pairs ?? 0;
   const call = (k: number, title: string, d: string, delay: number) => (
-    <motion.div className="mc-call" {...fade(delay)}>
+    <motion.div className="mc-call" {...quick(delay)}>
       <span className="mc-n">{k}</span>
       <div><b>{title}</b><span>{d}</span></div>
       <ArrowRight size={18} className="mc-arrow" aria-hidden />
     </motion.div>
   );
   return (
-    <motion.div {...fade(0.2)} className="mini-compare">
-      <div className="mc-calls mc-r3">{call(1, 'Your budget', 'cost against cash you can spend', 0.5)}</div>
+    <motion.div {...quick(0)} className="mini-compare">
+      <div className="mc-calls mc-r3">{call(1, 'Your budget', 'cost against cash you can spend', 0.1)}</div>
       <div className="mc-calls mc-r4">
-        {call(2, `NASA ${pairs}-season replay`, `${pairs} consecutive season pairs`, 0.7)}
-        {call(3, 'Stress-test: drier & hotter', '−15% rain, +2 °C', 0.9)}
+        {call(2, `NASA ${pairs}-season replay`, `${pairs} consecutive season pairs`, 0.15)}
+        {call(3, 'Stress-test: drier & hotter', '−15% rain, +2 °C', 0.2)}
       </div>
-      {plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Usual plan' : p.label} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} />)}
+      {plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Usual plan' : k === 1 ? BEST_FIT : p.label} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} />)}
     </motion.div>
   );
 }
@@ -339,8 +341,9 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     { id: 'result', kicker: `Live result · ${scenario.name}`, icon: <BadgeCheck size={14} />, body: (
       <>
         <motion.h2 {...up(0.1)}>{engine?.baseline.budget.status === 'affordable' ? 'The usual plan fits, and here is how the alternatives compare.' : 'The usual plan doesn’t fit the budget. Two that do:'}</motion.h2>
-        <motion.div {...fade(0.2)} className="plan-row slide-plans" style={{ flex: 1, alignContent: 'center' }}>{plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Your usual plan' : k === 1 ? 'Best fit' : p.label} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} showNet />)}</motion.div>
-        <motion.div {...up(0.6)} className="row" style={{ gap: 24, fontSize: 15 }}>
+        <motion.div {...fade(0.2)} className="plan-row slide-plans" style={{ flex: 1, alignContent: 'center' }}>{plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Your usual plan' : k === 1 ? BEST_FIT : p.label} sub={k === 1 ? `ranked by ${PRIORITY_LABEL[scenario.priority]}` : undefined} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} showNet />)}</motion.div>
+        <motion.p {...fade(0.3)} className="muted" style={{ fontSize: 14, lineHeight: 1.4, margin: '8px 0' }}>{CASH_CAPTION}{engine && tradeOffText(engine.alternatives, cur) ? ` ${tradeOffText(engine.alternatives, cur)}` : ''}</motion.p>
+        <motion.div {...up(0.4)} className="row" style={{ gap: 24, fontSize: 15 }}>
           <span className="row" style={{ gap: 6 }}><Check size={16} className="good-t" /> Change a price, the budget or seed availability and results update instantly</span>
           <span className="row" style={{ gap: 6 }}><Check size={16} className="good-t" /> Printable report for the farmer</span>
         </motion.div>
@@ -373,10 +376,10 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
           <div style={{ minWidth: 0 }}>
             <div className="grid g3">
               {([[<Globe2 size={20} />, 'Global', '16 regional farming systems on 6 continents + a global fallback; FAOSTAT prices for 240 countries.'], [<WifiOff size={20} />, '≈ $0 to run', 'Static web app on free hosting. Demo farms work offline; other places are cached after the first download.'], [<FileDown size={20} />, 'Shareable', 'Printable plan with sources for farmers, extension workers and lenders.']] as const).map(([ic, title, d], k) => (
-                <Panel key={title} d={0.2 + k * 0.1}><div className="row" style={{ gap: 8 }}><span className="muted">{ic}</span><b className="impact-t">{title}</b></div><p style={{ marginTop: 8, fontSize: 15 }}>{d}</p></Panel>
+                <Panel key={title} d={0.05 + k * 0.05}><div className="row" style={{ gap: 8 }}><span className="muted">{ic}</span><b className="impact-t">{title}</b></div><p style={{ marginTop: 8, fontSize: 15 }}>{d}</p></Panel>
               ))}
             </div>
-            <motion.div {...up(0.5)} className="timeline">
+            <motion.div {...up(0.15)} className="timeline">
               {[['Now', 'Working prototype, 16 regional packs, automated tests'], ['Next 90 days', 'Pilot: 3–5 farmer interviews, agronomist review of every rule, dated local price pack'], ['v2', 'French · Wolof · Kazakh · Russian, SMS summary, NDVI per field'], ['Scale', 'Co-op dashboards & input-credit programmes']].map(([title, d], k) => (
                 <div key={title}>
                   <i className={k === 0 ? 'on' : ''} />
@@ -385,12 +388,12 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
               ))}
             </motion.div>
           </div>
-          <motion.div {...up(0.3)} className="qr-box">
+          <motion.div {...quick(0.1)} className="qr-box">
             <img src={`${base}media/qr-live.svg`} alt="QR code for https://adrizh.github.io/AgroNASA/" width={200} height={200} />
             <span className="muted">Scan to try it on a phone</span>
           </motion.div>
         </div>
-        <motion.div {...up(0.7)} className="live-url">
+        <motion.div {...quick(0.15)} className="live-url">
           <span className="caption">Try it live</span>
           <a href="https://adrizh.github.io/AgroNASA/" target="_blank" rel="noopener noreferrer">adrizh.github.io/AgroNASA</a>
         </motion.div>

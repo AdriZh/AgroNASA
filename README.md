@@ -61,7 +61,7 @@ Search a place, click the map, use GPS, or pick one of 15 example farming region
 | **4 · Evidence** | NASA climate record (monthly climatology, ET₀, season totals, dry runs, heat days, provenance), **this season so far** vs history + onset + NASA soil wetness, **16-day forecast** & planting-readiness, **NASA satellite layers** (MODIS NDVI, SMAP L4 soil moisture, GPM IMERG, MODIS LST, true colour, with date & −1-year compare), **past-season review** (descriptive, never causal), fertilizer nutrient timeline, and a **hindcast vs real FAOSTAT national yields**. |
 | **Report** | Printable / PDF plan summary with sources; export, import and delete-all-data controls. |
 | **Methods** | Pipeline, formulas, reason codes, rule packs (with review status), crop parameters, full evidence register, privacy & AI disclosure. |
-| **Presentation** | Animated 12-slide explainer deck (problem, cash gap, users, solution, data fusion, sowing science, soil-water bucket, decision funnel, live result, hindcast, impact) with a **7-slide submission cut** and one-click PDF export. Live data from the selected farm. |
+| **Presentation** | Animated 7-slide pitch (title, problem & market, solution, how it works, why it is better, what comes next, team), with one-click PDF export. Live data from the selected farm. |
 | **Design system** | [`docs/DESIGN.md`](docs/DESIGN.md): tokens and components, light and dark mode. |
 | **30-second video** | Narrated 1080p MP4 (`public/media/field-shift-30s.mp4`) with original synthesized soundtrack and burned-in captions, plus a live animated version. See [`docs/PITCH.md`](docs/PITCH.md). |
 
@@ -129,7 +129,7 @@ npm run build
 
 ## Presentation & video
 
-* **Presentation**: sidebar → *Presentation* (or `#/pitch`). Arrow keys / space to advance, `f` for full screen, Esc to exit. Toggle *Full story · 12* or *Submission cut · 7*; **PDF** prints one slide per page.
+* **Presentation**: sidebar → *Presentation* (or `#/pitch`). Arrow keys / space to advance, `f` for full screen, Esc to exit. Exactly 7 slides; **PDF** prints one slide per page.
 * **Video**: sidebar → *30-second video* (or `#/video`), or open `public/media/field-shift-30s.mp4` directly (1920×1080, 30 fps, 30.0 s, AAC at −14 LUFS).
   * Narration: Kokoro-82M neural TTS (voice `af_heart`, Apache-2.0), script in `src/ui/video/timing.json`.
   * Music & sound design: synthesized from scratch by `scripts/make-soundtrack.py` (no samples), ducked under the voice.

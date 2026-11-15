@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight, BadgeCheck, Ban, BookMarked, Calculator, Check, ChevronLeft, ChevronRight, CloudRain, Droplets, Eye, FileDown, FlaskConical, Globe2, Layers, Leaf,
-  NotebookPen, Satellite, Shovel, Sprout, Tractor, Users, Wallet, WifiOff, X, Sun, Thermometer,
+  NotebookPen, Satellite, Shovel, Sprout, Tractor, Users, Wallet, WifiOff, X, Sun, Moon, Thermometer,
+  Languages, Bot, Mic, LayoutDashboard, Cpu, Rocket, Workflow, Target, Code,
 } from 'lucide-react';
 import type { Route } from '../../App';
 import { useApp } from '../../state/AppContext';
@@ -13,13 +14,12 @@ import { addDays, dayIndex, fmtDayMonth } from '../../domain/dates';
 import { rainOnset, temperatureSowing, yearlyWindow } from '../../weather/indicators';
 import { BrandMark } from '../components/Logo';
 import { OrbitVisual } from '../components/OrbitVisual';
-import { Seg, ThemeToggle } from '../components/common';
 import { CAT_TOKEN, SeasonRainChart, useChartTheme } from '../components/charts';
 import { BEST_FIT, CASH_CAPTION, PlanCard, tradeOffText } from './Compare';
 import { weightsSummary } from '../components/PrioritySliders';
 import { HindcastChart } from '../components/Hindcast';
 import { allHindcasts } from '../../data/hindcast/hindcast';
-import { TEAM } from '../../data/team';
+import { TEAM, TEAM_NAME, TEAM_PROFILES } from '../../data/team';
 import type { PlanResult } from '../../engine/plan';
 import type { PlanStress } from '../../engine/whatif';
 import { useDrierHotter } from '../components/stress';
@@ -39,6 +39,9 @@ function Slide({ n, total, kicker, icon, title, children }: { n: number; total: 
     </div>
   );
 }
+
+/** Source footnote at the bottom of a data slide. */
+const Source = ({ children }: { children: ReactNode }) => <div className="muted" style={{ fontSize: 11.5, marginTop: 'auto', paddingTop: 8, paddingBottom: 18 }}>* Sources: {children}</div>;
 
 /** Highlighted phrase in a slide title (brand ink; no gradient text). */
 const G = ({ children }: { children: ReactNode }) => <span className="hl">{children}</span>;
@@ -214,20 +217,108 @@ function MiniCompare({ plans, cur, stress }: { plans: PlanResult[]; cur: string;
   );
   return (
     <motion.div {...quick(0)} className="mini-compare">
-      <div className="mc-calls mc-r3">{call(1, 'Your budget', 'cost against cash you can spend', 0.1)}</div>
+      <div className="mc-calls mc-r3">{call(1, 'Your budget', 'cost vs cash you can spend', 0.1)}</div>
       <div className="mc-calls mc-r4">
-        {call(2, `NASA ${pairs}-season replay`, `${pairs} consecutive season pairs`, 0.15)}
-        {call(3, 'Stress-test: drier & hotter', '−15% rain, +2 °C', 0.2)}
+        {call(2, 'NASA weather replay', `${pairs} real season pairs`, 0.15)}
+        {call(3, 'Drier & hotter test', '−15% rain, +2 °C', 0.2)}
       </div>
       {plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Usual plan' : k === 1 ? BEST_FIT : p.label} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} />)}
     </motion.div>
   );
 }
 
+/** Slide 4: a simple schema of the product, inputs → engine → outputs. */
+function ProductSchema() {
+  const t = useChartTheme();
+  const inputs: [ReactNode, string, string, boolean][] = [
+    [<CloudRain size={18} />, 'NASA POWER', 'daily weather since 2001', true],
+    [<Satellite size={18} />, 'NASA satellites', 'SMAP · MODIS · GRACE context', true],
+    [<Shovel size={18} />, 'SoilGrids', 'soil → water the root zone holds', false],
+    [<Wallet size={18} />, 'FAOSTAT prices', 'local currency, 240 countries', false],
+    [<NotebookPen size={18} />, 'The farmer', 'past crops, budget, constraints', false],
+  ];
+  const outputs: [ReactNode, string, string][] = [
+    [<Check size={18} />, 'Plans you can afford', 'usual plan + up to 2 alternatives'],
+    [<Droplets size={18} />, 'Risk in bad years', '24 season pairs + drier & hotter'],
+    [<BookMarked size={18} />, 'Reasons & sources', 'for every number'],
+    [<FileDown size={18} />, 'Printable plan', 'and a share link'],
+  ];
+  const box = (ic: ReactNode, title: string, sub: string, k: number, nasa = false) => (
+    <motion.div key={title} {...up(0.15 + k * 0.05)} className="boxed" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', minHeight: 0 }}>
+      <span className={nasa ? 'hl' : 'muted'}>{ic}</span>
+      <div style={{ minWidth: 0 }}><b className="ink" style={{ fontSize: 15 }}>{title}</b>{nasa && <span className="chip nasa" style={{ marginLeft: 6 }}>NASA</span>}<div className="muted" style={{ fontSize: 12.5, lineHeight: 1.3 }}>{sub}</div></div>
+    </motion.div>
+  );
+  const fan = (n: number, dir: 'in' | 'out') => (
+    <svg viewBox="0 0 40 100" preserveAspectRatio="none" width="100%" height="100%" aria-hidden>
+      {Array.from({ length: n }, (_, k) => {
+        const y = ((2 * k + 1) / (2 * n)) * 100;
+        const d = dir === 'in' ? `M0 ${y} C20 ${y}, 20 50, 40 50` : `M0 50 C20 50, 20 ${y}, 40 ${y}`;
+        return <motion.path key={k} d={d} fill="none" stroke={t.brand} strokeOpacity={0.6} strokeWidth={1.5} vectorEffect="non-scaling-stroke" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: (dir === 'in' ? 0.3 : 0.8) + k * 0.05, duration: 0.4 }} />;
+      })}
+    </svg>
+  );
+  const step = (n: number, text: string) => <div key={n} className="row" style={{ gap: 8, fontSize: 14, alignItems: 'baseline' }}><span className="mc-n" style={{ flex: 'none' }}>{n}</span><span className="muted">{text}</span></div>;
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 1.25fr 48px 1fr', alignItems: 'stretch', flex: 1, minHeight: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><div className="caption">Data in</div>{inputs.map(([ic, h, d, nasa], k) => box(ic, h, d, k, nasa))}</div>
+      <div style={{ paddingTop: 26 }}>{fan(inputs.length, 'in')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="caption">Field Shift engine · runs in the browser</div>
+        <motion.div {...up(0.5)} className="boxed" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, border: `2px solid ${t.brand}` }}>
+          <b className="ink row" style={{ gap: 6 }}><Droplets size={16} /> Weather &amp; soil</b>
+          {step(1, 'Sowing date for every past year (rain onset)')}
+          {step(2, 'Daily soil-water balance (FAO-56)')}
+        </motion.div>
+        <div style={{ textAlign: 'center', lineHeight: 0 }}><ArrowRight size={18} className="hl" style={{ transform: 'rotate(90deg)' }} /></div>
+        <motion.div {...up(0.6)} className="boxed" style={{ flex: 1.4, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, border: `2px solid ${t.brand}` }}>
+          <b className="ink row" style={{ gap: 6 }}><Calculator size={16} /> Plan calculator</b>
+          {step(3, 'Yield in 24 real season pairs (FAO-66)')}
+          {step(4, 'Cash check at every due date')}
+          {step(5, 'Rotation rules, then rank, with reasons')}
+        </motion.div>
+      </div>
+      <div style={{ paddingTop: 26 }}>{fan(outputs.length, 'out')}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><div className="caption">What the farmer gets</div>{outputs.map(([ic, h, d], k) => box(ic, h, d, k + 6))}</div>
+    </div>
+  );
+}
+
+/** Slide 5: what each similar tool has, from its public pages (Nov 2026). y = yes, p = partly, n = no. */
+const RIVALS = ['Field Shift', 'E-PICSA', 'Precision Dev.', 'FarmerChat', 'Crop Planner (UK)', 'OneSoil'];
+const FEATURES: [string, string][] = [
+  ['Checks the plan against your cash and due dates', 'ypnnpn'],
+  ['Computes each plan’s risk from past weather', 'ypnnnn'],
+  ['Compares crop rotations side by side', 'ypnnyp'],
+  ['Works anywhere on Earth', 'ynnpnp'],
+  ['Built for smallholders and extension workers', 'yyyynp'],
+];
+function CheckTable() {
+  const cell = (v: string) => v === 'y' ? <Check size={22} className="good-t" aria-label="yes" /> : v === 'p' ? <span className="muted" style={{ fontSize: 13 }}>partly</span> : <X size={20} className="muted" aria-label="no" style={{ opacity: 0.6 }} />;
+  return (
+    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 15 }}>
+      <thead><tr><th style={{ textAlign: 'left', padding: '8px 12px' }} />{RIVALS.map((r, k) => <th key={r} className={k === 0 ? 'boxed' : ''} style={{ padding: '10px 8px', textAlign: 'center', fontSize: k === 0 ? 16 : 13, borderRadius: k === 0 ? '12px 12px 0 0' : 0 }}><span className={k === 0 ? 'hl' : 'muted'}>{r}</span></th>)}</tr></thead>
+      <tbody>{FEATURES.map(([f, v], i) => (
+        <motion.tr key={f} {...up(0.2 + i * 0.06)}>
+          <td style={{ padding: '10px 12px', borderTop: '1px solid var(--border)' }} className="ink">{f}</td>
+          {v.split('').map((c, k) => <td key={k} className={k === 0 ? 'boxed' : ''} style={{ textAlign: 'center', padding: '10px 8px', borderTop: '1px solid var(--border)', borderRadius: k === 0 && i === FEATURES.length - 1 ? '0 0 12px 12px' : 0 }}>{cell(c)}</td>)}
+        </motion.tr>
+      ))}</tbody>
+    </table>
+  );
+}
+
 // ---------- deck ----------
 export function PitchPage({ go }: { go: (r: Route) => void }) {
   const { engine, data, scenario } = useApp();
-  const [cut, setCut] = useState<'full' | 'submission'>('full');
+  const cut = 'pitch';
+  // The deck opens in light mode; the button switches it for this deck only, and the app's own theme comes back on exit.
+  const [deckTheme, setDeckTheme] = useState<'light' | 'dark'>('light');
+  useEffect(() => {
+    const root = document.documentElement, prev = root.dataset.theme;
+    return () => { if (prev) root.dataset.theme = prev; else delete root.dataset.theme; };
+  }, []);
+  useEffect(() => { document.documentElement.dataset.theme = deckTheme; }, [deckTheme]);
   const [i, setI] = useState(0);
   const [printing, setPrinting] = useState(false);
   const rows = useMemo(() => (data.series && engine ? yearlyWindow(data.series, engine.window.earliest, seasonEndOf(engine)) : []), [data.series, engine]);
@@ -243,28 +334,42 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     { id: 'title', kicker: 'NASA Space Apps 2026 · Field Shift challenge', icon: <BadgeCheck size={14} />, body: (
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.15fr .85fr', gap: 32, alignItems: 'center' }}>
         <div>
-          <motion.div {...up(0.1)} style={{ display: 'flex', alignItems: 'center', gap: 16 }}><BrandMark size={56} /><span style={{ fontWeight: 600, fontSize: 28 }}>Field Shift</span></motion.div>
-          <motion.h1 {...up(0.2)} style={{ margin: '24px 0 16px' }}>Crop plans farmers can <G>afford</G>, informed by <G>25 years of NASA Earth data</G>.</motion.h1>
-          <motion.p {...up(0.3)} style={{ maxWidth: 620 }}>We replay NASA POWER daily weather, add NASA satellite context, combine it with what the farmer already knows (past crops, soil, budget and constraints) and explain every trade-off.</motion.p>
-          <motion.div {...up(0.4)} className="row" style={{ marginTop: 24 }}>{['Informs, never dictates', 'Demo farms work offline', 'Any location on Earth'].map((x) => <span key={x} className="chip" style={{ fontSize: 13, padding: '4px 10px' }}>{x}</span>)}</motion.div>
+          <motion.div {...up(0.1)} style={{ display: 'flex', alignItems: 'center', gap: 20 }}><BrandMark size={88} /><span style={{ fontWeight: 700, fontSize: 'clamp(36px, 5vw, 64px)', letterSpacing: '-.02em' }}>Field Shift</span></motion.div>
+          <motion.h1 {...up(0.2)} style={{ margin: '24px 0 12px' }}><G>From space to soil.</G></motion.h1>
+          <motion.p {...up(0.3)} style={{ maxWidth: 620 }}>Crop plans farmers can afford, tested against 25 years of NASA Earth data.</motion.p>
+          <motion.p {...up(0.4)} className="quote" style={{ marginTop: 32 }}>by Team <b>{TEAM_NAME}</b></motion.p>
         </div>
         <motion.div {...fade(0.3)} style={{ height: 260 }}><OrbitVisual /></motion.div>
       </div>
     ) },
-    { id: 'problem', kicker: 'The problem', icon: <CloudRain size={14} />, body: (
+    { id: 'problem', kicker: '01 / The problem', icon: <CloudRain size={14} />, body: (
       <>
-        <motion.h2 {...up(0.1)}>Every season, farmers bet their savings on the sky.</motion.h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 32, flex: 1, alignItems: 'center' }}>
-          <motion.div {...fade(0.2)}>
-            {rows.length > 0 && minRow && maxRow && <SeasonRainChart rows={rows} highlight={[minRow.year, maxRow.year]} height={300} />}
-            <div className="muted" style={{ fontSize: 13 }}>Season rainfall by year at {place}, mm, NASA POWER PRECTOTCORR (grid cell, not a field station). Driest and wettest years highlighted.</div>
+        <motion.h2 {...up(0.1)}>Every season, farmers bet their savings on the sky, before they know the rain.</motion.h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: 32, flex: 1, alignItems: 'center' }}>
+          <motion.div {...up(0.2)}>
+            <div className="hl" style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' }}>The rain gamble</div>
+            <h3 style={{ fontSize: 'clamp(20px, 2.2vw, 30px)', lineHeight: 1.2, margin: '8px 0 16px' }}>The wettest year brought <span className="hl">{(mx / Math.max(1, mn)).toFixed(1)}×</span> the rain of the driest, on the same field.</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 16px', alignItems: 'baseline' }}>
+              <b className="ink" style={{ fontSize: 26 }}>$170 B</b><span className="muted" style={{ fontSize: 14 }}>yearly smallholder finance gap; 70% of need unmet</span>
+              <b className="ink" style={{ fontSize: 26 }}>1 : 1,000+</b><span className="muted" style={{ fontSize: 14 }}>extension agents to farmers in many countries</span>
+              <b className="ink" style={{ fontSize: 26 }}>608 M</b><span className="muted" style={{ fontSize: 14 }}>farms worldwide, 84% under 2 ha: the market</span>
+            </div>
           </motion.div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Panel d={0.4}><div className="num-xl">{(mx / Math.max(1, mn)).toFixed(1)}×</div><p style={{ marginTop: 8 }}>swing in season rain at the same place ({Math.round(mn)}–{Math.round(mx)} mm). An “average year” hides it.</p></Panel>
-            {minRow && maxRow && <Panel d={0.5}><b style={{ fontSize: 20 }}>Live from NASA POWER</b><p style={{ marginTop: 8 }}>Driest season {minRow.year}: <b className="ink">{Math.round(mn)} mm</b>. Wettest {maxRow.year}: <b className="ink">{Math.round(mx)} mm</b>. Same field, same calendar.</p></Panel>}
-            <Panel d={0.6}><b style={{ fontSize: 20 }}>Patchy records</b><p style={{ marginTop: 8 }}>Past crops, doses and dates live in memory, and timing matters as much as totals.</p></Panel>
-          </div>
+          <motion.div {...fade(0.3)}>
+            <b className="ink" style={{ fontSize: 16 }}>Season rain at {place}, every year since 2001 (mm)</b>
+            {minRow && maxRow && <div className="muted" style={{ fontSize: 13 }}>Highlighted: driest {minRow.year} ({Math.round(mn)} mm) and wettest {maxRow.year} ({Math.round(mx)} mm)</div>}
+            {rows.length > 0 && minRow && maxRow && <SeasonRainChart rows={rows} highlight={[minRow.year, maxRow.year]} height={200} />}
+          </motion.div>
         </div>
+        <motion.div {...up(0.5)} style={{ marginTop: 8 }}>
+          <b style={{ fontSize: 15 }}>Why it happens</b>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginTop: 6 }}>
+            {[['Rain decides', 'Rain-fed farms give 52% of world crop output (FAO 2025).'], ['Cash comes before rain', 'Inputs are paid before sowing; credit and insurance rarely reach smallholders.'], ['Advice is scarce', 'Generic tips, no check of what a plan costs or how it fails in a bad year.'], ['Markets push one crop', 'Wheat ≈ 56% of Kazakhstan’s sown area (2024 plan).']].map(([h, d]) => (
+              <div key={h} style={{ fontSize: 13, lineHeight: 1.35 }}><b className="ink">{h}</b><div className="muted">{d}</div></div>
+            ))}
+          </div>
+        </motion.div>
+        <Source>NASA POWER (grid cell, not a field station); ISF Advisors 2019; Fabregas, Kremer &amp; Schilbach, Science 2019; FAO.</Source>
       </>
     ) },
     { id: 'cash', kicker: 'The cash gap', icon: <Wallet size={14} />, body: (
@@ -292,11 +397,79 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         </div>
       </>
     ) },
-    { id: 'solution', kicker: 'Our solution', icon: <Sprout size={14} />, body: (
+    { id: 'solution', kicker: '02 / Our solution', icon: <Sprout size={14} />, body: (
       <>
-        <motion.h2 {...up(0.1)}>Which next two-season plans can I <G>realistically afford</G>?</motion.h2>
-        <motion.p {...up(0.2)}>Your usual plan against the two best alternatives, live for {place}: priced, cash-checked, replayed on NASA weather.</motion.p>
+        <motion.h2 {...up(0.1)} style={{ marginBottom: 8, fontSize: 'clamp(20px, 2.3vw, 30px)' }}>Which next plans can I <G>afford</G>, and how do they hold up in a <G>bad year</G>?</motion.h2>
+        <motion.div {...up(0.15)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          {['Pin your field', 'Enter crops & budget', 'Compare plans you can afford', 'Print or share'].map((s, k, a) => (
+            <span key={s} style={{ display: 'contents' }}>
+              <span className="boxed" style={{ padding: '6px 12px', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}><span className="hl">{k + 1}</span> {s}</span>
+              {k < a.length - 1 && <ArrowRight size={16} className="muted" aria-hidden />}
+            </span>
+          ))}
+        </motion.div>
+        <motion.div {...up(0.2)} className="ink" style={{ fontSize: 15, fontWeight: 600 }}>Live for {place}: your usual plan against the two best plans that fit the budget</motion.div>
         {engine && plans.length > 0 ? <MiniCompare plans={plans} cur={cur} stress={stress} /> : null}
+      </>
+    ) },
+    { id: 'how', kicker: '03 / How it works', icon: <Cpu size={14} />, body: (
+      <>
+        <motion.h2 {...up(0.1)} style={{ marginBottom: 12 }}>Published science in a free web app: no black box.</motion.h2>
+        <ProductSchema />
+        <motion.div {...up(0.9)} style={{ margin: '12px 0 20px', fontSize: 13, display: 'grid', gap: 4 }}>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}><b className="row ink" style={{ gap: 6 }}><Code size={15} /> Stack:</b><span className="muted">React + TypeScript + Vite · static site, GitHub Pages CI · no backend, works offline · 227 automated tests</span></div>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}><b className="row ink" style={{ gap: 6 }}><Workflow size={15} /> Process:</b><span className="muted">Brief &amp; research → spec + evidence register → engine first, tested on archived NASA data &amp; the FAO-56 example → UI + 16 regional packs → hindcast vs real FAOSTAT yields</span></div>
+        </motion.div>
+      </>
+    ) },
+    { id: 'edge', kicker: '04 / Why it is better', icon: <Target size={14} />, body: (
+      <>
+        <motion.h2 {...up(0.1)}>Others show what grows. Field Shift shows what you can <G>afford</G>.</motion.h2>
+        <motion.div {...fade(0.15)} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <CheckTable />
+          <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>Only Field Shift has all five. Plus: every number traced to a source, no AI in the decision, checked against real harvests. “Partly”: E-PICSA builds budgets without due dates and shows rainfall graphs for people to read; Crop Planner gives gross margins for the UK only; OneSoil keeps a rotation record.</p>
+        </motion.div>
+        <Source>each tool’s public pages, checked Nov 2026 (E-PICSA: GIZ 2023; PxD 2024 annual report; Digital Green; ADAS Crop Planner, Apr 2026; OneSoil help centre).</Source>
+      </>
+    ) },
+    { id: 'next', kicker: '05 / What comes next', icon: <Rocket size={14} />, body: (
+      <>
+        <motion.h2 {...up(0.1)}>Next: every market, every language, every farmer.</motion.h2>
+        <div className="grid g2" style={{ gap: 12, flex: 1, alignContent: 'center' }}>
+          {([
+            [<Languages size={20} />, 'Every market, its own language', 'French, Wolof, Kazakh, Russian, Uzbek, Portuguese, Swahili, Hindi… (today: English).'],
+            [<Bot size={20} />, 'AI assistant', 'Explains each plan in plain words, using only the engine’s numbers.'],
+            [<Mic size={20} />, 'Voice', 'Read-out and voice input for farmers who don’t read easily.'],
+            [<LayoutDashboard size={20} />, 'Live data dashboard', 'Opt-in telemetry: plans compared and changed, by region, for co-ops and ministries.'],
+          ] as const).map(([ic, h, d], k) => (
+            <Panel key={h} d={0.2 + k * 0.07}><div className="row" style={{ gap: 8 }}><span className="muted">{ic}</span><b className="ink" style={{ fontSize: 18 }}>{h}</b><span className="chip" style={{ marginLeft: 'auto' }}>planned</span></div><p style={{ marginTop: 6, fontSize: 15 }}>{d}</p></Panel>
+          ))}
+        </div>
+        <motion.div {...up(0.5)} className="timeline" style={{ marginBottom: 20 }}>
+          {[['Now', 'Working prototype, 16 regional packs'], ['Next 90 days', 'Pilot with an NGO and a local agronomist; real local prices'], ['v2', 'Languages, voice, AI assistant'], ['Scale', 'Dashboard for co-ops, NGOs and governments']].map(([title, d], k) => (
+            <div key={title}><i className={k === 0 ? 'on' : ''} /><b>{title}</b><p style={{ fontSize: 14, marginTop: 4 }}>{d}</p></div>
+          ))}
+        </motion.div>
+      </>
+    ) },
+    { id: 'team', kicker: `06 / Why us · Team ${TEAM_NAME}`, icon: <Users size={14} />, body: (
+      <>
+        <motion.h2 {...up(0.1)}>Builders, educators and founders: <G>Team {TEAM_NAME}</G>.</motion.h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 200px', gap: 20, flex: 1, alignItems: 'center' }}>
+          <div className="grid g3" style={{ gap: 12 }}>
+            {TEAM_PROFILES.map((m, k) => (
+              <Panel key={m.name} d={0.15 + k * 0.05}><b className="ink" style={{ fontSize: 18 }}>{m.name}</b><p style={{ marginTop: 6, fontSize: 14, lineHeight: 1.4 }}>{m.line}</p></Panel>
+            ))}
+          </div>
+          <motion.div {...quick(0.3)} className="qr-box">
+            <img src={`${base}media/qr-live.svg`} alt="QR code for https://adrizh.github.io/AgroNASA/" width={160} height={160} style={{ width: 160, height: 160 }} />
+            <span className="muted">Scan to try it</span>
+          </motion.div>
+        </div>
+        <motion.div {...quick(0.4)} className="live-url">
+          <span className="caption">Try it live</span>
+          <a href="https://adrizh.github.io/AgroNASA/" target="_blank" rel="noopener noreferrer">adrizh.github.io/AgroNASA</a>
+        </motion.div>
       </>
     ) },
     { id: 'fusion', kicker: 'Data fusion', icon: <Layers size={14} />, body: (<><motion.h2 {...up(0.1)}>NASA Earth data + ground truth → explainable plans</motion.h2><FusionDiagram /></>) },
@@ -403,8 +576,9 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
       </>
     ) },
   ];
-  const SUB = ['title', 'problem', 'solution', 'fusion', 'result', 'honest', 'impact'];
-  const slides = cut === 'full' ? all : all.filter((s) => SUB.includes(s.id));
+  // Exactly seven slides, in the order the team asked for. Older slides stay defined above but are not shown.
+  const PITCH = ['title', 'problem', 'solution', 'how', 'edge', 'next', 'team'];
+  const slides = PITCH.map((id) => all.find((s) => s.id === id)!);
   const n = slides.length;
   const idx = Math.min(i, n - 1);
 
@@ -447,11 +621,10 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         <div className="pitch-bar">
           <div className="row">
             <button className="btn sm" onClick={() => go('overview')}><X /> Exit</button>
-            <Seg label="Deck" value={cut} options={[{ v: 'full', label: 'Full story · 12' }, { v: 'submission', label: 'Submission · 7' }]} onChange={(v) => { setCut(v); setI(0); }} />
           </div>
           <div className="progress" role="tablist" aria-label="Slides">{slides.map((s, k) => <i key={s.id} role="tab" aria-selected={k === idx} aria-label={s.kicker} className={k === idx ? 'on' : ''} onClick={() => setI(k)} title={s.kicker} />)}</div>
           <div className="row">
-            <ThemeToggle />
+            <button className="btn sm icon" aria-label={deckTheme === 'light' ? 'Switch slides to dark' : 'Switch slides to light'} title={deckTheme === 'light' ? 'Dark slides' : 'Light slides'} onClick={() => setDeckTheme((m) => (m === 'light' ? 'dark' : 'light'))}>{deckTheme === 'light' ? <Moon /> : <Sun />}</button>
             <button className="btn sm" onClick={() => setPrinting(true)} title="Print every slide, one per page (save as PDF)"><FileDown /> PDF</button>
             <button className="btn sm icon" aria-label="Previous slide" onClick={() => setI((v) => Math.max(0, v - 1))}><ChevronLeft /></button>
             <button className="btn sm" onClick={() => setI((v) => Math.min(n - 1, v + 1))}>Next <ChevronRight /></button>

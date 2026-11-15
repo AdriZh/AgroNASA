@@ -534,7 +534,7 @@ details.disclose > .body { margin-top: var(--s-3); }
 .mini-compare .plan .seq { font-size: 18px; }
 .mc-calls { grid-column: 1; display: flex; flex-direction: column; justify-content: space-between; gap: var(--s-2); }
 .mc-r3 { grid-row: 3; justify-content: center; }
-.mc-r4 { grid-row: 4; }
+.mc-r4 { grid-row: 4; justify-content: space-around; }
 .mc-call { display: grid; grid-template-columns: 24px 1fr 18px; gap: var(--s-2); align-items: center; }
 .mc-call b { display: block; color: var(--brand); font-size: 15px; line-height: 20px; }
 .mc-call span:not(.mc-n) { display: block; font-size: 13px; line-height: 18px; color: var(--text-muted); }
@@ -917,3 +917,11 @@ main.fit { padding-top: var(--s-3); padding-bottom: var(--s-3); }
 @keyframes fs-drop { to { transform: translateY(260px); } }
 @media (prefers-reduced-motion: reduce) { .fs-rain i { animation: none; top: auto; bottom: 8px; } }
 @media (max-width: 900px) { .crop-chips { flex: none; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); grid-auto-rows: 110px; } .crop-chip .crop-ic { width: 40px !important; height: 40px !important; } .crop-chip .crop-ic svg { width: 28px; height: 28px; } }
+/* Pitch slide 3: keep the plan cards (now with the profit box) inside the 16:9 slide */
+.slide .mini-compare { row-gap: var(--s-2); margin-top: var(--s-1); }
+.slide .mini-compare > .plan { row-gap: var(--s-2); padding: var(--s-2) var(--s-3); }
+.slide .mini-compare > .plan.best { padding: calc(var(--s-2) - 1px) calc(var(--s-3) - 1px); }
+.slide .mini-compare .plan-cost { gap: 4px; }
+.slide .mini-compare .plan-profit { padding: 4px 10px; gap: 0; }
+.slide .mini-compare .plan-profit .caption { font-size: 11px; line-height: 14px; }
+.slide .mini-compare .plan-profit .sub { font-size: 12px; line-height: 15px; }

@@ -91,6 +91,8 @@ export function baselineCrops(sc: FarmScenario, pack: RegionPack): [string, stri
   return [first, first];
 }
 
+const GROUP_NOUN: Record<string, string> = { cereal: 'a cereal', legume: 'a legume', oilseed: 'an oilseed / fibre crop', tuber: 'a tuber crop', cover: 'a cover crop' };
+
 function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: RegionPack, plannedRisks: (CropRisk | null)[], soil: SoilProfile): Reason[] {
   const R: Reason[] = [];
   const has = (id: string) => pack.rules.some((r) => r.id === id);
@@ -138,6 +140,11 @@ function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: R
       }
       if (prev.group === 'cereal' && c.group === 'legume') {
         R.push({ code: 'BREAK_CROP', severity: 'good', text: `${tag}: a grain legume after ${after} (a cereal) — breaks cereal pest and disease cycles and fixes its own nitrogen.`, refs: ['G-R8', 'R32'] });
+      }
+      // G-R9 group alternation beyond cereal ↔ legume (which G-R3 / G-R8 already credit), e.g. cereal ↔ oilseed.
+      const cerLeg = (prev.group === 'cereal' && c.group === 'legume') || (prev.group === 'legume' && c.group === 'cereal');
+      if (prev.group !== c.group && prev.family !== c.family && !shared.length && !cerLeg) {
+        R.push({ code: 'ALTERNATION', severity: 'good', text: `${tag}: ${GROUP_NOUN[c.group] ?? c.group} after ${after} (${GROUP_NOUN[prev.group] ?? prev.group}) — a change of crop group, so pests, diseases and weeds of the previous crop get a break.`, refs: ['G-R9', 'R31'] });
       }
     }
     if (prev?.id === 'fallow' && c.group === 'cereal' && has('KZ-R1')) {
@@ -439,7 +446,14 @@ export function rotationPenalty(p: PlanResult): number {
 }
 /** Count of rotation benefits: legume → cereal (G-R3), cereal → legume (G-R8), fallow → cereal (KZ-R1). */
 export function rotationBenefit(p: PlanResult): number {
-  return p.reasons.filter((r) => r.code === 'LEGUME_BENEFIT' || r.code === 'BREAK_CROP' || r.code === 'FALLOW_BENEFIT').length;
+  return p.reasons.filter((r) => r.code === 'LEGUME_BENEFIT' || r.code === 'BREAK_CROP' || r.code === 'FALLOW_BENEFIT' || r.code === 'ALTERNATION').length;
+}
+/**
+ * True when any planned succession (including last season → season 1) repeats the crop or its family
+ * (MONOCULTURE warn on an accepted continuous crop, or SAME_FAMILY, G-R6/G-R7). Ranked strictly last (G-R9).
+ */
+export function isRepeat(p: PlanResult): boolean {
+  return p.reasons.some((r) => r.code === 'MONOCULTURE' || r.code === 'SAME_FAMILY');
 }
 
 export function rankComparator(priority: FarmScenario['priority']) {
@@ -452,7 +466,8 @@ export function rankComparator(priority: FarmScenario['priority']) {
   const byGood = (a: PlanResult, b: PlanResult) => b.reasons.filter((r) => r.severity === 'good').length - a.reasons.filter((r) => r.severity === 'good').length;
   const byWarn = (a: PlanResult, b: PlanResult) => a.reasons.filter((r) => r.severity === 'warn').length - b.reasons.filter((r) => r.severity === 'warn').length;
   const tie = (a: PlanResult, b: PlanResult) => a.id.localeCompare(b.id);
-  const byPenalty = (a: PlanResult, b: PlanResult) => rotationPenalty(a) - rotationPenalty(b);
+  // A repeat (same crop / same family) never outranks a feasible alternation; then lower rotation penalty first.
+  const byPenalty = (a: PlanResult, b: PlanResult) => Number(isRepeat(a)) - Number(isRepeat(b)) || rotationPenalty(a) - rotationPenalty(b);
   const byBenefit = (a: PlanResult, b: PlanResult) => rotationBenefit(b) - rotationBenefit(a);
   const chain: Record<string, ((a: PlanResult, b: PlanResult) => number)[]> = {
     cost: [byCost, byBenefit, byWarn, byClimate],

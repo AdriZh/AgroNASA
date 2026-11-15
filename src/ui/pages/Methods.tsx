@@ -10,6 +10,8 @@ const CODES: [string, string][] = [
   ['RETURN_INTERVAL', 'Same crop before its minimum break (rule G-R1 / SN-R2 / KZ-R2).'],
   ['DISEASE_GROUP', 'Consecutive hosts of a shared soil-borne pathogen (G-R2 / KZ-R3).'],
   ['LEGUME_BENEFIT / FALLOW_BENEFIT', 'Legume or fallow before a cereal (G-R3 / SN-R1 / KZ-R1).'],
+  ['MONOCULTURE · SAME_FAMILY', 'Same crop, or same family / shared pest group, in consecutive seasons, including last season → season 1 (G-R6 / G-R7). Never the top-ranked option while a feasible alternation exists.'],
+  ['BREAK_CROP · ALTERNATION', 'Cereal → legume, or any other change of crop group (cereal ↔ legume ↔ oilseed ↔ tuber); credited in the ranking (G-R8 / G-R9).'],
   ['SEED_UNAVAILABLE · MARKET_CONSTRAINT · LABOR_LIMIT · IRRIGATION_REQUIRED', 'Hard farmer constraints; never silently relaxed.'],
   ['CLIMATE_UNSUITABLE', 'Season mean temperature outside crop range in most years, or median water-limited yield < 35%.'],
   ['CLIMATE_RISK_HIGH · HEAT_EXPOSURE · FROST_RISK', 'Warnings from the NASA replay (≥35% severe years; ≥30% years with ≥3 hot days at flowering; ≥20% years with frost after emergence).'],

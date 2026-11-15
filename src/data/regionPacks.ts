@@ -22,6 +22,7 @@ const GENERIC_RULES: RotationRule[] = [
   { id: 'G-R6', kind: 'exclude', text: 'Same crop in two consecutive seasons (monoculture) is excluded from rotation options. Where a pack lists the crop as an accepted continuous practice (e.g. irrigated rice–rice), it is only warned and ranked below true rotations. The usual plan is always shown, flagged.', sources: ['R31'], reviewed: false },
   { id: 'G-R7', kind: 'warn', text: 'Consecutive crops of the same botanical family or sharing a pest/disease group (e.g. millet → sorghum, both Striga hosts) give a weak break; ranked below rotations that change family.', sources: ['R31', 'R32'], reviewed: false },
   { id: 'G-R8', kind: 'benefit', text: 'A grain legume after a cereal breaks cereal pest and disease cycles and fixes its own nitrogen; legume ↔ cereal alternation is favored in the ranking.', sources: ['R32', 'R31'], reviewed: false },
+  { id: 'G-R9', kind: 'benefit', text: 'Alternating crop groups (cereal ↔ legume ↔ oilseed ↔ tuber), including across the boundary from last season, ranks above same-group sequences. The best-ranked option is never a same-crop or same-family succession while any feasible alternation exists.', sources: ['R31', 'R32'], reviewed: false },
 ];
 
 export const SENEGAL: RegionPack = {

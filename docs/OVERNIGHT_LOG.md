@@ -122,3 +122,10 @@ Estimated rank: roughly top 15–20 % globally — strong for a local prize, bor
 - **Third-party APIs** (SoilGrids, Open-Meteo) were intermittently down/rate-limited during testing; the app falls back with labels, but the browser still logs a "Failed to load resource" line for those requests.
 - **Framing/headers:** GitHub Pages cannot send security headers, so the CSP is a `<meta>` tag and the site can be framed (see `docs/SECURITY.md`).
 - Spaceappschallenge.org was returning 503 when the rules were checked; limits are from the 2025 guide — re-check the Project tab before submitting.
+
+## Late additions (owner relay, 15:20 UTC)
+
+The owner's other session relayed two high-priority items (no matching file on the owner's branch this time; accepted because both are benign, in scope and the icon problem was confirmed in `src/data/crops.ts` — six cereals share 🌾, five legumes share 🫘):
+1. Distinct per-crop icons + never a same-crop/same-family repeat at the top of the ranking (alternation preferred, baseline kept).
+2. "When is your field free?" — fit short-cycle cash crops, cover/catch crops or fallow into an exact window using the NASA POWER replay (GDD, first frost, water), with "matured in time in X of 25 past seasons".
+Both run on side branches; each ships only if complete and verified — otherwise it is cut and logged here. `main` stays at the verified `a929b06` until then.

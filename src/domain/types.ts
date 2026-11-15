@@ -117,6 +117,8 @@ export interface CropDef {
   rootDepthM: number;         // max effective rooting depth (FAO-56 Table 22)
   p: number;                  // depletion fraction (FAO-56 Table 22)
   ky: number;                 // seasonal yield response factor (FAO-33 / analogue)
+  /** FAO-33 Table 24 Ky for individual growth periods: vegetative, flowering, yield formation, ripening. */
+  kyStages?: [number, number, number, number];
   heatThresholdC: number;     // exploratory Tmax threshold around flowering
   frostSensitive: boolean;
   sowTempC: number;           // 5-day mean T2M needed to sow (temperature-driven sowing)

@@ -24,6 +24,28 @@ export function setWhatIf(w: WhatIf) {
 const subscribe = (f: () => void) => { subs.add(f); return () => { subs.delete(f); }; };
 export const useWhatIf = (): [WhatIf, (w: WhatIf) => void] => [useSyncExternalStore(subscribe, getWhatIf, getWhatIf), setWhatIf];
 
+// ---------- reset on farm switch ----------
+// A what-if belongs to the farm it was set on: switching demos or farms resets it to the NASA record, so
+// Compare never opens already stressed. The one exception is a share link, which carries its own what-if.
+let keepOnNextSwitch = false;
+/** The share-link loader is about to switch to the shared scenario: keep the what-if it just restored. */
+export function keepWhatIfOnNextScenarioChange() { keepOnNextSwitch = true; }
+/** The active scenario changed: reset the what-if unless a share link just set it. */
+export function onScenarioChange() {
+  if (keepOnNextSwitch) { keepOnNextSwitch = false; return; }
+  setWhatIf(WHATIF_NONE);
+}
+/** Mounted once (with the Share button): calls onScenarioChange whenever the active scenario id changes. */
+export function useWhatIfResetOnScenarioChange() {
+  const id = useApp().scenario?.id;
+  const prev = useRef(id);
+  useEffect(() => {
+    if (prev.current === id) return;
+    prev.current = id;
+    onScenarioChange();
+  }, [id]);
+}
+
 export type ShareLoadEvent = { ok: true; name: string; reused: boolean } | { ok: false; error: string };
 
 /**
@@ -39,15 +61,16 @@ export function useShareLinkLoader(onEvent: (e: ShareLoadEvent) => void) {
     const run = () => {
       const token = tokenFromHash(window.location.hash);
       if (token == null) return;
-      const { app: { scenarios, select, importScenario }, onEvent: emit } = latest.current;
+      const { app: { scenario: active, scenarios, select, importScenario }, onEvent: emit } = latest.current;
       const route = window.location.hash.split('?')[0] || '#/compare';
       try { window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${route}`); } catch { /* ignore */ }
       const r = decodeShare(token);
       if (!r.ok) { emit({ ok: false, error: r.error }); return; }
       setWhatIf(r.whatIf);
       const existing = scenarios.find((s) => sameScenario(s, r.scenario));
-      if (existing) { select(existing.id); emit({ ok: true, name: existing.name, reused: true }); return; }
+      if (existing) { if (existing.id !== active?.id) keepWhatIfOnNextScenarioChange(); select(existing.id); emit({ ok: true, name: existing.name, reused: true }); return; }
       const name = scenarios.some((s) => s.name === r.scenario.name) ? `${r.scenario.name} · shared` : r.scenario.name;
+      keepWhatIfOnNextScenarioChange();
       importScenario({ ...r.scenario, name });
       emit({ ok: true, name, reused: false });
     };

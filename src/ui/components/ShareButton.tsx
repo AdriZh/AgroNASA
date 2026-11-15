@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, Link2, X } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
-import { getWhatIf, shareUrl, useShareLinkLoader, type ShareLoadEvent } from '../../state/share';
+import { getWhatIf, shareUrl, useShareLinkLoader, useWhatIfResetOnScenarioChange, type ShareLoadEvent } from '../../state/share';
 
 type Toast = { tone: 'ok' | 'warn'; text: string; url?: string };
 
@@ -33,6 +33,7 @@ export function ShareButton() {
   }, []);
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
+  useWhatIfResetOnScenarioChange();
   useShareLinkLoader(useCallback((e: ShareLoadEvent) => {
     if (e.ok) show({ tone: 'ok', text: `Shared scenario opened: ${e.name}` }, 4000);
     else show({ tone: 'warn', text: `This share link couldn’t be read (${e.error}). Your current scenario is unchanged.` }, 7000);

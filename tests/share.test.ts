@@ -1,7 +1,7 @@
 // Shareable scenario links: encode → decode roundtrip, size budget and malformed links.
 import { describe, expect, it } from 'vitest';
 import type { FarmScenario } from '../src/domain/types';
-import { decodeShare, encodeShare, sameScenario, shareUrl, SHARE_MAX_URL, tokenFromHash } from '../src/state/share';
+import { decodeShare, encodeShare, getWhatIf, keepWhatIfOnNextScenarioChange, onScenarioChange, sameScenario, setWhatIf, shareUrl, SHARE_MAX_URL, tokenFromHash } from '../src/state/share';
 import { DEMO_KAZAKHSTAN, DEMO_SENEGAL } from '../src/state/demo';
 
 const BASE = 'https://example.org/field-shift/';
@@ -107,5 +107,19 @@ describe('share links', () => {
     expect(tokenFromHash('#/compare?s=abc_-')).toBe('abc_-');
     expect(tokenFromHash('#/compare')).toBeNull();
     expect(tokenFromHash('')).toBeNull();
+  });
+});
+
+describe('what-if on farm switch', () => {
+  it('resets to the NASA record on a farm switch, but keeps a what-if restored from a share link', () => {
+    setWhatIf({ rainScale: 0.85, dT: 2 });
+    onScenarioChange();                       // ordinary switch (another demo or farm)
+    expect(getWhatIf()).toEqual({ rainScale: 1, dT: 0 });
+    setWhatIf({ rainScale: 0.9, dT: 1 });     // the share loader restores the link's what-if…
+    keepWhatIfOnNextScenarioChange();         // …then switches to the shared scenario
+    onScenarioChange();
+    expect(getWhatIf()).toEqual({ rainScale: 0.9, dT: 1 });
+    onScenarioChange();                       // the exception applies once only
+    expect(getWhatIf()).toEqual({ rainScale: 1, dT: 0 });
   });
 });

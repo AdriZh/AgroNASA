@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CropIcon } from '../components/CropIcon';
 import type { Route } from '../../App';
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, FlaskConical, Info, Ruler, Satellite, Search } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
@@ -188,7 +189,7 @@ function PastTab() {
       {reviews.map((r) => (
         <div key={r.season.id} className="card">
           <div className="card-head">
-            <div><h3><span className="mono" style={{ fontSize: 14, marginRight: 8 }}>{r.season.year}</span>{CROPS[r.season.cropId]?.emoji} {cropName(r.season.cropId)}</h3><span className="mini">{fmtDate(r.start)} → {fmtDate(r.end)}{r.datesEstimated ? ' (estimated)' : r.season.approximateDate ? ' (approximate)' : ''}{r.season.outcome ? ` · reported outcome: ${r.season.outcome}` : ''}</span></div>
+            <div><h3><span className="mono" style={{ fontSize: 14, marginRight: 8 }}>{r.season.year}</span><span className="crop-name"><CropIcon id={r.season.cropId} size={20} />{cropName(r.season.cropId)}</span></h3><span className="mini">{fmtDate(r.start)} → {fmtDate(r.end)}{r.datesEstimated ? ' (estimated)' : r.season.approximateDate ? ' (approximate)' : ''}{r.season.outcome ? ` · reported outcome: ${r.season.outcome}` : ''}</span></div>
             <div className="chips"><Tag t="nasa" /><Tag t="modeled" /></div>
           </div>
           <div className="cols kpi-strip" style={{ marginBottom: 16 }}>

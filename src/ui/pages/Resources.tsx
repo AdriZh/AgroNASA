@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CropIcon } from '../components/CropIcon';
 import type { Route } from '../../App';
 import { ArrowLeft, ArrowRight, Plus, RotateCcw, Tags, Target, Tractor, Trash2, Wallet } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
@@ -88,12 +89,12 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
           <div className="grid g2 group">
             <div>
               <h4>Seed I cannot get</h4>
-              {sellable.map((c) => <div key={c}><label className="check"><input type="checkbox" checked={sc.unavailableCrops.includes(c)} onChange={() => update((s) => ({ ...s, unavailableCrops: toggle(s.unavailableCrops, c) }))} /> {CROPS[c].emoji} {cropName(c)}</label></div>)}
+              {sellable.map((c) => <div key={c}><label className="check"><input type="checkbox" checked={sc.unavailableCrops.includes(c)} onChange={() => update((s) => ({ ...s, unavailableCrops: toggle(s.unavailableCrops, c) }))} /> <CropIcon id={c} size={18} /> {cropName(c)}</label></div>)}
             </div>
             <div>
               <h4>Crops I can sell or use</h4>
               <p className="mini">Leave all unticked for no restriction.</p>
-              {sellable.map((c) => <div key={c}><label className="check"><input type="checkbox" checked={sc.marketCrops.includes(c)} onChange={() => update((s) => ({ ...s, marketCrops: toggle(s.marketCrops, c) }))} /> {CROPS[c].emoji} {cropName(c)}</label></div>)}
+              {sellable.map((c) => <div key={c}><label className="check"><input type="checkbox" checked={sc.marketCrops.includes(c)} onChange={() => update((s) => ({ ...s, marketCrops: toggle(s.marketCrops, c) }))} /> <CropIcon id={c} size={18} /> {cropName(c)}</label></div>)}
             </div>
           </div>
         </section>
@@ -133,7 +134,7 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
               <>Clearing a field marks the price missing: the plan then shows “Budget not verified”, never zero.</>,
             ]}>Input costs are synthetic demo prices; sale prices come from FAOSTAT.</Disclaimer>
             <div style={{ margin: '16px 0' }}>
-              <Seg label="Crop" value={active} options={priceCrops.map((c) => ({ v: c, label: `${CROPS[c].emoji} ${cropName(c)}` }))} onChange={setCrop} />
+              <Seg label="Crop" value={active} options={priceCrops.map((c) => ({ v: c, label: <span className="crop-name"><CropIcon id={c} size={16} />{cropName(c)}</span> }))} onChange={setCrop} />
             </div>
             <div className="table-wrap sticky-first">
               <table>

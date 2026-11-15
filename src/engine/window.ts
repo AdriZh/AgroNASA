@@ -162,7 +162,7 @@ function summarize(c: CropDef, years: WindowYear[], w: WindowSpec): WindowFit {
     : !worst
       ? `Ready by ${fmtMMDD(medianMaturity)} in a typical year; no frost or severe water stress in the record.`
       : binding === 'frost'
-        ? `First autumn frost (≤ ${killTempC(c)} °C) before maturity in ${of(frostKills, n)} years.`
+        ? `First autumn frost (≤ ${String(killTempC(c)).replace("-", "−")} °C) before maturity in ${of(frostKills, n)} years.`
         : binding === 'window'
           ? `Not ready before ${fmtMMDD(w.end)} in ${of(tooShort, n)} years: too few warm days.`
           : binding === 'cold'

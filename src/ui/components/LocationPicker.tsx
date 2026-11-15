@@ -50,13 +50,13 @@ export function LocationSearch({ onPick, compact }: { onPick: (p: Place) => void
     <div>
       <div className="row" style={{ flexWrap: compact ? 'wrap' : 'nowrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--ink-3)' }} />
+          <Search size={16} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--text-muted)' }} />
           <input className="input" style={{ paddingLeft: 36 }} placeholder="Search any village, district or region — or type lat, lon" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && search()} aria-label="Search location" />
         </div>
         <button className="btn primary" onClick={search} disabled={busy}>{busy ? <Loader2 size={15} className="spin" /> : <Search size={15} />} Search</button>
         <button className="btn" onClick={gps} title="Use device GPS"><Crosshair size={15} /> GPS</button>
       </div>
-      {err && <p className="mini" style={{ color: 'var(--amber)', margin: '8px 0 0' }}>{err}</p>}
+      {err && <p className="mini" style={{ color: 'var(--warn)', margin: '8px 0 0' }}>{err}</p>}
       {hits.length > 0 && (
         <div className="stack" style={{ marginTop: 10 }}>
           {hits.map((h) => (

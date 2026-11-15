@@ -72,18 +72,18 @@ export function Overview({ go }: { go: (r: Route) => void }) {
               <div className="grid g3" style={{ gap: 12 }}>
                 <div className="card flat" style={{ padding: 16 }}>
                   <div className="kpi"><span className="l">Usual plan</span></div>
-                  <div className="seq" style={{ fontSize: '.95rem', margin: '8px 0' }}>{cropEmoji(engine.baseline.crops[0])} {cropName(engine.baseline.crops[0])} <ArrowRight size={14} color="var(--ink-3)" /> {cropEmoji(engine.baseline.crops[1])} {cropName(engine.baseline.crops[1])}</div>
+                  <div className="seq" style={{ fontSize: '.95rem', margin: '8px 0' }}>{cropEmoji(engine.baseline.crops[0])} {cropName(engine.baseline.crops[0])} <ArrowRight size={14} color="var(--text-muted)" /> {cropEmoji(engine.baseline.crops[1])} {cropName(engine.baseline.crops[1])}</div>
                   <span className={`badge ${engine.baseline.budget.status === 'affordable' ? 'ok' : 'bad'}`}>{engine.baseline.budget.status === 'affordable' ? `Fits · +${fmtMoney(engine.baseline.budget.headroom, cur)}` : engine.baseline.budget.status === 'unaffordable' ? `Over by ${fmtMoney(-engine.baseline.budget.headroom, cur)}` : engine.baseline.budget.status}</span>
                 </div>
                 <div className="card flat" style={{ padding: 16, background: 'linear-gradient(180deg,#ecfdf5,#fff)', borderColor: '#a7f3d0' }}>
                   <div className="kpi"><span className="l" style={{ color: 'var(--brand)' }}>Best feasible option</span></div>
                   {best ? <>
-                    <div className="seq" style={{ fontSize: '.95rem', margin: '8px 0' }}>{cropEmoji(best.crops[0])} {cropName(best.crops[0])} <ArrowRight size={14} color="var(--ink-3)" /> {cropEmoji(best.crops[1])} {cropName(best.crops[1])}</div>
+                    <div className="seq" style={{ fontSize: '.95rem', margin: '8px 0' }}>{cropEmoji(best.crops[0])} {cropName(best.crops[0])} <ArrowRight size={14} color="var(--text-muted)" /> {cropEmoji(best.crops[1])} {cropName(best.crops[1])}</div>
                     <span className="badge ok">Fits · +{fmtMoney(best.budget.headroom, cur)}</span>
                   </> : <p className="mini" style={{ marginTop: 8 }}>No plan fits the stated constraints — see Compare for the smallest change that would help.</p>}
                 </div>
                 <div className="card flat" style={{ padding: 16 }}>
-                  <div className="kpi"><span className="l">Severe-stress risk</span><span className="v">{pct(engine.baseline.outcome.pSevereAny)} <span style={{ color: 'var(--ink-3)', fontSize: '1rem' }}>→</span> <span style={{ color: 'var(--brand)' }}>{best ? pct(best.outcome.pSevereAny) : '—'}</span></span><span className="s">share of replayed past season pairs below 50% water-limited yield</span></div>
+                  <div className="kpi"><span className="l">Severe-stress risk</span><span className="v">{pct(engine.baseline.outcome.pSevereAny)} <span style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>→</span> <span style={{ color: 'var(--brand)' }}>{best ? pct(best.outcome.pSevereAny) : '—'}</span></span><span className="s">share of replayed past season pairs below 50% water-limited yield</span></div>
                 </div>
               </div>
               <div className="row mini" style={{ marginTop: 14, gap: 16 }}>
@@ -139,7 +139,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
           ] as const).map(([i, t, d]) => <div key={t} className="source-tile"><span className="ico">{i}</span><div><b>{t}</b><div className="mini">{d}</div></div></div>)}
         </div>
         <div className="card">
-          <div className="eyebrow" style={{ color: 'var(--soil)' }}><NotebookPen size={13} /> Ground truth</div>
+          <div className="eyebrow" style={{ color: 'var(--text-muted)' }}><NotebookPen size={13} /> Ground truth</div>
           <h3 style={{ marginBottom: 10 }}>From the farmer and the market</h3>
           {([
             [<NotebookPen size={18} />, 'Farmer records', 'Crop sequence, dates, outcomes, fertilizer product/quantity/area/cost — stored only on this device.'],

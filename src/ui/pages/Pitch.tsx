@@ -221,7 +221,7 @@ function PlanTile({ p, cur, d }: { p: PlanResult; cur: string; d: number }) {
   return (
     <motion.div {...up(d)} className="glass" style={{ padding: 18, border: best ? '2px solid #34d399' : p.isBaseline ? '1px dashed rgba(255,255,255,.25)' : undefined, boxShadow: best ? '0 0 40px rgba(16,185,129,.25)' : undefined }}>
       <div className="muted" style={{ fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.1em', fontWeight: 800, color: best ? '#6ee7b7' : undefined }}>{p.isBaseline ? 'Usual plan' : `${p.label}${best ? ' · best fit' : ''}`}</div>
-      <div style={{ fontWeight: 800, fontSize: '1.15rem', margin: '8px 0', fontFamily: 'var(--display)' }}>{cropEmoji(p.crops[0])} {cropName(p.crops[0])} → {cropEmoji(p.crops[1])} {cropName(p.crops[1])}</div>
+      <div style={{ fontWeight: 800, fontSize: '1.15rem', margin: '8px 0', fontFamily: 'var(--font)' }}>{cropEmoji(p.crops[0])} {cropName(p.crops[0])} → {cropEmoji(p.crops[1])} {cropName(p.crops[1])}</div>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, fontWeight: 800, fontSize: '.85rem', background: ok ? 'rgba(52,211,153,.16)' : 'rgba(248,113,113,.16)', color: ok ? '#6ee7b7' : '#fca5a5' }}>{ok ? <Check size={14} /> : <X size={14} />}{ok ? `Fits · +${fmtMoney(p.budget.headroom, cur)}` : p.budget.status === 'unaffordable' ? `Over by ${fmtMoney(-p.budget.headroom, cur)}` : p.budget.status}</span>
       <div style={{ marginTop: 12, fontSize: '.85rem' }} className="muted">Cash {fmtMoney(p.budget.totalCash, cur)}</div>
       <div style={{ marginTop: 8 }}>
@@ -249,7 +249,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     { id: 'title', kicker: 'NASA Space Apps 2026 · Field Shift challenge', icon: <BadgeCheck size={14} />, body: (
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.15fr .85fr', gap: 30, alignItems: 'center' }}>
         <div>
-          <motion.div {...up(0.1)} style={{ display: 'flex', alignItems: 'center', gap: 16 }}><LogoMark size={64} /><span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: '2rem' }}>Field Shift</span></motion.div>
+          <motion.div {...up(0.1)} style={{ display: 'flex', alignItems: 'center', gap: 16 }}><LogoMark size={64} /><span style={{ fontFamily: 'var(--font)', fontWeight: 800, fontSize: '2rem' }}>Field Shift</span></motion.div>
           <motion.h1 {...up(0.25)} style={{ margin: '22px 0 14px', lineHeight: 1.02 }}>Crop plans farmers can <G>afford</G>, informed by <G>25 years of NASA Earth data</G>.</motion.h1>
           <motion.p {...up(0.45)} style={{ fontSize: '1.15rem', maxWidth: 620 }}>We combine satellite climate history with what the farmer already knows — past crops, soil, budget and constraints — and explain every trade-off.</motion.p>
           <motion.div {...up(0.65)} className="row" style={{ marginTop: 18 }}>{['Informs, never dictates', 'Works offline', 'Any location on Earth'].map((x) => <span key={x} style={{ padding: '6px 12px', borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', fontSize: '.85rem', color: '#d6e0ee' }}>{x}</span>)}</motion.div>
@@ -308,7 +308,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
           ] as const).map(([ic, t, d], k, arr) => (
             <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
               <Glass d={0.4 + k * 0.2} style={{ flex: 1, height: '100%', padding: 20 }}>
-                <div className="spread"><span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: '2rem', color: '#6ee7b7' }}>{k + 1}</span><span style={{ color: '#93c5fd' }}>{ic}</span></div>
+                <div className="spread"><span style={{ fontFamily: 'var(--font)', fontWeight: 800, fontSize: '2rem', color: '#6ee7b7' }}>{k + 1}</span><span style={{ color: '#93c5fd' }}>{ic}</span></div>
                 <h3 style={{ marginTop: 10 }}>{t}</h3><p style={{ margin: 0, fontSize: '.92rem' }}>{d}</p>
               </Glass>
               {k < arr.length - 1 && <motion.div {...fade(0.6 + k * 0.2)} style={{ color: '#5d6c86' }}><ArrowRight size={22} /></motion.div>}

@@ -33,7 +33,7 @@ function PlanCard({ p, cur, onWhy, selected, priority, isBest, prices }: { p: Pl
       </div>
       <div className="split">
         <div><div className="t">Cash cost (2 seasons)</div><div className="v">{fmtMoney(p.budget.totalCash, cur)}</div></div>
-        <div><div className="t">Headroom</div><div className="v" style={{ color: p.budget.headroom >= 0 ? 'var(--brand)' : 'var(--red)' }}>{p.budget.headroom >= 0 ? '+' : ''}{fmtMoney(p.budget.headroom, cur)}</div></div>
+        <div><div className="t">Headroom</div><div className="v" style={{ color: p.budget.headroom >= 0 ? 'var(--brand)' : 'var(--bad)' }}>{p.budget.headroom >= 0 ? '+' : ''}{fmtMoney(p.budget.headroom, cur)}</div></div>
         <div><div className="t">Due by first sowing</div><div className="v">{fmtMoney(p.budget.upfront, cur)}</div></div>
         <div><div className="t">Season 1 / 2</div><div className="v" style={{ fontSize: '.9rem' }}>{fmtMoney(p.budget.bySeason[0], cur)} / {fmtMoney(p.budget.bySeason[1], cur)}</div></div>
       </div>
@@ -49,7 +49,7 @@ function PlanCard({ p, cur, onWhy, selected, priority, isBest, prices }: { p: Pl
           );
         })}
         {p.outcome.net && <div className="mini" style={{ marginTop: 6 }}>Modeled net after cash costs: <b>{fmtMoney(p.outcome.net.median, cur)}</b> (bad year {fmtMoney(p.outcome.net.p20, cur)})</div>}
-        {prices && <div className="mini" style={{ marginTop: 4, color: 'var(--ink-3)' }}>Sale prices: {p.crops.filter((c) => c !== 'fallow').map((c) => `${cropName(c)} ${fmtMoney(prices[c]?.perT, cur)}/t (${prices[c]?.source === 'faostat-country' ? 'FAOSTAT' : prices[c]?.source === 'faostat-median' ? 'FAOSTAT median' : prices[c]?.source === 'farmer' ? 'yours' : 'placeholder'})`).join(' · ')}</div>}
+        {prices && <div className="mini" style={{ marginTop: 4, color: 'var(--text-muted)' }}>Sale prices: {p.crops.filter((c) => c !== 'fallow').map((c) => `${cropName(c)} ${fmtMoney(prices[c]?.perT, cur)}/t (${prices[c]?.source === 'faostat-country' ? 'FAOSTAT' : prices[c]?.source === 'faostat-median' ? 'FAOSTAT median' : prices[c]?.source === 'farmer' ? 'yours' : 'placeholder'})`).join(' · ')}</div>}
       </div>
       <div>
         <div className="spread mini"><b>Severe water-stress risk</b><span>{pct(p.outcome.pSevereAny)} of {p.outcome.pairs} replayed season pairs</span></div>

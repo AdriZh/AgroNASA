@@ -24,7 +24,7 @@ export function CropScreenPanel({ engine }: { engine: EngineOutput }) {
       <div className="body">
         <p className="mini crop-screen-intro">
           Each crop of the {engine.pack.short} calendar is replayed in the {years} NASA POWER seasons of this grid cell: season-mean temperature against its range,
-          water-limited yield (FAO-56 water balance, FAO-66 Ky) and whether it matures before the first autumn frost (Tmin ≤ 0 °C).{' '}
+          water-limited yield (FAO-56 water balance, FAO-66 Ky) and whether it matures before the first killing frost (Tmin ≤ 0 °C; −2 °C for frost-tolerant crops).{' '}
           {engine.screen.filtered ? 'Crops marked ✗ are removed from the candidates, so they never appear in a plan.' : 'Rotations with a crop marked ✗ are blocked and listed under Excluded rotations.'}{' '}
           “Commonly grown” is national context from FAOSTAT harvested area (<Ref id="R42" />), not a verdict on this field.
         </p>

@@ -26,7 +26,7 @@ It replays 25 years (2001–2025) of daily **NASA POWER** weather for the farmer
 
 ## Team
 
-ayu.ogura, zhamilya.toleukhan, fernando.stoll, francisco.correia, Iuliia Zakhartsova, Ruslan Kan
+Ayu Ogura, Zhamilya Toleukhan, Fernando Stoll, Francisco Correia, Iuliia Zakhartsova, Ruslan Kan
 
 ## AI disclosure (if the form asks)
 

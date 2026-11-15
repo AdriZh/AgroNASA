@@ -21,7 +21,8 @@ It fuses **25 years of NASA Earth observations** with **what the farmer knows** 
 | **4 · Evidence** | NASA climate record (monthly climatology, ET₀, season totals, dry runs, heat days, provenance), **this season so far** vs history + onset + NASA soil wetness, **16-day forecast** & planting-readiness, **NASA satellite layers** (MODIS NDVI, SMAP L4 soil moisture, GPM IMERG, MODIS LST, true colour, with date & −1-year compare), **past-season review** (descriptive, never causal), fertilizer nutrient timeline. |
 | **Report** | Printable / PDF plan summary with sources; export, import and delete-all-data controls. |
 | **Methods** | Pipeline, formulas, reason codes, rule packs (with review status), crop parameters, full evidence register, privacy & AI disclosure. |
-| **▶ Pitch** | Built-in 7-slide presentation using live data from the selected farm. See [`docs/PITCH.md`](docs/PITCH.md). |
+| **Presentation** | Animated 12-slide explainer deck (problem, cash gap, users, solution, data fusion, sowing science, soil-water bucket, decision funnel, live result, validity, impact) with a **7-slide submission cut** and one-click PDF export. Live data from the selected farm. |
+| **30-second video** | Narrated 1080p MP4 (`public/media/field-shift-30s.mp4`) with original synthesized soundtrack and burned-in captions, plus a live animated version. See [`docs/PITCH.md`](docs/PITCH.md). |
 
 ### Data — NASA and non-NASA
 
@@ -76,6 +77,15 @@ npm run build
 `.github/workflows/deploy.yml` tests, builds and deploys on every push to `main`. One-time setup: repository **Settings → Pages → Source: GitHub Actions**. The judging link must open without login — check it in a private window.
 
 ---
+
+## Presentation & video
+
+* **Presentation**: sidebar → *Presentation* (or `#/pitch`). Arrow keys / space to advance, `f` for full screen, Esc to exit. Toggle *Full story · 12* or *Submission cut · 7*; **PDF** prints one slide per page.
+* **Video**: sidebar → *30-second video* (or `#/video`), or open `public/media/field-shift-30s.mp4` directly (1920×1080, 30 fps, 30.0 s, AAC at −14 LUFS).
+  * Narration: Kokoro-82M neural TTS (voice `af_heart`, Apache-2.0), script in `src/ui/video/timing.json`.
+  * Music & sound design: synthesized from scratch by `scripts/make-soundtrack.py` (no samples), ducked under the voice.
+  * Visuals: deterministic React/SVG scenes (`src/ui/video/Scenes.tsx`) using real NASA POWER values and real engine output for the Senegal demo; rendered frame-by-frame.
+  * Re-render: `npm run build && npm run preview`, then `npm run video:frames`, `npm run video:audio` (after `scripts/make-voiceover.py`), `npm run video:encode`. Requires Playwright, ffmpeg and Python (numpy, scipy, soundfile).
 
 ## Verification
 

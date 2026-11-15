@@ -1,20 +1,21 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Route } from '../../App';
+import { ArrowDown, ArrowLeft, ArrowRight, Ban, CheckCircle2, Clock, CloudSunRain, Coins, HelpCircle, XCircle } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
 import type { PlanResult } from '../../engine/plan';
 import { CROPS, cropEmoji, cropName } from '../../data/crops';
 import { fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDayMonth, fmtDate } from '../../domain/dates';
 import { CashTimeline, CostChart, RangeBar, ReplayChart } from '../components/charts';
-import { Callout, Loading, Meter, pct, ReasonList, Tag } from '../components/common';
+import { CardTitle, Callout, Loading, Meter, pct, ReasonList, Tag } from '../components/common';
 
-const STATUS: Record<string, { cls: string; t: string }> = {
-  affordable: { cls: 'ok', t: '✓ Affordable' }, unaffordable: { cls: 'bad', t: '✕ Over budget' }, unverified: { cls: 'warn', t: '? Budget not verified' }, timing: { cls: 'bad', t: '⏱ Cash-timing gap' },
+const STATUS: Record<string, { cls: string; t: string; i: ReactNode }> = {
+  affordable: { cls: 'ok', t: 'Affordable', i: <CheckCircle2 /> }, unaffordable: { cls: 'bad', t: 'Over budget', i: <XCircle /> }, unverified: { cls: 'warn', t: 'Budget not verified', i: <HelpCircle /> }, timing: { cls: 'bad', t: 'Cash-timing gap', i: <Clock /> },
 };
 const PRIORITY_LABEL = { cost: 'lowest cost', climate: 'lowest climate exposure', continuity: 'continuity', return: 'modeled return' };
 
 function Seq({ crops }: { crops: [string, string] }) {
-  return <div className="seq"><span className="crop">{cropEmoji(crops[0])} {cropName(crops[0])}</span><span className="arrow">→</span><span className="crop">{cropEmoji(crops[1])} {cropName(crops[1])}</span></div>;
+  return <div className="seq"><span className="crop">{cropEmoji(crops[0])} {cropName(crops[0])}</span><span className="arrow"><ArrowRight size={16} /></span><span className="crop">{cropEmoji(crops[1])} {cropName(crops[1])}</span></div>;
 }
 
 function PlanCard({ p, cur, onWhy, selected, priority, isBest }: { p: PlanResult; cur: string; onWhy: () => void; selected: boolean; priority: string; isBest: boolean }) {
@@ -22,7 +23,7 @@ function PlanCard({ p, cur, onWhy, selected, priority, isBest }: { p: PlanResult
   return (
     <div className={`card plan ${p.isBaseline ? 'baseline' : ''} ${isBest ? 'best' : ''}`} style={selected ? { outline: '3px solid #9cc3ff' } : undefined}>
       <span className="ribbon">{p.isBaseline ? 'Your usual plan' : `${p.label}${isBest ? ` · best for ${PRIORITY_LABEL[priority as keyof typeof PRIORITY_LABEL]}` : ''}`}</span>
-      <div className="spread" style={{ marginTop: 6 }}><Seq crops={p.crops} /><span className={`badge ${st.cls}`}>{st.t}</span></div>
+      <div className="spread" style={{ marginTop: 6 }}><Seq crops={p.crops} /><span className={`badge ${st.cls}`}>{st.i}{st.t}</span></div>
       <div className="mini">
         {p.seasons.map((s) => (
           <div key={s.season}>
@@ -54,7 +55,7 @@ function PlanCard({ p, cur, onWhy, selected, priority, isBest }: { p: PlanResult
         <Meter value={p.outcome.pSevereAny} />
       </div>
       <ReasonList reasons={p.reasons} max={4} />
-      <button className="btn sm" onClick={onWhy}>{selected ? 'Showing details ↓' : 'See why →'}</button>
+      <button className="btn sm" onClick={onWhy}>{selected ? <>Showing details <ArrowDown size={14} /></> : <>See why <ArrowRight size={14} /></>}</button>
     </div>
   );
 }
@@ -77,7 +78,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
           <h1>Compare two-season plans</h1>
           <p>{engine.pack.name}. {engine.areaHa.toFixed(2)} ha · {sc.firstSeasonYear}–{sc.firstSeasonYear + 1} · spendable {fmtMoney(engine.baseline.budget.cap, cur)}{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, cur)} confirmed inflows` : ''}. Ranked by <b>{PRIORITY_LABEL[sc.priority]}</b>.</p>
         </div>
-        <div className="row"><button className="btn" onClick={() => go('resources')}>← Edit resources</button><button className="btn primary" onClick={() => go('evidence')}>Review evidence →</button></div>
+        <div className="row"><button className="btn" onClick={() => go('resources')}><ArrowLeft size={16} /> Edit resources</button><button className="btn primary" onClick={() => go('evidence')}>Review evidence <ArrowRight size={16} /></button></div>
       </div>
 
       <Callout tone="info"><ul className="notes">{engine.notes.map((n, i) => <li key={i}>{n.text}</li>)}</ul></Callout>
@@ -92,11 +93,11 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
 
       <div className="grid g2 section">
         <div className="card">
-          <div className="card-head"><h3>💰 Cash cost by category vs spendable budget</h3><Tag t="synthetic">prices: {Object.keys(sc.priceOverrides).length ? 'partly yours' : 'synthetic'}</Tag></div>
+          <div className="card-head"><CardTitle icon={<Coins size={17} />} tone="amber">Cash cost vs spendable budget</CardTitle><Tag t="synthetic">prices: {Object.keys(sc.priceOverrides).length ? 'partly yours' : 'synthetic'}</Tag></div>
           <CostChart plans={plans} cap={engine.baseline.budget.cap + engine.baseline.budget.inflowsTotal} currency={cur} />
         </div>
         <div className="card">
-          <div className="card-head"><h3>🌦️ Water-limited yield by crop at this location</h3><Tag t="nasa" /><Tag t="modeled" /></div>
+          <div className="card-head"><CardTitle icon={<CloudSunRain size={17} />} tone="sky">Water-limited yield by crop here</CardTitle><Tag t="nasa" /><Tag t="modeled" /></div>
           <p className="mini">FAO-56 daily soil-water balance replayed over every complete NASA POWER season, sown on that year’s detected date. Dot = median, bar = 20th–80th percentile, as % of attainable yield.</p>
           <div className="table-wrap">
             <table>
@@ -163,7 +164,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
       </div>
 
       <details className="card section">
-        <summary>✕ Excluded rotations ({engine.excluded.length}) — and the exact reason for each</summary>
+        <summary><span className="ic red"><Ban size={17} /></span>Excluded rotations ({engine.excluded.length}) — and the exact reason for each</summary>
         <div className="table-wrap" style={{ marginTop: 10 }}>
           <table>
             <thead><tr><th>Rotation</th><th>Cash cost</th><th>Blocking reasons</th></tr></thead>

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Route } from '../../App';
+import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CloudSun, FlaskConical, Globe2, History, Info, LineChart, Ruler, Satellite, Search } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
 import { CROPS, cropName } from '../../data/crops';
 import { addDays, diffDays, fmtDate, fmtDayMonth, todayISO } from '../../domain/dates';
@@ -17,9 +18,9 @@ export function seasonEndOf(e: EngineOutput): string {
 }
 
 type Tab = 'climate' | 'season' | 'forecast' | 'satellite' | 'past' | 'fertilizer';
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'climate', label: '🌍 Climate record' }, { id: 'season', label: '📈 This season so far' }, { id: 'forecast', label: '⛅ Next 16 days' },
-  { id: 'satellite', label: '🛰️ Satellite layers' }, { id: 'past', label: '🔍 Past-season review' }, { id: 'fertilizer', label: '🧪 Fertilizer timeline' },
+const TABS: { id: Tab; label: string; i: ReactNode }[] = [
+  { id: 'climate', label: 'Climate record', i: <Globe2 /> }, { id: 'season', label: 'This season so far', i: <LineChart /> }, { id: 'forecast', label: 'Next 16 days', i: <CloudSun /> },
+  { id: 'satellite', label: 'Satellite layers', i: <Satellite /> }, { id: 'past', label: 'Past-season review', i: <History /> }, { id: 'fertilizer', label: 'Fertilizer timeline', i: <FlaskConical /> },
 ];
 
 export function EvidencePage({ go }: { go: (r: Route) => void }) {
@@ -33,9 +34,9 @@ export function EvidencePage({ go }: { go: (r: Route) => void }) {
           <h1>Evidence behind the numbers</h1>
           <p>Observed NASA records, modeled indicators and forecasts are kept separate and labeled. Every chart states its source, grid scale and window.</p>
         </div>
-        <div className="row"><button className="btn" onClick={() => go('compare')}>← Plans</button><button className="btn primary" onClick={() => go('report')}>Export report →</button></div>
+        <div className="row"><button className="btn" onClick={() => go('compare')}><ArrowLeft size={16} /> Plans</button><button className="btn primary" onClick={() => go('report')}>Export report <ArrowRight size={16} /></button></div>
       </div>
-      <div className="tabs" role="tablist">{TABS.map((t) => <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>{t.label}</button>)}</div>
+      <div className="tabs" role="tablist">{TABS.map((t) => <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>{t.i}{t.label}</button>)}</div>
       {!engine || !data.series ? <Loading text="Loading NASA POWER…" /> : (
         <>
           {tab === 'climate' && <ClimateTab />}
@@ -183,7 +184,7 @@ function PastTab() {
             <Kpi label="Modeled water-limited yield" value={r.relYield != null ? `${Math.round(r.relYield * 100)}%` : '—'} sub="of attainable (FAO-56/66)" />
           </div>
           {r.statements.map((st, i) => (
-            <div key={i} className="statement"><span className="k">{st.tone === 'warn' ? '⚠️' : st.tone === 'ok' ? '✅' : st.kind === 'limit' ? '📏' : st.kind === 'fertilizer' ? '🧪' : st.kind === 'check' ? '🔎' : 'ℹ️'}</span><span>{st.text} <span className="refs">{st.refs.slice(0, 2).map((x) => <Ref key={x} id={x} />)}</span></span></div>
+            <div key={i} className="statement"><span className={`k ${st.tone}`}>{st.tone === 'warn' ? <AlertTriangle /> : st.tone === 'ok' ? <CheckCircle2 /> : st.kind === 'limit' ? <Ruler /> : st.kind === 'fertilizer' ? <FlaskConical /> : st.kind === 'check' ? <Search /> : <Info />}</span><span>{st.text} <span className="refs">{st.refs.slice(0, 2).map((x) => <Ref key={x} id={x} />)}</span></span></div>
           ))}
           {r.season.notes && <p className="mini" style={{ marginTop: 6 }}>Farmer note: “{r.season.notes}”</p>}
         </div>

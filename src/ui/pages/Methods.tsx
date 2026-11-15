@@ -1,7 +1,8 @@
+import { Bot, Lock } from 'lucide-react';
 import { PACKS } from '../../data/regionPacks';
 import { CROPS } from '../../data/crops';
 import { SOURCES } from '../../data/sources';
-import { Ref, Tag } from '../components/common';
+import { CardTitle, Ref, Tag } from '../components/common';
 
 const CODES: [string, string][] = [
   ['BUDGET_EXCEEDED', 'Cash cost exceeds funds − reserve + confirmed inflows; shortfall shown.'],
@@ -78,8 +79,8 @@ export function MethodsPage() {
       </div>
 
       <div className="grid g2 section">
-        <div className="card"><h3>🔒 Privacy</h3><p className="mini">Crop history, fertilizer records, prices and budget are stored in this browser (localStorage); public datasets are cached in IndexedDB. Requests to NASA POWER, SoilGrids, Open-Meteo and the map/geocoder contain only coordinates or a place name — providers still see network information. Export, import and delete-all are on the Report page. No account, no tracking.</p></div>
-        <div className="card"><h3>🤖 AI disclosure & limits</h3><p className="mini">AI assistance was used for research synthesis, documents and code. Recommendations are produced by fixed rules and published formulas, not by a language model. Not validated agronomic advice: rule packs await local review; no user tests or field validation are claimed. NASA data is credited; NASA does not endorse this project.</p></div>
+        <div className="card"><CardTitle icon={<Lock size={17} />} tone="sky">Privacy</CardTitle><p className="mini">Crop history, fertilizer records, prices and budget are stored in this browser (localStorage); public datasets are cached in IndexedDB. Requests to NASA POWER, SoilGrids, Open-Meteo and the map/geocoder contain only coordinates or a place name — providers still see network information. Export, import and delete-all are on the Report page. No account, no tracking.</p></div>
+        <div className="card"><CardTitle icon={<Bot size={17} />} tone="violet">AI disclosure & limits</CardTitle><p className="mini">AI assistance was used for research synthesis, documents and code. Recommendations are produced by fixed rules and published formulas, not by a language model. Not validated agronomic advice: rule packs await local review; no user tests or field validation are claimed. NASA data is credited; NASA does not endorse this project.</p></div>
       </div>
     </div>
   );

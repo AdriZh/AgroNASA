@@ -11,10 +11,15 @@
     "test": "vitest run",
     "typecheck": "tsc -b",
     "data": "vite-node scripts/build-demo-data.ts data/raw",
-    "demo:print": "vite-node scripts/print-demo-results.ts"
+    "demo:print": "vite-node scripts/print-demo-results.ts",
+    "video:frames": "node scripts/render-video.cjs http://localhost:4173/ .video/frames 30",
+    "video:audio": "python3 scripts/make-soundtrack.py src/ui/video/timing.json .video/tts .video/mix.wav",
+    "video:encode": "bash scripts/encode-video.sh .video/frames .video/mix.wav public/media"
   },
   "dependencies": {
+    "framer-motion": "^11.11.17",
     "leaflet": "^1.9.4",
+    "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",

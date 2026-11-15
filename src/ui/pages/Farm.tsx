@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Route } from '../../App';
+import { ArrowRight, BookMarked, CalendarDays, Crosshair, FlaskConical, Layers, MapPin, Plus, Shovel, Sprout, Trash2 } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
 import type { CropSeason, FertilizerApplication, SoilTexture } from '../../domain/types';
 import { CROPS, cropName } from '../../data/crops';
@@ -9,7 +10,7 @@ import { geocode, type GeoHit } from '../../weather/forecast';
 import { normalizeApplication, fmtNum } from '../../domain/units';
 import { TEXTURE_LABEL } from '../../soil/soil';
 import { MapView } from '../components/MapView';
-import { Callout, Field, NumInput, Tag, uid } from '../components/common';
+import { CardTitle, Callout, Field, NumInput, Tag, uid } from '../components/common';
 import { powerGridCell } from '../../weather/power';
 
 export function FarmPage({ go }: { go: (r: Route) => void }) {
@@ -59,21 +60,21 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
           <h1>Farm & history</h1>
           <p>Where is the field, what grew there and what was applied? Unknown values are allowed — they stay “unknown” and are never silently turned into zero.</p>
         </div>
-        <button className="btn primary" onClick={() => go('resources')}>Next: Resources →</button>
+        <button className="btn primary" onClick={() => go('resources')}>Next: Resources <ArrowRight size={16} /></button>
       </div>
 
       <div className="grid g-side">
         <div className="card">
-          <div className="card-head"><h3>📍 Field location</h3><Tag t="farmer" /></div>
+          <div className="card-head"><CardTitle icon={<MapPin size={17} />}>Field location</CardTitle><Tag t="farmer" /></div>
           <div className="row" style={{ marginBottom: 10 }}>
             <input className="input" style={{ flex: 1, minWidth: 200 }} placeholder="Search a village, district or region…" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && search()} />
             <button className="btn" onClick={search}>Search</button>
-            <button className="btn" onClick={myLocation} title="Use device GPS">◎ GPS</button>
+            <button className="btn" onClick={myLocation} title="Use device GPS"><Crosshair size={15} /> GPS</button>
           </div>
           {geoErr && <p className="mini" style={{ color: 'var(--amber)' }}>{geoErr}</p>}
           {hits.length > 0 && (
             <div className="stack" style={{ marginBottom: 10 }}>
-              {hits.map((h) => <button key={h.label} className="btn sm" style={{ justifyContent: 'flex-start', textAlign: 'left' }} onClick={() => { setLocation(Number(h.lat.toFixed(4)), Number(h.lon.toFixed(4)), h.label.split(',').slice(0, 3).join(',')); setHits([]); }}>📍 {h.label}</button>)}
+              {hits.map((h) => <button key={h.label} className="btn sm" style={{ justifyContent: 'flex-start', textAlign: 'left' }} onClick={() => { setLocation(Number(h.lat.toFixed(4)), Number(h.lon.toFixed(4)), h.label.split(',').slice(0, 3).join(',')); setHits([]); }}><MapPin size={14} /> {h.label}</button>)}
             </div>
           )}
           <MapView lat={sc.location.lat} lon={sc.location.lon} onPick={(a, b) => setLocation(a, b)} defaultLayer="none" />
@@ -82,7 +83,7 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
 
         <div className="stack">
           <div className="card">
-            <h3>🌾 Field basics</h3>
+            <CardTitle icon={<Sprout size={17} />}>Field basics</CardTitle>
             <div className="grid g2">
               <Field label="Latitude"><NumInput value={sc.location.lat} onChange={(v) => v != null && setLocation(v, sc.location.lon)} /></Field>
               <Field label="Longitude"><NumInput value={sc.location.lon} onChange={(v) => v != null && setLocation(sc.location.lat, v)} /></Field>
@@ -97,7 +98,7 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
             </div>
           </div>
           <div className="card">
-            <div className="card-head"><h3>📘 Regional knowledge pack</h3><Tag t="rule" /></div>
+            <div className="card-head"><CardTitle icon={<BookMarked size={17} />} tone="violet">Regional knowledge pack</CardTitle><Tag t="rule" /></div>
             <select className="input" value={sc.regionPackId ?? ''} onChange={(e) => update((s) => ({ ...s, regionPackId: e.target.value || undefined, currency: (PACKS.find((p) => p.id === e.target.value) ?? detectPack(s.location.lat, s.location.lon)).currency, priceOverrides: {} }))}>
               <option value="">Auto-detect from location ({detectPack(sc.location.lat, sc.location.lon).short})</option>
               {PACKS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -111,8 +112,8 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
 
       <div className="card section">
         <div className="card-head">
-          <div><h3>🗓️ Crop history (last 1–3 seasons)</h3><p className="mini" style={{ margin: 0 }}>Dates drive the past-season review. If you only remember the month, tick “approx.”. Leave dates empty to let NASA rain-onset/temperature rules estimate them.</p></div>
-          <div className="row"><Tag t="farmer" /><button className="btn sm" onClick={addH}>＋ Add season</button></div>
+          <div><CardTitle icon={<CalendarDays size={17} />} tone="sky">Crop history (last 1–3 seasons)</CardTitle><p className="mini" style={{ margin: 0 }}>Dates drive the past-season review. If you only remember the month, tick “approx.”. Leave dates empty to let NASA rain-onset/temperature rules estimate them.</p></div>
+          <div className="row"><Tag t="farmer" /><button className="btn sm" onClick={addH}><Plus size={14} /> Add season</button></div>
         </div>
         {histSorted.length === 0 ? <div className="empty">No history yet. Field Shift still works — the usual plan will default to the first crop in the pack.</div> : (
           <div className="table-wrap">
@@ -130,7 +131,7 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
                     <td style={{ width: 90 }}><NumInput className="sm" allowNull value={h.yieldTHa ?? null} onChange={(v) => setH(h.id, { yieldTHa: v })} /></td>
                     <td><select className="input sm" style={{ minWidth: 100 }} value={h.residueUse ?? 'unknown'} onChange={(e) => setH(h.id, { residueUse: e.target.value as any })}>{['left', 'grazed', 'removed', 'burned', 'unknown'].map((o) => <option key={o}>{o}</option>)}</select></td>
                     <td><input className="input sm" value={h.notes ?? ''} onChange={(e) => setH(h.id, { notes: e.target.value })} /></td>
-                    <td><button className="btn ghost danger" onClick={() => delH(h.id)} aria-label="Delete season">✕</button></td>
+                    <td><button className="btn ghost danger" onClick={() => delH(h.id)} aria-label="Delete season"><Trash2 size={15} /></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -140,10 +141,10 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
       </div>
 
       <details className="card section" open={sc.fertilizer.length > 0}>
-        <summary>🧪 Fertilizer & manure applications ({sc.fertilizer.length}) — optional, detailed record</summary>
+        <summary><span className="ic violet"><FlaskConical size={17} /></span>Fertilizer & manure applications ({sc.fertilizer.length}) — optional, detailed record</summary>
         <div style={{ marginTop: 12 }}>
           <Callout tone="info">Records are historical context. Field Shift converts them to product rate and label nutrients (N, P₂O₅, K₂O) only when units and treated area are known. It never infers present soil N–P–K from purchases and never charges past purchases to a new plan.</Callout>
-          <div className="row" style={{ justifyContent: 'flex-end', margin: '10px 0' }}><button className="btn sm" onClick={addF} disabled={!sc.history.length}>＋ Add application</button></div>
+          <div className="row" style={{ justifyContent: 'flex-end', margin: '10px 0' }}><button className="btn sm" onClick={addF} disabled={!sc.history.length}><Plus size={14} /> Add application</button></div>
           {sc.fertilizer.length > 0 && (
             <div className="table-wrap">
               <table>
@@ -165,7 +166,7 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
                         <td className="num">{fmtNum(nm.rateKgHa, 0)}</td>
                         <td className="num">{fmtNum(nm.nKgHa, 1)}</td>
                         <td className="mini" style={{ minWidth: 200, maxWidth: 260 }}>{nm.flags.join('; ') || '—'}</td>
-                        <td><button className="btn ghost danger" onClick={() => delF(f.id)} aria-label="Delete application">✕</button></td>
+                        <td><button className="btn ghost danger" onClick={() => delF(f.id)} aria-label="Delete application"><Trash2 size={15} /></button></td>
                       </tr>
                     );
                   })}
@@ -178,7 +179,7 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
 
       <div className="grid g2 section">
         <div className="card">
-          <div className="card-head"><h3>🟤 Soil you know</h3><Tag t="farmer" /></div>
+          <div className="card-head"><CardTitle icon={<Shovel size={17} />} tone="soil">Soil you know</CardTitle><Tag t="farmer" /></div>
           <div className="grid g2">
             <Field label="Texture (feel / local name)" hint="Overrides the SoilGrids estimate for the water-balance model.">
               <select className="input" value={sc.soil.texture} onChange={(e) => update((s) => ({ ...s, soil: { ...s.soil, texture: e.target.value as SoilTexture } }))}>
@@ -189,7 +190,7 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
           </div>
         </div>
         <div className="card">
-          <div className="card-head"><h3>🗺️ Soil map at this point</h3><Tag t="soilgrids" /></div>
+          <div className="card-head"><CardTitle icon={<Layers size={17} />} tone="soil">Soil map at this point</CardTitle><Tag t="soilgrids" /></div>
           {data.soilGrid ? (
             <div className="table-wrap"><table><tbody>
               <tr><td>Texture (0–60 cm)</td><td><b>{TEXTURE_LABEL[data.soilGrid.texture]}</b> · sand {fmtNum(data.soilGrid.sandPct, 0)}% · clay {fmtNum(data.soilGrid.clayPct, 0)}%</td></tr>

@@ -1,7 +1,25 @@
 # Field Shift — pitch kit
 
-Built into the app: open **▶ Pitch** in the top bar (or `#/pitch`). 7 slides, arrow keys / click to advance, Esc to exit.
-Slides 2 and 5 use **live data from whichever farm is selected** — pick the Senegal or Kazakhstan demo before presenting.
+## Assets
+
+| Asset | Where | Notes |
+|---|---|---|
+| 30-second video | `public/media/field-shift-30s.mp4` · in-app *30-second video* | 1080p30, narrated, captions burned in, −14 LUFS |
+| Presentation | in-app *Presentation* (`#/pitch`) | 12 animated slides or the 7-slide submission cut; **PDF** button exports one slide per page |
+| Poster frame | `public/media/field-shift-poster.jpg` | thumbnail for the submission page |
+
+Slides on the problem, cash gap, sowing science, decision funnel and live result use **live data from whichever farm is selected** — pick the Senegal or Kazakhstan demo before presenting.
+
+### Video script (as narrated)
+
+| Time | Scene | Narration |
+|---|---|---|
+| 0.0 s | Hook — Earth & satellite | “Every season, farmers bet their savings on the weather.” |
+| 3.4 s | NASA POWER rain bars, Bambey 2001–2025 | “Near Bambey, Senegal, NASA records show season rain swinging from three hundred to nearly a thousand millimetres.” |
+| 10.2 s | Cash gap bar vs spendable line | “And the usual plan often costs more than the cash on hand.” |
+| 13.6 s | Data fusion: NASA tiles + farmer tiles → engine | “Field Shift fuses twenty-five years of NASA Earth data with what farmers know: their crops, soil and budget.” |
+| 20.1 s | 25-season replay grid + plan cards | “It replays every past season to find rotations they can actually afford, and explains why.” |
+| 26.2 s | Logo close | “Field Shift. From space to soil.” |
 
 The Space Apps submission guide (checked 14 Nov 2026) allows **a video ≤ 30 s or a deck of ≤ 7 slides** including the title.
 Re-check the current guide before submitting.
@@ -17,6 +35,8 @@ Re-check the current guide before submitting.
 | 5 | Live result | “The usual groundnut→millet plan is 74,500 XOF over budget. Field Shift shows two that fit, with headroom, cash timing and climate risk from replaying every past season — and the reason behind each.” | “Usual plan over budget → two that fit, with risk and reasons.” |
 | 6 | Validity | “25 automated tests reproduce the archived NASA query exactly and the FAO-56 textbook example. We never claim yields, causes or doses — and we label what’s synthetic.” | “Tested, transparent, honest about limits.” |
 | 7 | Impact | “Works anywhere POWER exists, offline, near-zero cost. Next: a 90-day pilot with farmers and a local agronomist.” | “Global, offline, free — pilot next.” |
+
+The table above follows the 7-slide submission cut (Title, Problem, Solution, Data fusion, Live result, Validity, Impact). The full 12-slide story adds: Cash gap, Who it serves, Science 1 (sowing date), Science 2 (soil-water bucket), Decision funnel.
 
 ## Live demo script (90 s)
 

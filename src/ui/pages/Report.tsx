@@ -1,3 +1,4 @@
+import { Download, Printer, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useApp } from '../../state/AppContext';
 import { cropEmoji, cropName } from '../../data/crops';
@@ -36,11 +37,11 @@ export function ReportPage() {
       <div className="page-head no-print">
         <div><div className="eyebrow">Share & keep</div><h1>Two-season plan report</h1><p>Print or save as PDF for the farmer, extension worker or lender. Export/import the scenario as a file. All data stays on this device unless you share the file.</p></div>
         <div className="row">
-          <button className="btn primary" onClick={() => window.print()}>🖨️ Print / Save PDF</button>
-          <button className="btn" onClick={download}>⬇ Export scenario</button>
-          <button className="btn" onClick={() => file.current?.click()}>⬆ Import</button>
+          <button className="btn primary" onClick={() => window.print()}><Printer size={16} /> Print / Save PDF</button>
+          <button className="btn" onClick={download}><Download size={16} /> Export scenario</button>
+          <button className="btn" onClick={() => file.current?.click()}><Upload size={16} /> Import</button>
           <input ref={file} type="file" accept="application/json" hidden onChange={(e) => e.target.files?.[0] && onImport(e.target.files[0])} />
-          <button className="btn danger" onClick={async () => { if (confirm('Delete all saved farms, prices and cached data from this device?')) { await deleteAll(); setMsg('All local data deleted; demos restored.'); } }}>🗑 Delete all local data</button>
+          <button className="btn danger" onClick={async () => { if (confirm('Delete all saved farms, prices and cached data from this device?')) { await deleteAll(); setMsg('All local data deleted; demos restored.'); } }}><Trash2 size={16} /> Delete all local data</button>
         </div>
       </div>
       {msg && <Callout tone="ok">{msg}</Callout>}

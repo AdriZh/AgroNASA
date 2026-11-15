@@ -11,7 +11,7 @@ import kostanay from '../src/data/demo/kostanay.json';
 
 const run = (sc: FarmScenario, d: any) => runEngine(sc, d.series, effectiveSoil(sc.soil.texture, d.soil), detectPack(sc.location.lat, sc.location.lon));
 const DEMOS: [string, FarmScenario, any][] = [['Senegal', DEMO_SENEGAL, bambey], ['Kazakhstan', DEMO_KAZAKHSTAN, kostanay]];
-const PRIORITIES: FarmScenario['priority'][] = ['cost', 'climate', 'continuity', 'return'];
+const PRIORITIES: FarmScenario['priority'][] = ['cost', 'climate', 'continuity', 'return', 'soil'];
 
 describe('G-R9: no same-crop or same-family top pick while an alternation is feasible', () => {
   for (const [name, demo, d] of DEMOS) for (const priority of PRIORITIES) {
@@ -84,5 +84,15 @@ describe('G-R9: all-same-family fallback', () => {
       expect(isRepeat(p)).toBe(true);
       expect(p.reasons.some((r) => r.code === 'SAME_FAMILY' && r.severity === 'warn' && r.refs.includes('G-R7'))).toBe(true);
     }
+  });
+});
+
+describe('soil-benefit goal', () => {
+  for (const [name, demo, d] of DEMOS) it(`${name}: the top pick is an alternation with a rotation benefit`, () => {
+    const out = run({ ...structuredClone(demo), priority: 'soil' }, d);
+    expect(out.alternatives.length).toBeGreaterThan(0);
+    const top = out.alternatives[0];
+    expect(isRepeat(top)).toBe(false);
+    expect(top.reasons.some((r) => ['BREAK_CROP', 'ALTERNATION', 'LEGUME_BENEFIT', 'FALLOW_BENEFIT'].includes(r.code) || r.severity === 'good')).toBe(true);
   });
 });

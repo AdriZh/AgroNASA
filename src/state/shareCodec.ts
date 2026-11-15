@@ -187,7 +187,7 @@ function validate(c: any, ids: Ids = {}): { scenario: FarmScenario; whatIf: What
     laborAvailable: oneOf(c.lb, ['low', 'medium', 'high'] as const, 'labor'),
     unavailableCrops: crops(c.ua, 'unavailable crops'), marketCrops: crops(c.mc, 'market crops'),
     needsResidue: fl[0] === '1', allowFallow: fl[1] === '1',
-    priority: oneOf(c.pr, ['cost', 'climate', 'continuity', 'return'] as const, 'priority'),
+    priority: oneOf(c.pr, ['cost', 'climate', 'continuity', 'return', 'soil'] as const, 'priority'),
     baselineOverride: bo && bo.length === 2 && bo.every(hasCrop) ? [bo[0], bo[1]] : null,
     history: history.filter((h) => hasCrop(h.cropId)),
     fertilizer: fertilizer.filter((f) => !f.cropSeasonId || history.some((h) => h.id === f.cropSeasonId && hasCrop(h.cropId))),

@@ -548,6 +548,8 @@ export function rankComparator(priority: FarmScenario['priority']) {
     climate: [byClimate, byBenefit, byWarn, byCost],
     continuity: [(a, b) => a.newCrops - b.newCrops, byBenefit, byWarn, byGood, byCost],
     return: [byReturn, byBenefit, byClimate, byCost],
+    // soil benefit: legume / break-crop / fallow benefits first (G-R8), then climate, then cost
+    soil: [byBenefit, byGood, byClimate, byCost],
   };
   return (a: PlanResult, b: PlanResult) => {
     for (const f of [byPenalty, ...chain[priority]]) { const d = f(a, b); if (Math.abs(d) > 1e-9) return d; }

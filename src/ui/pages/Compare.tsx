@@ -85,8 +85,8 @@ export function PlanCard({ p, cur, label, sub, tone, best, onWhy, selected, comp
           <StatRows rows={[
             ['Due before first sowing', fmtMoney(p.budget.upfront, cur)],
             ['Harvest, typical year', harvestText(p)],
-            ['Modeled net, typical year', fmtApprox(p.outcome.net?.median, cur)],
-            ['Severe water stress', `${severe} of ${p.outcome.pairs} season pairs`],
+            ['Net, typical year', fmtApprox(p.outcome.net?.median, cur)],
+            ['Severe stress', `${severe} of ${p.outcome.pairs} season pairs`],
           ]} />
         </div>
         <div className="plan-sow group" style={{ marginTop: 0 }}>
@@ -172,7 +172,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
 
       <div className="plan-row" ref={rowRef} onScroll={onRowScroll} style={{ marginTop: 24 }}>
         {plans.map((p, i) => (
-          <PlanCard key={p.id} p={p} cur={cur} label={labelOf(p, i)} sub={i === 1 ? `ranked by ${PRIORITY_LABEL[sc.priority]}` : undefined} tone={i === 1 ? 'brand' : undefined} best={i === 1} selected={chosen.id === p.id} onWhy={() => showWhy(p.id)} />
+          <PlanCard key={p.id} p={p} cur={cur} label={labelOf(p, i)} tone={i === 1 ? 'brand' : undefined} best={i === 1} selected={chosen.id === p.id} onWhy={() => showWhy(p.id)} />
         ))}
       </div>
       <div className="plan-dots" aria-hidden>{plans.map((p, i) => <i key={p.id} className={i === dot ? 'on' : ''} />)}</div>

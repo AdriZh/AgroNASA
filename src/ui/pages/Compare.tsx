@@ -76,7 +76,7 @@ export function harvestText(p: PlanResult) {
 export function ProfitBlock({ p, cur, compact }: { p: PlanResult; cur: string; compact?: boolean }) {
   const { scenario } = useApp();
   const e = p.finance?.expectedProfit;
-  if (e == null) return <div className="plan-profit muted"><span className="caption">Expected profit</span><span className="mini">needs every price and cost — set them in Resources</span></div>;
+  if (e == null) return <div className="plan-profit muted"><span className="caption">Expected profit</span><span className="mini">needs every price and cost — set them in Budget & crops</span></div>;
   const v = planValue(p, scenario.weights).value;
   const net = p.outcome.net;
   return (
@@ -221,10 +221,10 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
       <div>
         <span className="caption">Step 3 of 4</span>
         <h1>Compare two-season plans</h1>
-        {engine && <p>{engine.areaHa.toFixed(2)} ha · {engine.baseline.seasons[0].year === engine.baseline.seasons[1].year ? `${engine.baseline.seasons[0].year} ${engine.windows.map((w) => w.label).join(' + ')}` : `${engine.baseline.seasons[0].year}–${engine.baseline.seasons[1].year}`} · {fmtMoney(engine.baseline.budget.cap, sc.currency)} spendable{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, sc.currency)} confirmed inflows` : ''} · ranked by {weightsSummary(sc.weights)}{engine.notes.some((n) => n.code === 'BUDGET_PLACEHOLDER') && <>{' '}<button type="button" className="badge warn budget-chip" onClick={() => go('resources')} title="This budget is a placeholder, not your money. Enter the cash you really have in Resources."><Pencil />Placeholder budget · set yours</button></>}</p>}
+        {engine && <p>{engine.areaHa.toFixed(2)} ha · {engine.baseline.seasons[0].year === engine.baseline.seasons[1].year ? `${engine.baseline.seasons[0].year} ${engine.windows.map((w) => w.label).join(' + ')}` : `${engine.baseline.seasons[0].year}–${engine.baseline.seasons[1].year}`} · {fmtMoney(engine.baseline.budget.cap, sc.currency)} spendable{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, sc.currency)} confirmed inflows` : ''} · ranked by {weightsSummary(sc.weights)}{engine.notes.some((n) => n.code === 'BUDGET_PLACEHOLDER') && <>{' '}<button type="button" className="badge warn budget-chip" onClick={() => go('resources')} title="This budget is a placeholder, not your money. Enter the cash you really have in Budget & crops."><Pencil />Placeholder budget · set yours</button></>}</p>}
         {engine && <p className="mini">{CASH_CAPTION}</p>}
       </div>
-      <div className="page-actions"><button className="btn" onClick={() => go('resources')}><ArrowLeft /> Edit resources</button><button className="btn primary" onClick={() => go('evidence')}>Review evidence <ArrowRight /></button></div>
+      <div className="page-actions"><button className="btn" onClick={() => go('resources')}><ArrowLeft /> Budget & crops</button><button className="btn primary" onClick={() => go('evidence')}>Review evidence <ArrowRight /></button></div>
     </div>
   );
   if (engineError) return <div>{head}<Callout tone="bad">Engine error: {engineError}</Callout></div>;

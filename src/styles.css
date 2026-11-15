@@ -850,3 +850,21 @@ main.fit { padding-top: var(--s-3); padding-bottom: var(--s-3); }
   .history-row > :nth-child(n+3):not(:last-child) { grid-column: 1 / -1; }
   .onboard-foot { position: sticky; bottom: 0; background: var(--bg); padding: var(--s-2) 0; }
 }
+
+/* ---------- Step 2 · Budget & crops ---------- */
+.resources-step { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+.spendable { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; color: var(--text); }
+.spendable svg { color: var(--text-muted); }
+.onboard .divider { height: 1px; background: var(--border); margin: 4px 0; }
+.onboard .h-sub, .modal .h-sub { display: flex; align-items: center; gap: 8px; font-size: 16px; line-height: 24px; margin: 0 0 8px; }
+.crop-chips { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
+.crop-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 6px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-size: 14px; cursor: pointer; text-decoration: line-through; opacity: .7; }
+.crop-chip.on { color: var(--text); border-color: var(--brand); background: var(--brand-soft); text-decoration: none; opacity: 1; font-weight: var(--w-strong); }
+.crop-chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.prices-note { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-3); border: 1px solid var(--border); border-radius: var(--r); background: var(--surface-2); }
+.prices-note svg { color: var(--accent); flex: none; }
+.prices-note p { margin: 0; flex: 1; font-size: 13px; line-height: 18px; }
+.prices-note .btn { flex: none; }
+.modal-scrim { position: fixed; inset: 0; z-index: 50; background: rgb(0 0 0 / .35); display: grid; place-items: center; padding: var(--s-3); }
+.modal { width: min(720px, 100%); max-height: calc(100dvh - 2 * var(--s-4)); overflow-y: auto; margin: 0; }
+@media (max-width: 900px) { .resources-step { grid-template-columns: minmax(0, 1fr); } .prices-note { flex-wrap: wrap; } }

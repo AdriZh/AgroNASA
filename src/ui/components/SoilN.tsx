@@ -280,7 +280,7 @@ export function YieldCalibrationCard({ ctx, onFarm }: { ctx: AgriContext; onFarm
         </>
       )}
       {c.skipped.length > 0 && <p className="mini">Not used: {c.skipped.map((s) => `${cropName(s.cropId)} ${s.year} (${s.reason})`).join('; ')}.</p>}
-      {c.overridden.length > 0 && <p className="mini">{c.overridden.map(cropName).join(', ')}: you set this yield in Resources, so it is used as is.</p>}
+      {c.overridden.length > 0 && <p className="mini">{c.overridden.map(cropName).join(', ')}: you set this yield in Budget & crops, so it is used as is.</p>}
     </section>
   );
 }

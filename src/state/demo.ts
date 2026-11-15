@@ -31,8 +31,8 @@ export const DEMO_KAZAKHSTAN: FarmScenario = {
   id: 'demo-kostanay', name: 'Demo · Family grain farm (Kostanay, Kazakhstan)', synthetic: true,
   location: { lat: 53.0, lon: 64.0, label: 'Kostanay region, Kazakhstan' }, countryIso2: 'KZ',
   area: 200, areaUnit: 'ha', currency: 'KZT',
-  availableFunds: 33000000, reserve: 3000000,
-  confirmedInflows: [{ id: 'in1', date: '2027-06-15', amount: 4000000, label: 'Confirmed state input subsidy' }],
+  availableFunds: 37000000, reserve: 3000000,
+  confirmedInflows: [], // the confirmed 4,000,000 KZT state input subsidy is counted in the funds
   firstSeasonYear: 2027,
   irrigation: 'no', irrigationCapacityMm: 0,
   unavailableCrops: [], marketCrops: [], needsResidue: false, allowFallow: true, baselineOverride: null,

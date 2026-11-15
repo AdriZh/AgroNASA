@@ -98,7 +98,7 @@ export function RotationPage({ go }: { go: (r: Route) => void }) {
           </div>
 
           <div className="wi-results">
-            {sim?.truncated && <Callout tone="warn">Too many crops for a {s.years}-year search on this device; showing {Math.ceil(sim.seasons / (double ? 2 : 1))} years. Remove crops in Resources or shorten the plan.</Callout>}
+            {sim?.truncated && <Callout tone="warn">Too many crops for a {s.years}-year search on this device; showing {Math.ceil(sim.seasons / (double ? 2 : 1))} years. Remove crops in Budget & crops or shorten the plan.</Callout>}
             {best ? (
               <p className="wi-headline">
                 Best for your priorities: <b>{best.labels.join(' → ')}</b>. {fmtApprox(best.totals.net, cur)}/ha net over {s.years} years, {fmtNum(best.totals.nFert, 0)} kg fertilizer N/ha
@@ -158,7 +158,7 @@ export function RotationPage({ go }: { go: (r: Route) => void }) {
         <CoverageNotes ctx={ctx} />
         {ctx.pack.mode === 'double' && ctx.modeledWindows.length < ctx.windows.length && <p className="mini">Only the {ctx.modeledWindows.map((i) => ctx.windows[i].label).join(' and ')} is modeled here; the other season’s crops are not in the trials, so their effect on soil N between modeled seasons is not counted.</p>}
         <ModelCaption bundle={bundle} />
-        <p className="mini">Prices and input costs come from your farm (FAOSTAT and the {ctx.pack.short} template, editable in Resources); rotation rules are the same as on Compare. Fertilizer N is priced at {fmtMoney(ctx.nPricePerKg, cur)}/kg N ({ctx.nPriceSource}).</p>
+        <p className="mini">Prices and input costs come from your farm (FAOSTAT and the {ctx.pack.short} template, editable in Budget & crops); rotation rules are the same as on Compare. Fertilizer N is priced at {fmtMoney(ctx.nPricePerKg, cur)}/kg N ({ctx.nPriceSource}).</p>
       </section>
     </div>
   );

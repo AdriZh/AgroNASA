@@ -119,7 +119,9 @@ describe('placeholder budget for new farms', () => {
       expect(out.baseline.budget.status).toBe('unaffordable');
       expect(-out.baseline.budget.headroom / cost).toBeLessThan(0.15); // "slightly" over: ≤ 15%
       expect(out.alternatives.length).toBeGreaterThanOrEqual(1);
-      expect(out.allPlans.filter((p) => p.feasible).length).toBeLessThan(out.allPlans.length / 2); // still a trade-off
+      // still a trade-off among crop rotations (cheap rest-season plans are always considered and mostly fit)
+      const cropPlans = out.allPlans.filter((p) => !p.crops.includes('fallow'));
+      expect(cropPlans.filter((p) => p.feasible).length).toBeLessThan(cropPlans.length / 2);
       expect(out.notes[0].code).toBe('BUDGET_PLACEHOLDER');
       expect(s.reserve / s.availableFunds).toBeCloseTo(0.1, 2);
     });

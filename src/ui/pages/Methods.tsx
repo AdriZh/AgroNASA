@@ -8,7 +8,7 @@ import { SOURCES } from '../../data/sources';
 import { Ref, Tag } from '../components/common';
 
 const CODES: [string, string][] = [
-  ['BUDGET_EXCEEDED', 'Cash cost exceeds funds − reserve + confirmed inflows; shortfall shown.'],
+  ['BUDGET_EXCEEDED', 'Cash cost exceeds funds − reserve; shortfall shown.'],
   ['CASH_TIMING', 'Total fits but cumulative outflow exceeds available cash on a due date.'],
   ['PRICE_MISSING', 'An essential item has no price → “budget not verified”, never zero.'],
   ['RETURN_INTERVAL', 'Same crop before its minimum break (rule G-R1 / SN-R2 / KZ-R2).'],
@@ -57,12 +57,12 @@ export function MethodsPage() {
             <li><b>Water-balance replay.</b> FAO-56 Penman–Monteith ET₀ (Hargreaves fallback); single-Kc crop curve; root-zone depletion with readily-available water p·TAW; Ks stress; 120-day antecedent spin-up (365 days after fallow); runoff 20% of rain above 25 mm/day; optional irrigation to the declared cap.</li>
             <li><b>Yield response.</b> FAO-66 seasonal Ky, below. Coherent consecutive year pairs (Y, Y+1) are replayed for two-season plans.</li>
             <li><b>Candidates and rules.</b> Every two-season pair from the pack (fallow optional) is checked against return intervals, disease groups, farmer constraints and climate screening, each with a reason code.</li>
-            <li><b>Costs and feasibility.</b> Integer minor units; cumulative cash is checked at each due date with confirmed inflows only.</li>
+            <li><b>Costs and feasibility.</b> Integer minor units; cumulative cash is checked at each due date against funds − reserve; harvest income and credit are never assumed.</li>
             <li><b>Rank feasible plans by discounted expected profit.</b> Profit is always the objective. Each cash cost is discounted from its due date and each harvest from its sale date by your “cash now ↔ later” factor δ per year, so money that comes sooner counts more. Four sliders adjust that value in money: bad-year caution (revenue moves toward the 20th-percentile year), cash in hand (up to 20 % cost on cash you put up), crops I know (up to 25 % less revenue from a crop you have not grown) and soil benefit (40 kg N/ha of fertilizer saved per rotation benefit, discounted to after the plan, R44). Rotation rules come first: a repeat never outranks an alternation (G-R9). Ties break deterministically. The baseline is always shown, with 0, 1 or 2 alternatives, never an invented one.</li>
           </ol>
           <div className="formula">{'1 − Ya/Ym = Ky × (1 − ΣETa / ΣETc)\nyield = attainable × Ya/Ym'}</div>
           <div className="formula">{'value = Σ_harvests δ^t × revenue × (1 − w_new × 25 % if new crop) − (1 + w_cash × 20 %) × Σ_costs δ^t × cost + w_soil × benefits × N credit × δ^t_end\nrevenue = average year + w_bad × (bad year − average year)      t = years from 1 Jan of the first planned year'}</div>
-          <div className="formula">{'cost      = qty/ha × area × unit price\nspendable = funds − reserve\nheadroom  = spendable + confirmed inflows − cash cost'}</div>
+          <div className="formula">{'cost      = qty/ha × area × unit price\nspendable = funds − reserve\nheadroom  = spendable − cash cost'}</div>
 
           <h2>2. Soil water</h2>
           <p>Available water capacity (AWC, mm/m) comes from the farmer’s texture (FAO-56 Table 19 mid-range) or, if unknown, from SoilGrids sand, clay and organic carbon (0–60 cm weighted) via the Saxton &amp; Rawls (2006) pedotransfer functions. Roots grow linearly from 0.15 m to the crop maximum by the end of the development stage. <Ref id="R20" /> <Ref id="R21" /> <Ref id="R8" /></p>

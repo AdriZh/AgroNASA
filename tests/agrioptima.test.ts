@@ -76,13 +76,13 @@ describe('coverage', () => {
     expect(SN.ctx.options.filter((o) => o.family !== 'fallow')).toHaveLength(0);
     expect(SN.ctx.uncovered.length).toBeGreaterThan(3);
   });
-  it('honours unavailable seed and sellable-crop constraints', () => {
+  it('honours the allowed-crops list (and a legacy sellable-crops list)', () => {
     const sc = { ...DEMO_KAZAKHSTAN, unavailableCrops: ['chickpea'], marketCrops: ['wheat', 'barley', 'pea'] };
     const { ctx } = setup(sc, kostanay);
     const ids = ctx.options.map((o) => o.id);
     expect(ids).not.toContain('chickpea');
     expect(ids).not.toContain('lentil');
-    expect(ctx.uncovered.find((u) => u.cropId === 'chickpea')?.reason).toMatch(/unavailable/);
+    expect(ctx.uncovered.find((u) => u.cropId === 'chickpea')?.reason).toMatch(/allowed crops/);
   });
 });
 

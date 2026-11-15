@@ -83,8 +83,10 @@ describe('G-R9: the usual plan stays the baseline', () => {
 
 describe('G-R9: all-same-family fallback', () => {
   it('when only same-family plans are feasible, they are shown with the warning rather than nothing', () => {
+    // a rest season is always considered and would be a real alternation, so use the region without one
     const sc: FarmScenario = { ...structuredClone(DEMO_SENEGAL), marketCrops: ['millet', 'sorghum'], availableFunds: 1e9, reserve: 0 };
-    const out = run(sc, bambey);
+    const noFallow = { ...SENEGAL, crops: SENEGAL.crops.filter((c) => c !== 'fallow'), seasons: SENEGAL.seasons.map((x) => ({ ...x, crops: x.crops.filter((c) => c !== 'fallow') })) };
+    const out = runEngine(sc, (bambey as any).series, effectiveSoil(sc.soil.texture, (bambey as any).soil), noFallow);
     expect(out.pack.id).toBe(SENEGAL.id);
     expect(out.alternatives.length).toBeGreaterThan(0);
     for (const p of out.alternatives) {

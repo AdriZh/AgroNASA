@@ -78,7 +78,7 @@ export function blankScenario(at?: { lat: number; lon: number; label?: string; i
     location: at ? { lat: at.lat, lon: at.lon, label: at.label } : structuredClone(DEMO_SENEGAL.location),
     countryIso2: at ? at.iso2 : 'SN', currency: c?.currency ?? (at ? 'USD' : 'XOF'), area: 1, areaUnit: 'ha',
     history: [], fertilizer: [], confirmedInflows: [], priceOverrides: {}, unavailableCrops: [], marketCrops: [],
-    availableFunds: 0, reserve: 0, baselineOverride: null, soil: { texture: 'unknown' }, weights: { ...DEFAULT_WEIGHTS }, allowFallow: false,
+    availableFunds: 0, reserve: 0, baselineOverride: null, soil: { texture: 'unknown' }, weights: { ...DEFAULT_WEIGHTS }, allowFallow: true,
     needsResidue: false, // unknown for a new farm: no livestock constraint until the farmer says so
   };
   const pack = detectPack(base.location.lat, base.location.lon, base.countryIso2);

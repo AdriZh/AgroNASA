@@ -102,12 +102,12 @@ export function smallestChange(inputs: EngineInputs, p: PlanResult): Pick<NearMi
   if (codes.has('SEED_UNAVAILABLE')) {
     const crops = planned.filter((c) => sc.unavailableCrops.includes(c));
     patch.unavailableCrops = sc.unavailableCrops.filter((c) => !crops.includes(c));
-    fixes.push({ kind: 'seed', text: `${crops.map(cropName).join(' and ')} seed marked unavailable: allow it in Resources` });
+    fixes.push({ kind: 'seed', text: `allow ${crops.map(cropName).join(' and ')} in Budget & crops` });
   }
   if (codes.has('MARKET_CONSTRAINT')) {
     const crops = planned.filter((c) => !sc.marketCrops.includes(c));
     patch.marketCrops = [...sc.marketCrops, ...crops];
-    fixes.push({ kind: 'market', text: `add ${crops.map(cropName).join(' and ')} to the crops you can sell in Resources` });
+    fixes.push({ kind: 'market', text: `allow ${crops.map(cropName).join(' and ')} in Budget & crops` });
   }
   // budget last: the other fixes do not change costs, but verify the cash gap on the patched scenario
   let q = Object.keys(patch).length ? evaluateWith(inputs, p.crops, patch) : p;

@@ -56,7 +56,7 @@ export function calibrateYields(sc: FarmScenario, engine: EngineOutput): YieldCa
   return { obs, fieldFactor: clamp(Math.exp(logField), FACTOR_BOUNDS), byCrop, skipped, overridden: [...overridden] };
 }
 
-/** Productivity factor for a Field Shift crop id (1 when the farmer set the crop's yield explicitly in Resources). */
+/** Productivity factor for a Field Shift crop id (1 when the farmer set the crop's yield explicitly in Budget & crops). */
 export function factorFor(cal: YieldCalibration, cropId: string): number {
   if (cal.overridden.includes(cropId)) return 1;
   return cal.byCrop[cropId]?.factor ?? cal.fieldFactor;

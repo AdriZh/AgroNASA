@@ -151,8 +151,7 @@ export function buildContext(bundle: ModelBundle, sc: FarmScenario, engine: Engi
   for (const c of pack.crops) {
     if (c === 'fallow') continue;
     if (!CROPS[c]) continue;
-    if (unavailable.has(c)) { uncovered.push({ cropId: c, reason: 'seed marked unavailable' }); continue; }
-    if (!sellable(c)) { uncovered.push({ cropId: c, reason: 'not among the crops you can sell' }); continue; }
+    if (unavailable.has(c) || !sellable(c)) { uncovered.push({ cropId: c, reason: 'not in your allowed crops' }); continue; }
     if (cropFor(pack, c).irrigationRequired && !irrigationOn) { uncovered.push({ cropId: c, reason: 'needs irrigation' }); continue; }
     const sp = P.SPECIES_OF[c];
     if (!sp) { uncovered.push({ cropId: c, reason: 'not in the INRAE cereal–legume trials' }); continue; }
@@ -185,7 +184,7 @@ export function buildContext(bundle: ModelBundle, sc: FarmScenario, engine: Engi
       shares, ndfa: ndfaOf(shares), nhi: nhiOf(shares), extrapolated: [],
     });
   }
-  if (pack.crops.includes('fallow') && sc.allowFallow) {
+  if (pack.crops.includes('fallow')) {
     const f = costOf('fallow');
     options.push({
       id: 'fallow', label: cropName('fallow'), crops: ['fallow'], family: 'fallow', isIntercrop: false, window: windowOf('fallow'),

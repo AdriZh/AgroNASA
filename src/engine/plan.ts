@@ -164,8 +164,8 @@ function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: R
     }
     // farmer constraints
     if (c.id !== 'fallow') {
-      if (sc.unavailableCrops.includes(c.id)) R.push({ code: 'SEED_UNAVAILABLE', severity: 'block', text: `${tag}: seed reported unavailable.`, refs: ['input:unavailableCrops'] });
-      if (sc.marketCrops.length && !sc.marketCrops.includes(c.id)) R.push({ code: 'MARKET_CONSTRAINT', severity: 'block', text: `${tag}: not in the crops you can sell or use.`, refs: ['input:marketCrops'] });
+      if (sc.unavailableCrops.includes(c.id)) R.push({ code: 'SEED_UNAVAILABLE', severity: 'block', text: `${tag}: not in your allowed crops.`, refs: ['input:unavailableCrops'] });
+      if (sc.marketCrops.length && !sc.marketCrops.includes(c.id)) R.push({ code: 'MARKET_CONSTRAINT', severity: 'block', text: `${tag}: not in your allowed crops.`, refs: ['input:marketCrops'] });
       if (c.irrigationRequired && sc.irrigation !== 'yes') R.push({ code: 'IRRIGATION_REQUIRED', severity: 'block', text: `${tag}: requires irrigation, which is not available.`, refs: ['input:irrigation'] });
       // climate screening from the NASA replay
       const r = plannedRisks[k - plannedFrom];
@@ -180,10 +180,6 @@ function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: R
         R.push({ code: 'SOIL_PH', severity: 'warn', text: `${tag}: soil pH ${soil.ph.toFixed(1)} (${soil.source === 'soilgrids' ? 'SoilGrids estimate' : 'reported'}) is outside the usual ${c.phRange[0]}–${c.phRange[1]} range.`, refs: [soil.source === 'soilgrids' ? 'R21' : 'input:soil'] });
       }
     }
-  }
-  const planned = seq.slice(plannedFrom);
-  if (sc.needsResidue && planned.every((x) => !CROPS[x].residueForLivestock)) {
-    R.push({ code: 'RESIDUE_NEED', severity: 'warn', text: 'Neither season leaves residue for livestock, which you said you need.', refs: ['input:needsResidue'] });
   }
   return R;
 }
@@ -383,7 +379,9 @@ export function engineContext(sc: FarmScenario, s: DailySeries, soil: SoilProfil
   const record = new Set(completeYears(s));
   const irrigation = { on: sc.irrigation === 'yes', capMm: sc.irrigationCapacityMm || 0 };
   const fallowAllowed = pack.mode === 'annual' && pack.crops.includes('fallow');
-  const fallowInPlay = fallowAllowed && (sc.allowFallow || sc.history.some((h) => h.cropId === 'fallow') || !!sc.baselineOverride?.includes('fallow') || !!opts.customFallow);
+  // a rest season is always considered where the regional calendar has one (the farmer is no longer asked)
+  const fallowInPlay = fallowAllowed;
+  void opts.customFallow;
   const fx = { factor: fxFactor(pack.currency, sc.currency), from: pack.currency, to: sc.currency, year: countryInfo(sc.countryIso2)?.fxYear };
   const toLocalPerUsd = fxPerUsd(sc.currency) ?? (sc.currency === 'USD' ? 1 : null);
   const ctx: EngineContext = {
@@ -463,7 +461,8 @@ export function buildPlan(ctx: EngineContext, crops: [string, string], isBaselin
       lines.push(costLine({ key, category: 'irrigation', label: `Irrigation water (modeled median ${irr.toFixed(0)} mm)`, qtyPerHa: irr, unit: 'mm·ha', unitPrice: irrUnit, dueOffsetDays: 45, essential: true, cash: true }, ps.season, ps.cropId, areaHa, ps.sowing, sc.priceOverrides[`${ps.cropId}:${key}`]));
     }
   });
-  const budget = evaluateBudget(lines, sc.availableFunds, sc.reserve, sc.confirmedInflows, seasons[0].sowing);
+  // only funds − reserve count; dated inflows are no longer asked for (and ignored if an old scenario has them)
+  const budget = evaluateBudget(lines, sc.availableFunds, sc.reserve, [], seasons[0].sowing);
   const reasons = ruleCheck([...history, ...crops], history.length, sc, pack, [seasons[0].risk, seasons[1].risk], soil);
   for (let k = 1; k >= 0; k--) {
     if (!offCalendar[k]) continue;
@@ -500,16 +499,16 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
   if (pack.reviewStatus !== 'reviewed') notes.push({ code: 'UNREVIEWED_RULES', severity: 'info', text: `Rule pack "${pack.short}" v${pack.version} has not been signed off by a local agronomist — results are a demonstration.`, refs: pack.rules.map((r) => r.id) });
   const country = countryInfo(sc.countryIso2);
   const priceNote = Object.values(prices).some((p) => p.source === 'faostat-country') ? `Crop sale prices: FAOSTAT producer prices${country ? ` for ${country.name}` : ''}` : 'Crop sale prices: FAOSTAT global medians (no country prices)';
-  notes.push({ code: 'SYNTHETIC_PRICES', severity: 'info', text: `${priceNote}. Input costs are a synthetic regional template${fx.factor !== 1 ? ` converted ${fx.from}→${fx.to} at the FAOSTAT ${fx.year ?? ''} exchange rate` : ''} — edit them in Resources with dated local quotes.`, refs: ['R33', 'price-pack'] });
+  notes.push({ code: 'SYNTHETIC_PRICES', severity: 'info', text: `${priceNote}. Input costs are a synthetic regional template${fx.factor !== 1 ? ` converted ${fx.from}→${fx.to} at the FAOSTAT ${fx.year ?? ''} exchange rate` : ''} — edit them in Budget & crops with dated local quotes.`, refs: ['R33', 'price-pack'] });
   notes.push({ code: 'CLIMATE_CONTEXT_ONLY', severity: 'info', text: `Risk comes from replaying ${nSeasons} historical NASA POWER seasons for this grid cell${windows.length > 1 ? ` in each of ${windows.length} seasons (${windows.map((w) => w.label).join(', ')})` : ''} — a conditional historical scenario, not a forecast.`, refs: ['D1', 'R17', 'R8'] });
-  if (pack.irrigationTypical && sc.irrigation !== 'yes') notes.push({ code: 'IRRIGATION_REQUIRED', severity: 'info', text: `Most farms in "${pack.short}" are irrigated. Rainfed results here will look poor — set irrigation to “Yes” in Resources if your field is irrigated.`, refs: ['input:irrigation'] });
+  if (pack.irrigationTypical && sc.irrigation !== 'yes') notes.push({ code: 'IRRIGATION_REQUIRED', severity: 'info', text: `Most farms in "${pack.short}" are irrigated. Rainfed results here will look poor — set irrigation to “Yes” in Budget & crops if your field is irrigated.`, refs: ['input:irrigation'] });
   const odd = Object.entries(prices).filter(([, p]) => p.replaced);
   if (odd.length) notes.push({ code: 'PRICE_IMPLAUSIBLE', severity: 'info', text: `FAOSTAT country price${odd.length > 1 ? 's' : ''} for ${odd.map(([c, p]) => `${cropName(c)} (${Math.round(p.replaced!.usdPerT)} USD/t, ${p.replaced!.year})`).join(', ')} differ${odd.length > 1 ? '' : 's'} more than ${PRICE_PLAUSIBLE_FACTOR}× from the global median — likely a unit or exchange-rate artefact — so the global median is used instead. Enter your own price if you have one.`, refs: ['R33'] });
   if (fxUnknown(pack, sc)) notes.push({ code: 'SYNTHETIC_PRICES', severity: 'warn', text: `No FAOSTAT exchange rate for "${sc.currency}": input costs are shown unconverted in ${pack.currency} amounts. Use a 3-letter ISO currency code (e.g. ${countryInfo(sc.countryIso2)?.currency ?? 'USD'}) or enter local prices.`, refs: ['R33', 'input:currency'] });
   if (!hist.length && !sc.baselineOverride) notes.push({ code: 'HISTORY_INCOMPLETE', severity: 'info', text: `No crop history entered: “your usual plan” is assumed to be ${cropName(base[0])} → ${cropName(base[1])} (${pack.usualRotation && base.join() === pack.usualRotation.join() ? `a typical sequence in ${pack.short}` : base[0] === base[1] ? 'the first crop of this rule pack, grown continuously' : 'the first crop listed for each season'}). Add your last seasons in Farm to compare against what you really grow.`, refs: ['input:history'] });
   if (sc.budgetPlaceholder && !placeholderEdited(sc, sc.budgetPlaceholder)) {
     const ph = sc.budgetPlaceholder;
-    notes.unshift({ code: 'BUDGET_PLACEHOLDER', severity: 'warn', text: `Placeholder budget — not your money. Funds ${fmt(sc.availableFunds)} with a ${fmt(sc.reserve)} reserve were set so the cash you can spend is about ${Math.round(PLACEHOLDER_SPEND_SHARE * 100)}% of the usual plan's cash cost (${fmt(ph.usualCost * (ph.currency === sc.currency ? 1 : fxFactor(ph.currency, sc.currency)))}), a typical pre-season squeeze. Enter the cash you really have in Resources.`, refs: ['input:availableFunds', 'input:reserve'] });
+    notes.unshift({ code: 'BUDGET_PLACEHOLDER', severity: 'warn', text: `Placeholder budget — not your money. Funds ${fmt(sc.availableFunds)} with a ${fmt(sc.reserve)} reserve were set so the cash you can spend is about ${Math.round(PLACEHOLDER_SPEND_SHARE * 100)}% of the usual plan's cash cost (${fmt(ph.usualCost * (ph.currency === sc.currency ? 1 : fxFactor(ph.currency, sc.currency)))}), a typical pre-season squeeze. Enter the cash you really have in Budget & crops.`, refs: ['input:availableFunds', 'input:reserve'] });
   }
   if (sc.history.some((h) => !h.plantedOn) || sc.fertilizer.some((f) => f.treatedAreaHa == null)) notes.push({ code: 'HISTORY_INCOMPLETE', severity: 'info', text: 'Some crop dates or fertilizer treated areas are unknown; history interpretation is limited.', refs: ['input:history'] });
 
@@ -521,7 +520,6 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
   for (const a of slot1) for (const b of slot2) {
     if (!CROPS[a] || !CROPS[b]) continue;
     if (a === 'fallow' && b === 'fallow') continue;
-    if (!sc.allowFallow && (a === 'fallow' || b === 'fallow')) continue;
     if (a === base[0] && b === base[1]) continue;
     all.push(buildPlan(ctx, [a, b], false));
   }

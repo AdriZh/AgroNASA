@@ -1,162 +1,162 @@
-import { useState } from 'react';
-import { CropIcon } from '../components/CropIcon';
+// Step 2 · Budget & crops: what you can spend, irrigation, and which crops are allowed. Fits one window.
+// Prices are computed from data (FAOSTAT + regional templates) and only shown when the farmer asks to adjust them.
+import { useEffect, useState } from 'react';
 import type { Route } from '../../App';
-import { ArrowLeft, ArrowRight, Plus, RotateCcw, Tags, Target, Tractor, Trash2, Wallet } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Droplets, Info, RotateCcw, Sprout, Tags, Wallet, X } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
-import { PrioritySliders } from '../components/PrioritySliders';
-import { CROPS, cropName } from '../../data/crops';
+import { cropName } from '../../data/crops';
+import { countryInfo } from '../../data/countries';
 import { fmtMoney } from '../../domain/units';
-import { fmtDate } from '../../domain/dates';
-import { CardTitle, Disclaimer, Field, Money, NumInput, Seg, Stat, Tag, uid } from '../components/common';
-
+import { CropIcon } from '../components/CropIcon';
+import { NumInput, Seg } from '../components/common';
 
 export function ResourcesPage({ go }: { go: (r: Route) => void }) {
   const { scenario: sc, update, engine } = useApp();
+  const [pricesOpen, setPricesOpen] = useState(false);
+  const cur = sc.currency;
+  const crops = (engine?.pack.crops ?? []).filter((c) => c !== 'fallow');
+  // one list: a crop is allowed unless excluded (a legacy "crops I can sell" list is honoured until the first edit)
+  const allowed = (c: string) => !sc.unavailableCrops.includes(c) && (!sc.marketCrops.length || sc.marketCrops.includes(c));
+  const setAllowed = (next: (c: string) => boolean) => update((s) => ({ ...s, unavailableCrops: crops.filter((c) => !next(c)), marketCrops: [] }));
+  const toggle = (c: string) => setAllowed((x) => (x === c ? !allowed(c) : allowed(x)));
+  const nAllowed = crops.filter(allowed).length;
+  const edited = Object.keys(sc.priceOverrides).length;
+  const country = countryInfo(sc.countryIso2);
+
+  return (
+    <div className="onboard">
+      <div className="onboard-body resources-step">
+        <section className="onboard-panel">
+          <div>
+            <h1>What can you spend?</h1>
+            <p className="mini">Cash for both seasons. Harvest income and credit are not assumed.</p>
+          </div>
+          <div className="grid g2" style={{ gap: 12 }}>
+            <label className="field">Money available now, {cur}
+              <NumInput value={sc.availableFunds} min={0} onChange={(v) => update((s) => ({ ...s, availableFunds: Math.max(0, v ?? 0) }))} />
+            </label>
+            <label className="field">Keep in reserve, {cur}
+              <NumInput value={sc.reserve} min={0} onChange={(v) => update((s) => ({ ...s, reserve: Math.max(0, v ?? 0) }))} />
+            </label>
+          </div>
+          <p className="spendable"><Wallet size={14} aria-hidden /> You can spend <b>{fmtMoney(Math.max(0, sc.availableFunds - sc.reserve), cur)}</b> <span className="muted">(money − reserve)</span></p>
+          <label className="field" style={{ maxWidth: 200 }}>First season to plan
+            <NumInput value={sc.firstSeasonYear} onChange={(v) => update((s) => ({ ...s, firstSeasonYear: Math.round(v ?? s.firstSeasonYear) }))} />
+          </label>
+
+          <div className="divider" />
+          <div>
+            <h2 className="h-sub"><Droplets size={16} aria-hidden /> Can you irrigate?</h2>
+            <Seg label="Irrigation" value={sc.irrigation} options={[{ v: 'no', label: 'No' }, { v: 'yes', label: 'Yes' }, { v: 'unknown', label: 'Not sure' }]} onChange={(v) => update((s) => ({ ...s, irrigation: v, irrigationCapacityMm: v === 'yes' && !s.irrigationCapacityMm ? 150 : s.irrigationCapacityMm }))} />
+            {sc.irrigation === 'yes' && (
+              <label className="field" style={{ marginTop: 12, maxWidth: 260 }}>Water you can apply per season, mm
+                <NumInput value={sc.irrigationCapacityMm} min={0} onChange={(v) => update((s) => ({ ...s, irrigationCapacityMm: Math.max(0, v ?? 0) }))} />
+                <span className="mini" style={{ fontWeight: 400 }}>1 mm on 1 ha = 10 m³ of water.</span>
+              </label>
+            )}
+          </div>
+        </section>
+
+        <section className="onboard-panel">
+          <div>
+            <h1>Which crops can you grow?</h1>
+            <p className="mini">All are allowed to start. Untick any you can’t get seed for or can’t sell. A rest (fallow) season is always considered.</p>
+          </div>
+          <div className="crop-chips" role="group" aria-label="Allowed crops">
+            {crops.map((c) => (
+              <button key={c} type="button" className={`crop-chip ${allowed(c) ? 'on' : ''}`} aria-pressed={allowed(c)} onClick={() => toggle(c)}>
+                <CropIcon id={c} size={20} />{cropName(c)}
+              </button>
+            ))}
+          </div>
+          <div className="row" style={{ gap: 8 }}>
+            <span className="mini">{nAllowed} of {crops.length} allowed</span>
+            {nAllowed < crops.length && <button type="button" className="linkish mini" onClick={() => setAllowed(() => true)}>Allow all</button>}
+          </div>
+          {nAllowed === 0 && <p className="mini warn-t">Allow at least one crop, or only rest seasons can be planned.</p>}
+        </section>
+      </div>
+
+      <div className="prices-note">
+        <Info size={16} aria-hidden />
+        <p>
+          Prices and costs were <b>computed from data</b>: crop prices from FAOSTAT{country ? ` for ${country.name}` : ''}, input costs from a regional template{engine && engine.fx.factor !== 1 ? `, converted to ${cur}` : ''}.
+          They are estimates — adjust them to your local prices.{edited ? ` ${edited} edited.` : ''}
+        </p>
+        <button type="button" className="btn sm" onClick={() => setPricesOpen(true)}><Tags size={14} /> Adjust prices</button>
+      </div>
+
+      <div className="onboard-foot">
+        <button type="button" className="btn" onClick={() => go('farm')}><ArrowLeft /> Your field</button>
+        <button type="button" className="btn primary" onClick={() => go('compare')}>Compare plans <ArrowRight /></button>
+      </div>
+
+      {pricesOpen && <PricesDialog onClose={() => setPricesOpen(false)} />}
+    </div>
+  );
+}
+
+/** The full price & yield editor, only on request. Clearing a value marks it missing ("budget not verified"), never zero. */
+function PricesDialog({ onClose }: { onClose: () => void }) {
+  const { scenario: sc, update, engine } = useApp();
   const pack = engine?.pack;
   const cur = sc.currency;
-  const crops = pack?.crops ?? [];
+  const priceCrops = (pack?.crops ?? []).filter((c) => pack?.economics[c]);
   const [crop, setCrop] = useState<string | null>(null);
-  const priceCrops = crops.filter((c) => pack?.economics[c]);
   const active = crop && priceCrops.includes(crop) ? crop : priceCrops[0];
-  const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', f);
+    return () => window.removeEventListener('keydown', f);
+  }, [onClose]);
   const setPrice = (k: string, v: number | null | undefined) => update((s) => {
     const o = { ...s.priceOverrides };
     if (v === undefined) delete o[k]; else o[k] = v;
     return { ...s, priceOverrides: o };
   });
-  const sellable = crops.filter((c) => c !== 'fallow');
-
+  if (!pack || !active) return null;
+  const e = pack.economics[active];
+  const yk = `${active}:yield`, pk = `${active}:price`;
+  const reset = (k: string) => sc.priceOverrides[k] !== undefined && <button className="btn ghost plain icon sm" aria-label="Back to the computed value" title="Back to the computed value" onClick={() => setPrice(k, undefined)}><RotateCcw /></button>;
   return (
-    <div>
-      <div className="page-head">
-        <div>
-          <span className="caption">Step 2 of 4</span>
-          <h1>Resources and constraints</h1>
-          <p>What can you spend, what can you do, and what matters most? Hard constraints are never silently relaxed: if nothing fits, Field Shift says so.</p>
+    <div className="modal-scrim" onClick={onClose}>
+      <div className="modal card" role="dialog" aria-modal="true" aria-labelledby="prices-title" onClick={(ev) => ev.stopPropagation()}>
+        <div className="spread" style={{ marginBottom: 12 }}>
+          <h2 id="prices-title" className="h-sub" style={{ margin: 0 }}><Tags size={16} /> Adjust prices</h2>
+          <button className="btn ghost icon sm" onClick={onClose} aria-label="Close"><X /></button>
         </div>
-        <div className="page-actions"><button className="btn" onClick={() => go('farm')}><ArrowLeft /> Farm</button><button className="btn primary" onClick={() => go('compare')}>Compare plans <ArrowRight /></button></div>
-      </div>
-
-      <div className="grid g2">
-        <section className="card">
-          <div className="card-head"><CardTitle icon={<Wallet />}>Budget</CardTitle><Tag t="farmer" /></div>
-          <div className="grid g2">
-            <Field label={`Funds available now, ${cur}`} hint="Cash you can commit to both seasons."><NumInput value={sc.availableFunds} min={0} onChange={(v) => update((s) => ({ ...s, availableFunds: Math.max(0, v ?? 0) }))} /></Field>
-            <Field label={`Reserve to keep, ${cur}`} hint="Money you will not spend: food, health, emergencies."><NumInput value={sc.reserve} min={0} onChange={(v) => update((s) => ({ ...s, reserve: Math.max(0, v ?? 0) }))} /></Field>
-            <Field label="Currency"><input className="input" value={sc.currency} onChange={(e) => update((s) => ({ ...s, currency: e.target.value.toUpperCase().slice(0, 4) }))} /></Field>
-            <Field label="First planned season (year)"><NumInput value={sc.firstSeasonYear} onChange={(v) => update((s) => ({ ...s, firstSeasonYear: Math.round(v ?? s.firstSeasonYear) }))} /></Field>
-          </div>
-          <div className="group">
-            <Stat label="Spendable" value={<Money v={sc.availableFunds - sc.reserve} cur={cur} />} sub={<>{fmtMoney(sc.availableFunds, cur)} funds − {fmtMoney(sc.reserve, cur)} reserve. Harvest income and credit are not assumed; season 2 must be fundable without season 1’s harvest unless you add a confirmed inflow.</>} />
-          </div>
-          <div className="group">
-            <h4>Confirmed dated inflows <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></h4>
-            <p className="mini" style={{ marginBottom: 8 }}>Only money that is certain, such as an approved subsidy or a signed payment. Each is checked against the due date of every cost.</p>
-            {sc.confirmedInflows.map((f) => (
-              <div key={f.id} className="row" style={{ marginBottom: 8 }}>
-                <input className="input sm" style={{ width: 150 }} type="date" aria-label="Inflow date" value={f.date} onChange={(e) => update((s) => ({ ...s, confirmedInflows: s.confirmedInflows.map((x) => (x.id === f.id ? { ...x, date: e.target.value } : x)) }))} />
-                <div style={{ width: 140 }}><NumInput className="sm" label="Amount" value={f.amount} onChange={(v) => update((s) => ({ ...s, confirmedInflows: s.confirmedInflows.map((x) => (x.id === f.id ? { ...x, amount: v ?? 0 } : x)) }))} /></div>
-                <input className="input sm" style={{ flex: 1, minWidth: 120 }} aria-label="Inflow label" value={f.label} onChange={(e) => update((s) => ({ ...s, confirmedInflows: s.confirmedInflows.map((x) => (x.id === f.id ? { ...x, label: e.target.value } : x)) }))} />
-                <button className="btn ghost danger icon sm" aria-label="Remove inflow" onClick={() => update((s) => ({ ...s, confirmedInflows: s.confirmedInflows.filter((x) => x.id !== f.id) }))}><Trash2 /></button>
-              </div>
-            ))}
-            <button className="btn sm" onClick={() => update((s) => ({ ...s, confirmedInflows: [...s.confirmedInflows, { id: uid(), date: `${s.firstSeasonYear}-06-01`, amount: 0, label: 'Confirmed payment' }] }))}><Plus /> Add inflow</button>
-          </div>
-        </section>
-
-        <section className="card">
-          <div className="card-head"><CardTitle icon={<Tractor />}>Constraints</CardTitle><Tag t="farmer" /></div>
-          <div className="stack">
-            <Field label="Irrigation available?">
-              <Seg label="Irrigation" value={sc.irrigation} options={[{ v: 'no', label: 'No' }, { v: 'yes', label: 'Yes' }, { v: 'unknown', label: 'Unknown' }]} onChange={(v) => update((s) => ({ ...s, irrigation: v, irrigationCapacityMm: v === 'yes' && !s.irrigationCapacityMm ? 150 : s.irrigationCapacityMm }))} />
-            </Field>
-            {sc.irrigation === 'yes' && <Field label="Usable irrigation water per season (mm)" hint="1 mm on 1 ha = 10 m³. The FAO-56 model irrigates when soil water falls below the readily-available level, up to this cap."><NumInput value={sc.irrigationCapacityMm} min={0} onChange={(v) => update((s) => ({ ...s, irrigationCapacityMm: Math.max(0, v ?? 0) }))} /></Field>}
-            <div className="stack-sm" style={{ gap: 0 }}>
-              <label className="check"><input type="checkbox" checked={sc.needsResidue} onChange={(e) => update((s) => ({ ...s, needsResidue: e.target.checked }))} /> I need crop residue for livestock</label>
-              <label className="check"><input type="checkbox" checked={sc.allowFallow} onChange={(e) => update((s) => ({ ...s, allowFallow: e.target.checked }))} /> Consider a fallow or rest season</label>
-            </div>
-          </div>
-          <div className="grid g2 group">
-            <div>
-              <h4>Seed I cannot get</h4>
-              {sellable.map((c) => <div key={c}><label className="check"><input type="checkbox" checked={sc.unavailableCrops.includes(c)} onChange={() => update((s) => ({ ...s, unavailableCrops: toggle(s.unavailableCrops, c) }))} /> <CropIcon id={c} size={18} /> {cropName(c)}</label></div>)}
-            </div>
-            <div>
-              <h4>Crops I can sell or use</h4>
-              <p className="mini">Leave all unticked for no restriction.</p>
-              {sellable.map((c) => <div key={c}><label className="check"><input type="checkbox" checked={sc.marketCrops.includes(c)} onChange={() => update((s) => ({ ...s, marketCrops: toggle(s.marketCrops, c) }))} /> <CropIcon id={c} size={18} /> {cropName(c)}</label></div>)}
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <section className="card section">
-        <div className="card-head"><div><CardTitle icon={<Target />}>What matters to you this time?</CardTitle><p className="mini">Set how much each goal matters. The options are ranked by the weighted mix; it only orders feasible plans and never overrides a rule or the budget.</p></div></div>
-        <PrioritySliders />
-        <div className="row group">
-          <h4>Usual plan (baseline):</h4>
-          {[0, 1].map((k) => (
-            <select key={k} className="input sm" style={{ width: 'auto' }} aria-label={`Usual plan season ${k + 1}`} value={(sc.baselineOverride ?? engine?.baseline.crops ?? ['', ''])[k]} onChange={(e) => update((s) => {
-              const b: [string, string] = [...(s.baselineOverride ?? engine?.baseline.crops ?? [crops[0], crops[0]])] as [string, string];
-              b[k] = e.target.value; return { ...s, baselineOverride: b };
-            })}>
-              {crops.map((c) => <option key={c} value={c}>Season {k + 1}: {CROPS[c].emoji} {cropName(c)}</option>)}
-            </select>
-          ))}
-          {sc.baselineOverride ? <button className="btn ghost sm" onClick={() => update((s) => ({ ...s, baselineOverride: null }))}>Reset to history pattern</button> : <span className="mini">derived from your crop history</span>}
+        <p className="mini">Computed values are shown; type your local price to replace one, or use <RotateCcw size={12} /> to go back. Clearing a field marks it missing (“budget not verified”), never zero.</p>
+        <div style={{ margin: '12px 0' }}>
+          <Seg label="Crop" value={active} options={priceCrops.map((c) => ({ v: c, label: <span className="crop-name"><CropIcon id={c} size={16} />{cropName(c)}</span> }))} onChange={setCrop} />
         </div>
-      </section>
-
-      {pack && active && (() => {
-        const e = pack.economics[active];
-        const yk = `${active}:yield`, pk = `${active}:price`;
-        const allYours = e.items.every((it) => sc.priceOverrides[`${active}:${it.key}`] !== undefined);
-        return (
-          <section className="card section">
-            <div className="card-head">
-              <div><CardTitle icon={<Tags />}>Prices and yields</CardTitle><p className="mini">Edit to your dated local quotes. {Object.keys(sc.priceOverrides).length} edited.</p></div>
-              {allYours ? <Tag t="farmer">your prices</Tag> : <Tag t="synthetic" />}
-            </div>
-            <Disclaimer details={[
-              <>Crop sale prices come from FAOSTAT producer prices for your country (or the global median when FAOSTAT has none), converted at the FAOSTAT exchange rate.</>,
-              <>Input costs are a synthetic regional template{engine && engine.fx.factor !== 1 ? ` converted ${engine.fx.from}→${engine.fx.to}` : ''}; replace them with dated local quotes before using results.</>,
-              <>Clearing a field marks the price missing: the plan then shows “Budget not verified”, never zero.</>,
-            ]}>Input costs are synthetic demo prices; sale prices come from FAOSTAT.</Disclaimer>
-            <div style={{ margin: '16px 0' }}>
-              <Seg label="Crop" value={active} options={priceCrops.map((c) => ({ v: c, label: <span className="crop-name"><CropIcon id={c} size={16} />{cropName(c)}</span> }))} onChange={setCrop} />
-            </div>
-            <div className="table-wrap sticky-first">
-              <table>
-                <thead><tr><th>Item</th><th className="num">Qty/ha</th><th>Unit</th><th className="num">Unit price, {cur}</th></tr></thead>
-                <tbody>
-                  {e.items.map((it) => {
-                    const k = `${active}:${it.key}`;
-                    const ov = sc.priceOverrides[k];
-                    return (
-                      <tr key={k}>
-                        <td className="wrap">{it.label}{!it.cash && !/non-cash/i.test(it.label) && <span className="muted"> · non-cash</span>}</td>
-                        <td className="num">{it.qtyPerHa}</td>
-                        <td className="nowrap">{it.unit}</td>
-                        <td className="num">
-                          <div className="row" style={{ gap: 4, flexWrap: 'nowrap', justifyContent: 'flex-end' }}>
-                            {ov !== undefined && <button className="btn ghost plain icon sm" aria-label="Reset to default" title="Reset to default" onClick={() => setPrice(k, undefined)}><RotateCcw /></button>}
-                            <div style={{ width: 120 }}><NumInput className="sm" label={`${it.label} unit price`} allowNull value={ov !== undefined ? ov : it.unitPrice == null ? null : Math.round(it.unitPrice * (engine?.fx.factor ?? 1) * 100) / 100} onChange={(v) => setPrice(k, v)} /></div>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {active !== 'fallow' && <>
-                    <tr className="total"><td className="wrap">Attainable yield <span className="muted" style={{ fontWeight: 400 }}>(water-unlimited, your management)</span></td><td className="num" /><td>t/ha</td><td className="num"><div style={{ width: 120, marginLeft: 'auto' }}><NumInput className="sm" label="Attainable yield" value={sc.priceOverrides[yk] ?? e.attainableYieldTHa} onChange={(v) => setPrice(yk, v)} /></div></td></tr>
-                    <tr><td className="wrap">Expected farm-gate price<div className="mini">{engine?.prices[active]?.label}</div></td><td className="num" /><td className="nowrap">{cur}/t</td><td className="num"><div className="row" style={{ gap: 4, flexWrap: 'nowrap', justifyContent: 'flex-end' }}>{sc.priceOverrides[pk] !== undefined && <button className="btn ghost plain icon sm" aria-label="Back to FAOSTAT price" title="Back to FAOSTAT price" onClick={() => setPrice(pk, undefined)}><RotateCcw /></button>}<div style={{ width: 120 }}><NumInput className="sm" label="Farm-gate price" allowNull value={sc.priceOverrides[pk] !== undefined ? sc.priceOverrides[pk] : engine?.prices[active]?.perT ?? null} onChange={(v) => setPrice(pk, v)} /></div></div></td></tr>
-                  </>}
-                </tbody>
-              </table>
-            </div>
-            <p className="chart-cap">Price pack {pack.id} v{pack.version} · last edited {fmtDate(new Date().toISOString().slice(0, 10))} on this device. Yield and sale price are used only for the modeled return range, never for affordability.</p>
-          </section>
-        );
-      })()}
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Item</th><th className="num">Qty/ha</th><th>Unit</th><th className="num">Price, {cur}</th></tr></thead>
+            <tbody>
+              {active !== 'fallow' && <>
+                <tr><td className="wrap"><b>Sale price</b><div className="mini">{engine?.prices[active]?.label}</div></td><td /><td className="nowrap">{cur}/t</td><td className="num"><div className="row" style={{ gap: 4, flexWrap: 'nowrap', justifyContent: 'flex-end' }}>{reset(pk)}<div style={{ width: 120 }}><NumInput className="sm" label="Sale price" allowNull value={sc.priceOverrides[pk] !== undefined ? sc.priceOverrides[pk] : engine?.prices[active]?.perT ?? null} onChange={(v) => setPrice(pk, v)} /></div></div></td></tr>
+                <tr><td className="wrap"><b>Yield you can reach</b><div className="mini">good-rain year, your management</div></td><td /><td>t/ha</td><td className="num"><div className="row" style={{ gap: 4, flexWrap: 'nowrap', justifyContent: 'flex-end' }}>{reset(yk)}<div style={{ width: 120 }}><NumInput className="sm" label="Attainable yield" value={sc.priceOverrides[yk] ?? e.attainableYieldTHa} onChange={(v) => setPrice(yk, v)} /></div></div></td></tr>
+              </>}
+              {e.items.map((it) => {
+                const k = `${active}:${it.key}`;
+                const ov = sc.priceOverrides[k];
+                return (
+                  <tr key={k}>
+                    <td className="wrap">{it.label}{!it.cash && !/non-cash/i.test(it.label) && <span className="muted"> · family labour (not cash)</span>}</td>
+                    <td className="num">{it.qtyPerHa}</td>
+                    <td className="nowrap">{it.unit}</td>
+                    <td className="num"><div className="row" style={{ gap: 4, flexWrap: 'nowrap', justifyContent: 'flex-end' }}>{reset(k)}<div style={{ width: 120 }}><NumInput className="sm" label={`${it.label} unit price`} allowNull value={ov !== undefined ? ov : it.unitPrice == null ? null : Math.round(it.unitPrice * (engine?.fx.factor ?? 1) * 100) / 100} onChange={(v) => setPrice(k, v)} /></div></div></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="spread" style={{ marginTop: 12 }}>
+          <label className="mini row" style={{ gap: 6 }}>Currency <input className="input sm" style={{ width: 80 }} value={sc.currency} onChange={(ev) => update((s) => ({ ...s, currency: ev.target.value.toUpperCase().slice(0, 4) }))} /></label>
+          <button className="btn primary sm" onClick={onClose}><Sprout size={14} /> Done</button>
+        </div>
+      </div>
     </div>
   );
 }

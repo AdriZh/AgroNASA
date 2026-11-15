@@ -52,7 +52,7 @@ export type Route = 'overview' | 'farm' | 'resources' | 'compare' | 'rotation' |
 type NavItem = { id: Route; label: string; step?: number; icon: ReactNode };
 const PLAN: NavItem[] = [
   { id: 'farm', label: 'Your field', step: 1, icon: null },
-  { id: 'resources', label: 'Resources', step: 2, icon: null },
+  { id: 'resources', label: 'Budget & crops', step: 2, icon: null },
   { id: 'compare', label: 'Compare plans', step: 3, icon: null },
   { id: 'evidence', label: 'Evidence', step: 4, icon: null },
   { id: 'rotation', label: 'Multi-year & soil N', icon: <Sprout size={16} /> },
@@ -65,7 +65,7 @@ const SHOW: NavItem[] = [
   { id: 'pitch', label: 'Presentation', icon: <Presentation size={16} /> },
   { id: 'video', label: '30-second video', icon: <Clapperboard size={16} /> },
 ];
-const TITLES: Record<string, string> = { overview: 'Overview', farm: 'Your field', resources: 'Resources', compare: 'Compare plans', rotation: 'Multi-year & soil N', evidence: 'Evidence', report: 'Report & export', methods: 'Methods & sources', video: '30-second video' };
+const TITLES: Record<string, string> = { overview: 'Overview', farm: 'Your field', resources: 'Budget & crops', compare: 'Compare plans', rotation: 'Multi-year & soil N', evidence: 'Evidence', report: 'Report & export', methods: 'Methods & sources', video: '30-second video' };
 
 function useRoute(): [Route, (r: Route) => void] {
   const read = () => ((window.location.hash.replace('#/', '').split('?')[0]) || 'overview') as Route;
@@ -150,7 +150,7 @@ export default function App() {
             <button className="btn sm" onClick={() => go('pitch')} aria-label="Present"><Presentation size={16} /><span className="hide-sm">Present</span></button>
           </div>
         </header>
-        <main key={route} className={`page-enter ${route === 'farm' ? 'fit' : ''}`}>
+        <main key={route} className={`page-enter ${route === 'farm' || route === 'resources' ? 'fit' : ''}`}>
           <Suspense fallback={<RouteFallback />}>
           {route === 'overview' && <Overview go={go} />}
           {route === 'farm' && <FarmPage go={go} />}
@@ -162,7 +162,7 @@ export default function App() {
           {route === 'methods' && <MethodsPage />}
           {route === 'video' && <VideoPage go={go} />}
           </Suspense>
-          {route !== 'farm' && <p className="disclaimer">
+          {route !== 'farm' && route !== 'resources' && <p className="disclaimer">
             Field Shift is a decision-support prototype for NASA Space Apps 2026 (Field Shift challenge); it informs rather than decides, and NASA does not endorse it. Default prices, yields and demo farms are synthetic; rule packs await local agronomist review. Data: NASA POWER, NASA GIBS, ISRIC SoilGrids, Open-Meteo, maps © OpenStreetMap contributors. AI-assisted: built with Claude (Anthropic) for research, documents, code and design; the video narration voice is Kokoro TTS. <a href="#/methods">Methods & sources</a>
           </p>}
         </main>

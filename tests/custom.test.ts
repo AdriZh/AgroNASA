@@ -103,12 +103,12 @@ describe('near misses: smallest verified change', () => {
     expect(at(fix.shortfall! - 1).feasible).toBe(false);
   });
 
-  it('seed marked unavailable is suggested as "allow it in Resources", verified', () => {
+  it('a crop not in the allowed list is suggested as "allow it in Budget & crops", verified', () => {
     const inp = { ...KZ, sc: { ...KZ.sc, unavailableCrops: ['rapeseed'] } };
     const out = run(inp);
     const p = out.allPlans.find((x) => x.id === 'fallow→rapeseed')!;
     expect(p.reasons.some((r) => r.code === 'SEED_UNAVAILABLE')).toBe(true);
-    expect(smallestChange(inp, p).change).toBe(`${cropName('rapeseed')} seed marked unavailable: allow it in Resources`);
+    expect(smallestChange(inp, p).change).toBe(`allow ${cropName('rapeseed')} in Budget & crops`);
     expect(evaluateRotation({ ...inp, sc: { ...inp.sc, unavailableCrops: [] } }, p.crops).feasible).toBe(true);
   });
 

@@ -12,6 +12,7 @@ import { LocationSearch, PresetGrid } from '../components/LocationPicker';
 import { OrbitVisual } from '../components/OrbitVisual';
 import { WeatherError } from '../components/NetStatus';
 import { PlanCard } from './Compare';
+import { useDrierHotter } from '../components/stress';
 
 const NASA_SOURCES: [string, string][] = [
   ['NASA POWER daily (MERRA-2 / CERES)', 'Rain, temperature, humidity, wind and sun since 2001 → ET₀, sowing dates, dry spells, heat, water-balance replay.'],
@@ -36,6 +37,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
   const min = rows.length ? rows.reduce((a, r) => (r.windowRain < a.windowRain ? r : a)) : null;
   const max = rows.length ? rows.reduce((a, r) => (r.windowRain > a.windowRain ? r : a)) : null;
   const best = engine?.alternatives[0];
+  const stress = useDrierHotter();
   const cur = scenario.currency;
   const place = (scenario.location.label ?? 'this').split(',')[0];
   const country = (d: (typeof DEMOS)[number]) => d.location.label?.split(',').slice(-1)[0].trim();
@@ -49,7 +51,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
           <div className="hero-copy">
             <span className="caption">NASA Space Apps 2026 · Field Shift challenge</span>
             <h1 id="hero-title" className="display">Which crop next, and can you afford it?</h1>
-            <p className="lead">Field Shift replays 25 years of NASA climate records for your field and ranks the two-season rotations that fit your budget.</p>
+            <p className="lead">Field Shift replays 25 years of NASA POWER daily weather for your field and ranks the two-season rotations that fit your budget.</p>
             <div className="hero-cta">
               {DEMOS.map((d, i) => (
                 <button key={d.id} className={`btn ${i === 0 ? 'primary' : ''}`} onClick={() => { resetDemo(d.id); go('compare'); }}>
@@ -63,7 +65,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
             <div className="hero-art" aria-hidden><OrbitVisual /></div>
             {best ? (
               <>
-                <PlanCard p={best} cur={cur} label="Best fit" tone="brand" best compact />
+                <PlanCard p={best} cur={cur} label="Best fit" tone="brand" best compact risk={stress?.get(best.id) ?? null} showNet />
                 <div className="spread"><span className="mini">Best fit for the {place} {scenario.synthetic ? 'demo farm' : 'farm'}</span><button className="btn ghost sm" onClick={() => go('compare')}>All plans <ArrowRight /></button></div>
               </>
             ) : engine ? (
@@ -83,7 +85,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
           <div>
             <span className="caption">NASA data</span>
             <h3>{nSeasons || 25} seasons for this grid cell</h3>
-            <span className="mini">NASA POWER, SMAP, MODIS and IMERG, replayed day by day.</span>
+            <span className="mini">NASA POWER daily weather (MERRA-2 + CERES), replayed day by day{nSeasons > 1 ? ` as ${nSeasons - 1} consecutive season pairs` : ''}. SMAP, MODIS, IMERG and GRACE add satellite context.</span>
           </div>
           <div>
             <span className="caption">Plan</span>
@@ -151,7 +153,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
 
       <section className="card section" aria-label="What Field Shift does and does not do">
         <div className="cols">
-          <div><span className="caption">What it does</span><span className="mini">Affordable options first; sourced rotation rules; 25-season replay of water-limited yield (FAO-56 + FAO-66); cash-timing checks; honest “no feasible plan” states; works offline after first load.</span></div>
+          <div><span className="caption">What it does</span><span className="mini">Affordable options first; sourced rotation rules; NASA POWER replay of water-limited yield over 24 consecutive season pairs (FAO-56 + FAO-66); cash-timing checks; honest “no feasible plan” states. The two demo farms work offline; other locations are cached on the device after the first download.</span></div>
           <div><span className="caption">What it never claims</span><span className="mini">No guaranteed yield or profit, no causal diagnosis of a failed crop, no fertilizer prescription, no soil N–P–K inferred from purchases, no forecast presented as certainty.</span></div>
           <div><span className="caption">Private by design</span><span className="mini">History and budget stay in the browser; public APIs only see coordinates. Export, import and delete-all on the Report page. No account. No LLM in the decision path.</span></div>
         </div>

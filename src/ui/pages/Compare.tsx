@@ -1,6 +1,6 @@
 import { Fragment, useRef, useState, type ReactNode } from 'react';
 import type { Route } from '../../App';
-import { ArrowDown, ArrowLeft, ArrowRight, Ban, CloudSunRain, Coins } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, Ban, CloudSunRain, Coins, Pencil } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
 import type { EngineOutput, PlanResult } from '../../engine/plan';
 import { CROPS, cropEmoji, cropName } from '../../data/crops';
@@ -10,6 +10,8 @@ import { CashTimeline, CostChart, RangeBar, ReplayChart } from '../components/ch
 import { BudgetBar, CardTitle, Callout, Disclaimer, Money, NasaLoading, pct, ReasonList, Ref, Seg, StatRows, StatusBadge, Tag } from '../components/common';
 import { WhatIfPanel } from '../components/WhatIf';
 import { WeatherError } from '../components/NetStatus';
+import { RiskRow } from '../components/stress';
+import type { PlanStress } from '../../engine/whatif';
 
 const PRIORITY_LABEL = { cost: 'lowest cost', climate: 'lowest climate exposure', continuity: 'continuity', return: 'modeled return' };
 const BEST_LABEL = { cost: 'Best for lowest cost', climate: 'Best for climate risk', continuity: 'Best for continuity', return: 'Best for modeled return' };
@@ -43,7 +45,7 @@ function harvestText(p: PlanResult) {
 }
 
 /** The plan card: one hero number (cash cost), budget bar, three stat rows, sowing lines. Used by Compare, Overview and Report. */
-export function PlanCard({ p, cur, label, tone, best, onWhy, selected, compact }: { p: PlanResult; cur: string; label: string; tone?: 'brand'; best?: boolean; onWhy?: () => void; selected?: boolean; compact?: boolean }) {
+export function PlanCard({ p, cur, label, tone, best, onWhy, selected, compact, risk, showNet }: { p: PlanResult; cur: string; label: string; tone?: 'brand'; best?: boolean; onWhy?: () => void; selected?: boolean; compact?: boolean; risk?: PlanStress | null; showNet?: boolean }) {
   const severe = Math.round(p.outcome.pSevereAny * p.outcome.pairs);
   return (
     <article className={`card plan ${best ? 'best' : ''} ${compact ? 'preview' : ''}`} aria-label={`${label}: ${cropName(p.crops[0])} then ${cropName(p.crops[1])}`}>
@@ -57,12 +59,14 @@ export function PlanCard({ p, cur, label, tone, best, onWhy, selected, compact }
         <BudgetBar cost={p.budget.totalCash} cap={p.budget.cap + p.budget.inflowsTotal} status={p.budget.status} />
         <BudgetLine p={p} cur={cur} />
       </div>
+      {compact && risk !== undefined && <RiskRow p={p} s={risk} net={showNet ? (p.outcome.net ? fmtMoney(p.outcome.net.median, cur) : '—') : undefined} />}
       {!compact && <>
         <div className="group" style={{ marginTop: 0 }}>
           <StatRows rows={[
             ['Due before first sowing', fmtMoney(p.budget.upfront, cur)],
             ['Harvest, typical year', harvestText(p)],
-            ['Severe water stress', `${severe} of ${p.outcome.pairs} years`],
+            ['Modeled net, typical year', p.outcome.net ? fmtMoney(p.outcome.net.median, cur) : '—'],
+            ['Severe water stress', `${severe} of ${p.outcome.pairs} season pairs`],
           ]} />
         </div>
         <div className="plan-sow group" style={{ marginTop: 0 }}>
@@ -107,7 +111,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
       <div>
         <span className="caption">Step 3 of 4</span>
         <h1>Compare two-season plans</h1>
-        {engine && <p>{engine.areaHa.toFixed(2)} ha · {engine.baseline.seasons[0].year === engine.baseline.seasons[1].year ? `${engine.baseline.seasons[0].year} ${engine.windows.map((w) => w.label).join(' + ')}` : `${engine.baseline.seasons[0].year}–${engine.baseline.seasons[1].year}`} · {fmtMoney(engine.baseline.budget.cap, sc.currency)} spendable{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, sc.currency)} confirmed inflows` : ''} · ranked by {PRIORITY_LABEL[sc.priority]}</p>}
+        {engine && <p>{engine.areaHa.toFixed(2)} ha · {engine.baseline.seasons[0].year === engine.baseline.seasons[1].year ? `${engine.baseline.seasons[0].year} ${engine.windows.map((w) => w.label).join(' + ')}` : `${engine.baseline.seasons[0].year}–${engine.baseline.seasons[1].year}`} · {fmtMoney(engine.baseline.budget.cap, sc.currency)} spendable{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, sc.currency)} confirmed inflows` : ''} · ranked by {PRIORITY_LABEL[sc.priority]}{engine.notes.some((n) => n.code === 'BUDGET_PLACEHOLDER') && <>{' '}<button type="button" className="badge warn budget-chip" onClick={() => go('resources')} title="This budget is a placeholder, not your money. Enter the cash you really have in Resources."><Pencil />Placeholder budget · set yours</button></>}</p>}
       </div>
       <div className="page-actions"><button className="btn" onClick={() => go('resources')}><ArrowLeft /> Edit resources</button><button className="btn primary" onClick={() => go('evidence')}>Review evidence <ArrowRight /></button></div>
     </div>

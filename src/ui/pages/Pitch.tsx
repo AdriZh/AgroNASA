@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight, BadgeCheck, Ban, BookMarked, Calculator, Check, ChevronLeft, ChevronRight, CloudRain, Droplets, Eye, FileDown, FlaskConical, Globe2, Layers, Leaf,
-  Map as MapIcon, Microscope, NotebookPen, Satellite, Scale, Shovel, Sprout, Tractor, Users, Wallet, WifiOff, X, Sun, Thermometer,
+  NotebookPen, Satellite, Shovel, Sprout, Tractor, Users, Wallet, WifiOff, X, Sun, Thermometer,
 } from 'lucide-react';
 import type { Route } from '../../App';
 import { useApp } from '../../state/AppContext';
@@ -19,6 +19,8 @@ import { PlanCard } from './Compare';
 import { HindcastChart } from '../components/Hindcast';
 import { allHindcasts } from '../../data/hindcast/hindcast';
 import type { PlanResult } from '../../engine/plan';
+import type { PlanStress } from '../../engine/whatif';
+import { useDrierHotter } from '../components/stress';
 
 const ease = [0.2, 0.7, 0.2, 1] as const;
 const up = (d = 0) => ({ initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3, delay: d, ease } });
@@ -196,6 +198,28 @@ function Funnel({ steps }: { steps: [string, number, string][] }) {
   );
 }
 
+/** Slide 3: the live Compare result in miniature, with three callouts on the rows that matter. */
+function MiniCompare({ plans, cur, stress }: { plans: PlanResult[]; cur: string; stress: Map<string, PlanStress> | null }) {
+  const pairs = plans[0]?.outcome.pairs ?? 0;
+  const call = (k: number, title: string, d: string, delay: number) => (
+    <motion.div className="mc-call" {...fade(delay)}>
+      <span className="mc-n">{k}</span>
+      <div><b>{title}</b><span>{d}</span></div>
+      <ArrowRight size={18} className="mc-arrow" aria-hidden />
+    </motion.div>
+  );
+  return (
+    <motion.div {...fade(0.2)} className="mini-compare">
+      <div className="mc-calls mc-r3">{call(1, 'Your budget', 'cost against cash you can spend', 0.5)}</div>
+      <div className="mc-calls mc-r4">
+        {call(2, `NASA ${pairs}-season replay`, `${pairs} consecutive season pairs`, 0.7)}
+        {call(3, 'Stress-test: drier & hotter', '−15% rain, +2 °C', 0.9)}
+      </div>
+      {plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Usual plan' : p.label} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} />)}
+    </motion.div>
+  );
+}
+
 // ---------- deck ----------
 export function PitchPage({ go }: { go: (r: Route) => void }) {
   const { engine, data, scenario } = useApp();
@@ -208,6 +232,8 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
   const cur = scenario.currency;
   const place = (scenario.location.label ?? '').split(',')[0] || 'this site';
   const plans = engine ? [engine.baseline, ...engine.alternatives] : [];
+  const stress = useDrierHotter();
+  const base = import.meta.env.BASE_URL;
 
   const all: { id: string; kicker: string; icon: ReactNode; body: ReactNode }[] = [
     { id: 'title', kicker: 'NASA Space Apps 2026 · Field Shift challenge', icon: <BadgeCheck size={14} />, body: (
@@ -215,8 +241,8 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         <div>
           <motion.div {...up(0.1)} style={{ display: 'flex', alignItems: 'center', gap: 16 }}><BrandMark size={56} /><span style={{ fontWeight: 600, fontSize: 28 }}>Field Shift</span></motion.div>
           <motion.h1 {...up(0.2)} style={{ margin: '24px 0 16px' }}>Crop plans farmers can <G>afford</G>, informed by <G>25 years of NASA Earth data</G>.</motion.h1>
-          <motion.p {...up(0.3)} style={{ maxWidth: 620 }}>We combine satellite climate history with what the farmer already knows (past crops, soil, budget and constraints) and explain every trade-off.</motion.p>
-          <motion.div {...up(0.4)} className="row" style={{ marginTop: 24 }}>{['Informs, never dictates', 'Works offline', 'Any location on Earth'].map((x) => <span key={x} className="chip" style={{ fontSize: 13, padding: '4px 10px' }}>{x}</span>)}</motion.div>
+          <motion.p {...up(0.3)} style={{ maxWidth: 620 }}>We replay NASA POWER daily weather, add NASA satellite context, combine it with what the farmer already knows (past crops, soil, budget and constraints) and explain every trade-off.</motion.p>
+          <motion.div {...up(0.4)} className="row" style={{ marginTop: 24 }}>{['Informs, never dictates', 'Demo farms work offline', 'Any location on Earth'].map((x) => <span key={x} className="chip" style={{ fontSize: 13, padding: '4px 10px' }}>{x}</span>)}</motion.div>
         </div>
         <motion.div {...fade(0.3)} style={{ height: 260 }}><OrbitVisual /></motion.div>
       </div>
@@ -231,7 +257,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
           </motion.div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Panel d={0.4}><div className="num-xl">{(mx / Math.max(1, mn)).toFixed(1)}×</div><p style={{ marginTop: 8 }}>swing in season rain at the same place ({Math.round(mn)}–{Math.round(mx)} mm). An “average year” hides it.</p></Panel>
-            <Panel d={0.5}><div className="num-xl">30–84%</div><p style={{ marginTop: 8 }}>of studied site-seasons where fertilizer paid off in East Africa: inputs don’t always pay <span className="muted">(Sileshi et al. 2022)</span>.</p></Panel>
+            {minRow && maxRow && <Panel d={0.5}><b style={{ fontSize: 20 }}>Live from NASA POWER</b><p style={{ marginTop: 8 }}>Driest season {minRow.year}: <b className="ink">{Math.round(mn)} mm</b>. Wettest {maxRow.year}: <b className="ink">{Math.round(mx)} mm</b>. Same field, same calendar.</p></Panel>}
             <Panel d={0.6}><b style={{ fontSize: 20 }}>Patchy records</b><p style={{ marginTop: 8 }}>Past crops, doses and dates live in memory, and timing matters as much as totals.</p></Panel>
           </div>
         </div>
@@ -264,24 +290,9 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     ) },
     { id: 'solution', kicker: 'Our solution', icon: <Sprout size={14} />, body: (
       <>
-        <motion.h2 {...up(0.1)}>One question, answered transparently.</motion.h2>
-        <motion.p {...up(0.2)} className="quote" style={{ maxWidth: 1000 }}>“Given what I grew and applied before, my money now and the conditions here, <G>which next two-season plans can I realistically afford?</G>”</motion.p>
-        <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, marginTop: 'auto', marginBottom: 'auto' }}>
-          {([
-            [<MapIcon size={22} />, 'Farm & history', 'Map pin, area, last crops & outcomes, fertilizer, soil'],
-            [<Wallet size={22} />, 'Resources', 'Cash, reserve, inflows, labor, seed, market, irrigation, 1 priority'],
-            [<Scale size={22} />, 'Compare', 'Usual plan vs ≤ 2 feasible options, cost, timing, risk, reasons'],
-            [<Microscope size={22} />, 'Evidence', 'NASA climate, season so far, forecast, satellite, past-season review'],
-          ] as const).map(([ic, title, d], k, arr) => (
-            <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-              <Panel d={0.3 + k * 0.1} style={{ flex: 1, height: '100%', padding: 20 }}>
-                <div className="spread"><span className="step-n" style={{ fontSize: 20 }}>{String(k + 1).padStart(2, '0')}</span><span className="muted">{ic}</span></div>
-                <h3 style={{ margin: '12px 0 4px' }}>{title}</h3><p style={{ fontSize: 15 }}>{d}</p>
-              </Panel>
-              {k < arr.length - 1 && <motion.div {...fade(0.5 + k * 0.1)} className="muted"><ArrowRight size={20} /></motion.div>}
-            </div>
-          ))}
-        </div>
+        <motion.h2 {...up(0.1)}>Which next two-season plans can I <G>realistically afford</G>?</motion.h2>
+        <motion.p {...up(0.2)}>Your usual plan against the two best alternatives, live for {place}: priced, cash-checked, replayed on NASA weather.</motion.p>
+        {engine && plans.length > 0 ? <MiniCompare plans={plans} cur={cur} stress={stress} /> : null}
       </>
     ) },
     { id: 'fusion', kicker: 'Data fusion', icon: <Layers size={14} />, body: (<><motion.h2 {...up(0.1)}>NASA Earth data + ground truth → explainable plans</motion.h2><FusionDiagram /></>) },
@@ -300,7 +311,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     ) },
     { id: 'bucket', kicker: 'Science 2 · Will the crop get enough water?', icon: <Droplets size={14} />, body: (
       <>
-        <motion.h2 {...up(0.1)}>A daily soil-water bucket, replayed over 25 real seasons.</motion.h2>
+        <motion.h2 {...up(0.1)}>A daily soil-water bucket, every season since 2001.</motion.h2>
         <div style={{ display: 'grid', gridTemplateColumns: '.9fr 1.1fr', gap: 32, flex: 1, alignItems: 'center' }}>
           <motion.div {...fade(0.2)}><Bucket /></motion.div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -328,7 +339,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     { id: 'result', kicker: `Live result · ${scenario.name}`, icon: <BadgeCheck size={14} />, body: (
       <>
         <motion.h2 {...up(0.1)}>{engine?.baseline.budget.status === 'affordable' ? 'The usual plan fits, and here is how the alternatives compare.' : 'The usual plan doesn’t fit the budget. Two that do:'}</motion.h2>
-        <motion.div {...fade(0.2)} className="plan-row slide-plans" style={{ flex: 1, alignContent: 'center' }}>{plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Your usual plan' : k === 1 ? 'Best fit' : p.label} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact />)}</motion.div>
+        <motion.div {...fade(0.2)} className="plan-row slide-plans" style={{ flex: 1, alignContent: 'center' }}>{plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Your usual plan' : k === 1 ? 'Best fit' : p.label} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} showNet />)}</motion.div>
         <motion.div {...up(0.6)} className="row" style={{ gap: 24, fontSize: 15 }}>
           <span className="row" style={{ gap: 6 }}><Check size={16} className="good-t" /> Change a price, the budget or seed availability and results update instantly</span>
           <span className="row" style={{ gap: 6 }}><Check size={16} className="good-t" /> Printable report for the farmer</span>
@@ -358,18 +369,30 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     { id: 'impact', kicker: 'Impact & next steps', icon: <Globe2 size={14} />, body: (
       <>
         <motion.h2 {...up(0.1)}>From one field to a cooperative, anywhere on Earth.</motion.h2>
-        <div className="grid g3" style={{ marginTop: 8 }}>
-          {([[<Globe2 size={20} />, 'Global', '14 regional farming systems (one- and two-season) on 6 continents + a global fallback; local currency & FAOSTAT prices for 240 countries.'], [<WifiOff size={20} />, '≈ $0 to run', 'Static web app, offline after first load, free hosting. Data stays on the device.'], [<FileDown size={20} />, 'Shareable', 'Printable plan with sources for farmers, extension workers and lenders.']] as const).map(([ic, title, d], k) => (
-            <Panel key={title} d={0.2 + k * 0.1}><div className="muted">{ic}</div><div className="num-xl" style={{ fontSize: 32, marginTop: 8 }}>{title}</div><p style={{ marginTop: 8, fontSize: 15 }}>{d}</p></Panel>
-          ))}
-        </div>
-        <motion.div {...up(0.6)} className="timeline">
-          {[['Now', 'Working prototype, 14 regional packs, 37 tests'], ['Next 90 days', 'Pilot: 3–5 farmer interviews, agronomist review of every rule, dated local price pack'], ['v2', 'French · Wolof · Kazakh · Russian, SMS summary, NDVI time series per field'], ['Scale', 'Co-op dashboards & input-credit programmes; more regional packs']].map(([title, d], k) => (
-            <div key={title}>
-              <i className={k === 0 ? 'on' : ''} />
-              <b>{title}</b><p style={{ fontSize: 14, marginTop: 4 }}>{d}</p>
+        <div className="impact-grid">
+          <div style={{ minWidth: 0 }}>
+            <div className="grid g3">
+              {([[<Globe2 size={20} />, 'Global', '14 regional farming systems on 6 continents + a global fallback; FAOSTAT prices for 240 countries.'], [<WifiOff size={20} />, '≈ $0 to run', 'Static web app on free hosting. Demo farms work offline; other places are cached after the first download.'], [<FileDown size={20} />, 'Shareable', 'Printable plan with sources for farmers, extension workers and lenders.']] as const).map(([ic, title, d], k) => (
+                <Panel key={title} d={0.2 + k * 0.1}><div className="row" style={{ gap: 8 }}><span className="muted">{ic}</span><b className="impact-t">{title}</b></div><p style={{ marginTop: 8, fontSize: 15 }}>{d}</p></Panel>
+              ))}
             </div>
-          ))}
+            <motion.div {...up(0.5)} className="timeline">
+              {[['Now', 'Working prototype, 14 regional packs, automated tests'], ['Next 90 days', 'Pilot: 3–5 farmer interviews, agronomist review of every rule, dated local price pack'], ['v2', 'French · Wolof · Kazakh · Russian, SMS summary, NDVI per field'], ['Scale', 'Co-op dashboards & input-credit programmes']].map(([title, d], k) => (
+                <div key={title}>
+                  <i className={k === 0 ? 'on' : ''} />
+                  <b>{title}</b><p style={{ fontSize: 14, marginTop: 4 }}>{d}</p>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+          <motion.div {...up(0.3)} className="qr-box">
+            <img src={`${base}media/qr-live.svg`} alt="QR code for https://adrizh.github.io/AgroNASA/" width={200} height={200} />
+            <span className="muted">Scan to try it on a phone</span>
+          </motion.div>
+        </div>
+        <motion.div {...up(0.7)} className="live-url">
+          <span className="caption">Try it live</span>
+          <a href="https://adrizh.github.io/AgroNASA/" target="_blank" rel="noopener noreferrer">adrizh.github.io/AgroNASA</a>
         </motion.div>
       </>
     ) },

@@ -335,6 +335,13 @@ td.wrap, .table-wrap td.wrap { white-space: normal; }
 .plan-sow { display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 20px; color: var(--text-muted); }
 .plan-sow > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .plan-sow .yr { font-family: var(--mono); font-size: 12px; color: var(--text); margin-right: var(--s-2); }
+.plan-risk { display: flex; flex-direction: column; gap: 2px; border-top: 1px dashed var(--border); padding-top: var(--s-2); font-size: 13px; line-height: 20px; }
+.plan-risk b { font-weight: var(--w-strong); white-space: nowrap; color: var(--text); }
+.plan-risk-wi { display: flex; align-items: center; gap: var(--s-1); flex-wrap: wrap; color: var(--text-muted); }
+.plan-risk-wi svg { flex: none; }
+.budget-chip { border: 0; cursor: pointer; font: inherit; font-size: 12px; line-height: 16px; font-weight: var(--w-strong); vertical-align: 1px; margin-left: var(--s-1); }
+.budget-chip:hover { text-decoration: underline; }
+.budget-chip:focus-visible { box-shadow: var(--focus); outline: none; }
 .plan-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
 .plan-foot .showing { font-size: 13px; font-weight: var(--w-strong); color: var(--text-muted); display: inline-flex; align-items: center; gap: var(--s-1); }
 .plan-dots { display: none; justify-content: center; gap: var(--s-2); margin-top: var(--s-2); }

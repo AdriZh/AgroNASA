@@ -417,7 +417,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         <motion.h2 {...up(0.1)} style={{ marginBottom: 12 }}>Published science in a free web app: no black box.</motion.h2>
         <ProductSchema />
         <motion.div {...up(0.9)} style={{ margin: '12px 0 20px', fontSize: 13, display: 'grid', gap: 4 }}>
-          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}><b className="row ink" style={{ gap: 6 }}><Code size={15} /> Stack:</b><span className="muted">React + TypeScript + Vite · static site, GitHub Pages CI · no backend, works offline · 180 automated tests</span></div>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}><b className="row ink" style={{ gap: 6 }}><Code size={15} /> Stack:</b><span className="muted">React + TypeScript + Vite · static site, GitHub Pages CI · no backend, works offline · 227 automated tests</span></div>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}><b className="row ink" style={{ gap: 6 }}><Workflow size={15} /> Process:</b><span className="muted">Brief &amp; research → spec + evidence register → engine first, tested on archived NASA data &amp; the FAO-56 example → UI + 16 regional packs → hindcast vs real FAOSTAT yields</span></div>
         </motion.div>
       </>

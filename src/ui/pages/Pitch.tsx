@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight, BadgeCheck, Ban, BookMarked, Calculator, Check, ChevronLeft, ChevronRight, CloudRain, Droplets, Eye, FileDown, FlaskConical, Globe2, Layers, Leaf,
-  NotebookPen, Satellite, Shovel, Sprout, Tractor, Users, Wallet, WifiOff, X, Sun, Thermometer,
+  NotebookPen, Satellite, Shovel, Sprout, Tractor, Users, Wallet, WifiOff, X, Sun, Moon, Thermometer,
   Languages, Bot, Mic, LayoutDashboard, Cpu, Rocket, Workflow, Target, Code,
 } from 'lucide-react';
 import type { Route } from '../../App';
@@ -14,7 +14,6 @@ import { addDays, dayIndex, fmtDayMonth } from '../../domain/dates';
 import { rainOnset, temperatureSowing, yearlyWindow } from '../../weather/indicators';
 import { BrandMark } from '../components/Logo';
 import { OrbitVisual } from '../components/OrbitVisual';
-import { ThemeToggle } from '../components/common';
 import { CAT_TOKEN, SeasonRainChart, useChartTheme } from '../components/charts';
 import { BEST_FIT, CASH_CAPTION, PlanCard, tradeOffText } from './Compare';
 import { weightsSummary } from '../components/PrioritySliders';
@@ -313,6 +312,13 @@ function CheckTable() {
 export function PitchPage({ go }: { go: (r: Route) => void }) {
   const { engine, data, scenario } = useApp();
   const cut = 'pitch';
+  // The deck opens in light mode; the button switches it for this deck only, and the app's own theme comes back on exit.
+  const [deckTheme, setDeckTheme] = useState<'light' | 'dark'>('light');
+  useEffect(() => {
+    const root = document.documentElement, prev = root.dataset.theme;
+    return () => { if (prev) root.dataset.theme = prev; else delete root.dataset.theme; };
+  }, []);
+  useEffect(() => { document.documentElement.dataset.theme = deckTheme; }, [deckTheme]);
   const [i, setI] = useState(0);
   const [printing, setPrinting] = useState(false);
   const rows = useMemo(() => (data.series && engine ? yearlyWindow(data.series, engine.window.earliest, seasonEndOf(engine)) : []), [data.series, engine]);
@@ -393,8 +399,8 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     ) },
     { id: 'solution', kicker: '02 / Our solution', icon: <Sprout size={14} />, body: (
       <>
-        <motion.h2 {...up(0.1)} style={{ marginBottom: 8 }}>Which next plans can I <G>afford</G>, and how do they hold up in a <G>bad year</G>?</motion.h2>
-        <motion.div {...up(0.15)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <motion.h2 {...up(0.1)} style={{ marginBottom: 8, fontSize: 'clamp(20px, 2.3vw, 30px)' }}>Which next plans can I <G>afford</G>, and how do they hold up in a <G>bad year</G>?</motion.h2>
+        <motion.div {...up(0.15)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           {['Pin your field', 'Enter crops & budget', 'Compare plans you can afford', 'Print or share'].map((s, k, a) => (
             <span key={s} style={{ display: 'contents' }}>
               <span className="boxed" style={{ padding: '6px 12px', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}><span className="hl">{k + 1}</span> {s}</span>
@@ -618,7 +624,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
           </div>
           <div className="progress" role="tablist" aria-label="Slides">{slides.map((s, k) => <i key={s.id} role="tab" aria-selected={k === idx} aria-label={s.kicker} className={k === idx ? 'on' : ''} onClick={() => setI(k)} title={s.kicker} />)}</div>
           <div className="row">
-            <ThemeToggle />
+            <button className="btn sm icon" aria-label={deckTheme === 'light' ? 'Switch slides to dark' : 'Switch slides to light'} title={deckTheme === 'light' ? 'Dark slides' : 'Light slides'} onClick={() => setDeckTheme((m) => (m === 'light' ? 'dark' : 'light'))}>{deckTheme === 'light' ? <Moon /> : <Sun />}</button>
             <button className="btn sm" onClick={() => setPrinting(true)} title="Print every slide, one per page (save as PDF)"><FileDown /> PDF</button>
             <button className="btn sm icon" aria-label="Previous slide" onClick={() => setI((v) => Math.max(0, v - 1))}><ChevronLeft /></button>
             <button className="btn sm" onClick={() => setI((v) => Math.min(n - 1, v + 1))}>Next <ChevronRight /></button>

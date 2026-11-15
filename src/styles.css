@@ -412,6 +412,14 @@ details.disclose > summary > svg:first-child { width: 16px; height: 16px; color:
 details.disclose > summary::after { content: ''; margin-left: auto; width: 7px; height: 7px; border-right: 1.5px solid var(--text-muted); border-bottom: 1.5px solid var(--text-muted); transform: rotate(45deg); transition: transform var(--t) var(--ease); flex: 0 0 auto; }
 details.disclose[open] > summary::after { transform: rotate(-135deg); }
 details.disclose > .body { margin-top: var(--s-3); }
+/* "Why these crops here?" (CropScreen.tsx) */
+.crop-screen-count { font-weight: var(--w-regular); color: var(--text-muted); font-size: 13px; }
+.crop-screen-intro { margin: 0 0 var(--s-3); max-width: 72ch; }
+.crop-screen-list { list-style: none; margin: 0; padding: 0; }
+.crop-screen-list .reason { align-items: center; }
+.crop-screen-list .reason .ico { margin-top: 0; }
+.crop-screen-text { min-width: 0; overflow-wrap: anywhere; }
+.crop-screen-grown { margin-left: var(--s-1); vertical-align: 1px; }
 
 /* ---------- empty & loading ---------- */
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--s-2); padding: var(--s-5) var(--s-3); color: var(--text-muted); }

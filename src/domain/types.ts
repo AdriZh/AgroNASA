@@ -132,7 +132,7 @@ export interface CropDef {
   sources: string[];          // evidence ids
   /** Cover / catch crop: grown for soil benefit (green manure, cover), never ranked as a cash crop. */
   cover?: boolean;
-  /** Base temperature for growing-degree days (°C), used by the short-window check (engine/window.ts). */
+  /** Base temperature for growing-degree days (°C), used by the short-window check (engine/window.ts) and the season-length check (engine/season.ts). */
   tbase?: number;
   /** Growing-degree days above `tbase` from sowing to maturity — for green manures, to termination at flowering. */
   gddToMaturity?: number;
@@ -246,7 +246,7 @@ export type ReasonCode =
   | 'IRRIGATION_REQUIRED' | 'SEED_UNAVAILABLE' | 'MARKET_CONSTRAINT' | 'LABOR_LIMIT' | 'RESIDUE_NEED'
   | 'CLIMATE_UNSUITABLE' | 'CLIMATE_RISK_HIGH' | 'HEAT_EXPOSURE' | 'FROST_RISK' | 'SOIL_PH'
   | 'SEASON_OVERLAP' | 'HISTORY_INCOMPLETE' | 'CLIMATE_CONTEXT_ONLY' | 'UNREVIEWED_RULES' | 'SYNTHETIC_PRICES'
-  | 'OUT_OF_CALENDAR';
+  | 'OUT_OF_CALENDAR' | 'SEASON_TOO_SHORT';
 
 export interface Reason {
   code: ReasonCode;

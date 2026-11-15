@@ -1,9 +1,9 @@
 // Orchestrator: normalize → indicators → candidates → rules → costs → feasibility → rank → explain.
 // Pure and deterministic: identical inputs always give identical results (no LLM in this path).
-import type { BudgetPlaceholder, CostItemDef, DailySeries, FarmScenario, Reason, RegionPack, SoilProfile } from '../domain/types';
+import type { BudgetPlaceholder, CostItemDef, CropDef, DailySeries, FarmScenario, Reason, RegionPack, SoilProfile } from '../domain/types';
 import { CROPS, cropFor, cropName } from '../data/crops';
 import { IRRIGATION_USD_PER_MM_HA } from '../data/regionPacks';
-import { countryInfo, cropPriceUsd, fxFactor, fxPerUsd, PRICE_PLAUSIBLE_FACTOR } from '../data/countries';
+import { commonlyGrown, countryInfo, cropPriceUsd, fxFactor, fxPerUsd, PRICE_PLAUSIBLE_FACTOR } from '../data/countries';
 import { toHectares } from '../domain/units';
 import { addDays, diffDays } from '../domain/dates';
 import { completeYears, median, quantile } from '../weather/indicators';
@@ -49,7 +49,28 @@ export interface EngineOutput {
   allPlans: PlanResult[];
   excluded: PlanResult[];
   notes: Reason[];
+  /** Every crop considered at this location with its NASA screen verdict ("Why these crops here?"). */
+  screen: LocationScreen;
 }
+
+/** Screen verdict for one crop in one season window. */
+export interface CropScreen {
+  cropId: string; seasonId: string; seasonLabel: string;
+  ok: boolean;                 // no blocking screen item: the crop may appear in plans
+  items: ScreenItem[];         // the findings behind the verdict (cropScreenItems)
+  line: string;                // one-line NASA-based summary, e.g. "matures before frost in 23/25 years; water-limited yield 71%"
+  refs: string[];
+  /** FAOSTAT: commonly grown in the farm's country (harvested area), or null. Context only; never changes `ok`. */
+  grown: ReturnType<typeof commonlyGrown>;
+}
+export interface LocationScreen {
+  crops: CropScreen[];
+  /** True when crops failing the screen are removed from the candidate list (global-screening pack). */
+  filtered: boolean;
+}
+
+/** The fallback pack screens a generic crop library; only crops that pass the NASA screen become candidates. */
+export const GLOBAL_PACK_ID = 'global-screening';
 
 const LABOR_RANK = { low: 0, medium: 1, high: 2 } as const;
 const HARD_DISEASE = new Set(['sclerotinia', 'fusarium-flax', 'groundnut-pests', 'solanaceae', 'pulse-root-rot', 'bean-root-rot', 'fusarium-pulse', 'cotton-wilt']);
@@ -92,6 +113,40 @@ export function baselineCrops(sc: FarmScenario, pack: RegionPack): [string, stri
 }
 
 const GROUP_NOUN: Record<string, string> = { cereal: 'a cereal', legume: 'a legume', oilseed: 'an oilseed', tuber: 'a tuber crop', cover: 'a cover crop' };
+
+/** One location-screen finding: the full reason (without the season tag) and a short phrase for one-line summaries. */
+export interface ScreenItem { reason: Reason; short: string }
+const pc = (x: number) => `${(x * 100).toFixed(0)}%`;
+const mmddLabel = (md: string | null) => (md ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(md.slice(0, 2)) - 1]} ${Number(md.slice(3))}` : '—');
+
+/**
+ * Crop-level screening at this location, independent of the rotation: irrigation requirement, the NASA replay
+ * (season-mean temperature, water-limited yield, water stress, heat and frost exposure), the growing-season length
+ * (SEASON_TOO_SHORT, src/engine/season.ts) and soil pH. ruleCheck tags these per season; screenCrops lists them
+ * per crop. A crop "passes the screen" when none of its items blocks.
+ */
+export function cropScreenItems(c: CropDef, r: CropRisk | null, soil: SoilProfile, sc: Pick<FarmScenario, 'irrigation'>): ScreenItem[] {
+  const out: ScreenItem[] = [];
+  if (c.id === 'fallow') return out;
+  const add = (code: Reason['code'], severity: Reason['severity'], text: string, short: string, refs: string[]) => out.push({ reason: { code, severity, text, refs }, short });
+  if (c.irrigationRequired && sc.irrigation !== 'yes') add('IRRIGATION_REQUIRED', 'block', 'requires irrigation, which is not available.', 'needs irrigation, which this farm does not have', ['input:irrigation']);
+  if (r && r.years.length) {
+    if (r.tempOutOfRange > 0.5) add('CLIMATE_UNSUITABLE', 'block', `season mean temperature (${r.meanSeasonT?.toFixed(1)} °C) is outside ${c.name}'s range ${c.tMeanRange[0]}–${c.tMeanRange[1]} °C in most years.`, `season mean ${r.meanSeasonT?.toFixed(0)} °C, needs ${c.tMeanRange[0]}–${c.tMeanRange[1]} °C`, ['D1', 'R17']);
+    else if (r.medianRel < 0.35) add('CLIMATE_UNSUITABLE', 'block', `modeled water-limited yield is only ${(r.medianRel * 100).toFixed(0)}% of attainable in a median year.`, `water-limited yield only ${pc(r.medianRel)} of attainable in a median year`, ['R8', 'R18']);
+    else if (r.pSevere >= 0.35) add('CLIMATE_RISK_HIGH', 'warn', `severe water stress (<50% of attainable) in ${(r.pSevere * 100).toFixed(0)}% of replayed years.`, `severe water stress in ${pc(r.pSevere)} of years`, ['R8', 'R18']);
+    const ss = r.season;
+    if (ss && ss.applicable && !ss.pass) {
+      const need = ss.gddNeed != null ? `needs about ${ss.gddNeed.toLocaleString('en-US')} °C·d above ${ss.tbaseC} °C (its ${ss.cycleDays}-day FAO-56 cycle at ${((c.tMeanRange[0] + c.tMeanRange[1]) / 2).toFixed(0)} °C) and ` : `its ${ss.cycleDays}-day cycle (FAO-56 stage lengths) `;
+      add('SEASON_TOO_SHORT', 'block', `${need}matures before the first autumn frost in only ${ss.okYears} of ${ss.years} years (median frost-free season ${ss.medianFrostFreeDays} days, last spring frost ${mmddLabel(ss.medianLastSpring)}, first autumn frost ${mmddLabel(ss.medianFirstAutumn)}).`, `matures before frost in only ${ss.okYears} of ${ss.years} years`, ['R8', 'R41', 'R17']);
+    }
+    if (r.pHeat >= 0.3) add('HEAT_EXPOSURE', 'warn', `≥3 days with Tmax ≥ ${c.heatThresholdC} °C around flowering in ${(r.pHeat * 100).toFixed(0)}% of years (exploratory threshold).`, `≥3 days ≥ ${c.heatThresholdC} °C at flowering in ${pc(r.pHeat)} of years`, ['R30', 'R17']);
+    if (r.pFrost >= 0.2) add('FROST_RISK', 'warn', `frost (Tmin ≤ 0 °C) after emergence in ${(r.pFrost * 100).toFixed(0)}% of years.`, `frost after emergence in ${pc(r.pFrost)} of years`, ['R17']);
+  }
+  if (soil.ph != null && (soil.ph < c.phRange[0] - 0.3 || soil.ph > c.phRange[1] + 0.3)) {
+    add('SOIL_PH', 'warn', `soil pH ${soil.ph.toFixed(1)} (${soil.source === 'soilgrids' ? 'SoilGrids estimate' : 'reported'}) is outside the usual ${c.phRange[0]}–${c.phRange[1]} range.`, `soil pH ${soil.ph.toFixed(1)} outside ${c.phRange[0]}–${c.phRange[1]}`, [soil.source === 'soilgrids' ? 'R21' : 'input:soil']);
+  }
+  return out;
+}
 
 function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: RegionPack, plannedRisks: (CropRisk | null)[], soil: SoilProfile): Reason[] {
   const R: Reason[] = [];
@@ -158,19 +213,9 @@ function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: R
       if (sc.unavailableCrops.includes(c.id)) R.push({ code: 'SEED_UNAVAILABLE', severity: 'block', text: `${tag}: seed reported unavailable.`, refs: ['input:unavailableCrops'] });
       if (sc.marketCrops.length && !sc.marketCrops.includes(c.id)) R.push({ code: 'MARKET_CONSTRAINT', severity: 'block', text: `${tag}: not in the crops you can sell or use.`, refs: ['input:marketCrops'] });
       if (LABOR_RANK[c.labor] > LABOR_RANK[sc.laborAvailable]) R.push({ code: 'LABOR_LIMIT', severity: 'block', text: `${tag}: needs ${c.labor} labor; ${sc.laborAvailable} available.`, refs: ['input:laborAvailable'] });
-      if (c.irrigationRequired && sc.irrigation !== 'yes') R.push({ code: 'IRRIGATION_REQUIRED', severity: 'block', text: `${tag}: requires irrigation, which is not available.`, refs: ['input:irrigation'] });
-      // climate screening from the NASA replay
-      const r = plannedRisks[k - plannedFrom];
-      if (r && r.years.length) {
-        if (r.tempOutOfRange > 0.5) R.push({ code: 'CLIMATE_UNSUITABLE', severity: 'block', text: `${tag}: season mean temperature (${r.meanSeasonT?.toFixed(1)} °C) is outside ${c.name}'s range ${c.tMeanRange[0]}–${c.tMeanRange[1]} °C in most years.`, refs: ['D1', 'R17'] });
-        else if (r.medianRel < 0.35) R.push({ code: 'CLIMATE_UNSUITABLE', severity: 'block', text: `${tag}: modeled water-limited yield is only ${(r.medianRel * 100).toFixed(0)}% of attainable in a median year.`, refs: ['R8', 'R18'] });
-        else if (r.pSevere >= 0.35) R.push({ code: 'CLIMATE_RISK_HIGH', severity: 'warn', text: `${tag}: severe water stress (<50% of attainable) in ${(r.pSevere * 100).toFixed(0)}% of replayed years.`, refs: ['R8', 'R18'] });
-        if (r.pHeat >= 0.3) R.push({ code: 'HEAT_EXPOSURE', severity: 'warn', text: `${tag}: ≥3 days with Tmax ≥ ${c.heatThresholdC} °C around flowering in ${(r.pHeat * 100).toFixed(0)}% of years (exploratory threshold).`, refs: ['R30', 'R17'] });
-        if (r.pFrost >= 0.2) R.push({ code: 'FROST_RISK', severity: 'warn', text: `${tag}: frost (Tmin ≤ 0 °C) after emergence in ${(r.pFrost * 100).toFixed(0)}% of years.`, refs: ['R17'] });
-      }
-      if (soil.ph != null && (soil.ph < c.phRange[0] - 0.3 || soil.ph > c.phRange[1] + 0.3)) {
-        R.push({ code: 'SOIL_PH', severity: 'warn', text: `${tag}: soil pH ${soil.ph.toFixed(1)} (${soil.source === 'soilgrids' ? 'SoilGrids estimate' : 'reported'}) is outside the usual ${c.phRange[0]}–${c.phRange[1]} range.`, refs: [soil.source === 'soilgrids' ? 'R21' : 'input:soil'] });
-      }
+      // location screening (irrigation need, NASA climate replay, growing-season length, soil pH): one code path
+      // shared with the "Why these crops here?" screen
+      for (const it of cropScreenItems(c, plannedRisks[k - plannedFrom], soil, sc)) R.push({ ...it.reason, text: `${tag}: ${it.reason.text}` });
     }
   }
   const planned = seq.slice(plannedFrom);
@@ -322,6 +367,40 @@ function riskOf(ctx: EngineContext, w: SowingWindow, cropId: string, afterFallow
   return ctx.risks[key];
 }
 
+const uniq = (a: string[]) => [...new Set(a)];
+
+/** Screen one crop in one window: verdict, findings and a one-line summary, all from cropScreenItems. */
+export function screenCrop(ctx: EngineContext, w: SowingWindow, cropId: string): CropScreen {
+  const c = cropFor(ctx.pack, cropId);
+  const r = riskOf(ctx, w, cropId);
+  const items = cropScreenItems(c, r, ctx.soil, ctx.sc);
+  const blocks = items.filter((i) => i.reason.severity === 'block');
+  const warns = items.filter((i) => i.reason.severity === 'warn');
+  let line: string;
+  const refs = uniq(items.flatMap((i) => i.reason.refs));
+  if (blocks.length) line = blocks.map((i) => i.short).join('; ');
+  else if (!r || !r.years.length) line = 'no complete NASA POWER season to replay';
+  else {
+    const ss = r.season;
+    const parts: string[] = [];
+    if (ss?.frostFree) parts.push('no frost (Tmin ≤ 0 °C) in most years');
+    else if (ss?.applicable) parts.push(`matures before frost in ${ss.okYears}/${ss.years} years`);
+    else if (ss) parts.push('autumn-sown, overwinters');
+    if (r.meanSeasonT != null) parts.push(`season mean ${r.meanSeasonT.toFixed(0)} °C`);
+    parts.push(`water-limited yield ${(r.medianRel * 100).toFixed(0)}%`);
+    line = [...parts, ...warns.map((i) => i.short)].join('; ');
+    refs.unshift(...(ss?.applicable && !ss.frostFree ? ['R17', 'R41', 'R8'] : ['R17', 'R8']));
+  }
+  return { cropId, seasonId: w.id, seasonLabel: w.label, ok: !blocks.length, items, line, refs: uniq(refs), grown: commonlyGrown(ctx.sc.countryIso2, cropId) };
+}
+
+/** Every crop of the pack calendar (fallow excluded), screened in each window it can be sown in. */
+export function screenCrops(ctx: EngineContext): CropScreen[] {
+  const out: CropScreen[] = [];
+  for (const w of ctx.windows) for (const id of w.crops) if (id !== 'fallow' && CROPS[id]) out.push(screenCrop(ctx, w, id));
+  return out;
+}
+
 /** Farm-gate sale price for a crop (scenario currency per tonne), cached in the context. */
 function priceOf(ctx: EngineContext, c: string): PriceInfo | undefined {
   if (c === 'fallow') return undefined;
@@ -358,6 +437,12 @@ export function engineContext(sc: FarmScenario, s: DailySeries, soil: SoilProfil
     sc, s, soil, pack, areaHa, windows, record, irrigation, fallowInPlay, risks: {}, risksAfterFallow: {}, prices: {}, fx, toLocalPerUsd,
     history: historyOrder(sc, pack).map((h) => h.cropId), base: baselineCrops(sc, pack),
   };
+  // Global screening without history: "your usual plan" is the first library crop that passes the NASA screen
+  // here (not maize in Siberia or wheat in the Congo basin).
+  if (pack.id === GLOBAL_PACK_ID && !ctx.history.length && !sc.baselineOverride) {
+    const first = windows[0]?.crops.find((c) => c !== 'fallow' && CROPS[c] && screenCrop(ctx, windows[0], c).ok);
+    if (first) ctx.base = [first, first];
+  }
   if (opts.prefill) {
     for (const w of windows) {
       for (const id of w.crops) {
@@ -483,8 +568,18 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
 
   const baseline = buildPlan(ctx, base, true);
   const all: PlanResult[] = [];
-  const slot1 = pack.mode === 'double' ? windows[0].crops : pack.crops;
-  const slot2 = pack.mode === 'double' ? (windows[1] ?? windows[0]).crops : pack.crops;
+  // (a) the global-screening fallback offers only crops that pass the NASA screen at this location;
+  // regional packs keep their full calendar and show screen failures as excluded rotations
+  const screen = screenCrops(ctx);
+  const filtered = pack.id === GLOBAL_PACK_ID;
+  const passes = (w: SowingWindow | undefined, c: string) => c === 'fallow' || screen.some((x) => x.cropId === c && x.ok && (!w || x.seasonId === w.id));
+  const keep = (w: SowingWindow | undefined, list: string[]) => (filtered ? list.filter((c) => passes(w, c)) : list);
+  const slot1 = keep(pack.mode === 'double' ? windows[0] : undefined, pack.mode === 'double' ? windows[0].crops : pack.crops);
+  const slot2 = keep(pack.mode === 'double' ? windows[1] ?? windows[0] : undefined, pack.mode === 'double' ? (windows[1] ?? windows[0]).crops : pack.crops);
+  if (filtered) {
+    const n = new Set(screen.map((x) => x.cropId)).size, ok = new Set(screen.filter((x) => x.ok).map((x) => x.cropId)).size;
+    notes.push({ code: 'CLIMATE_CONTEXT_ONLY', severity: 'info', text: `Global screening: ${ok} of ${n} library crops pass the NASA climate and season-length screen here; the other ${n - ok} are not offered (see “Why these crops here?”).`, refs: ['R17', 'R41', 'R8'] });
+  }
   for (const a of slot1) for (const b of slot2) {
     if (!CROPS[a] || !CROPS[b]) continue;
     if (a === 'fallow' && b === 'fallow') continue;
@@ -505,7 +600,7 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
   }
   const alternatives = picked.map((p, i) => ({ ...p, rank: i + 1, label: i === 0 ? 'Best fit' : 'Option B' }));
   const excluded = all.filter((p) => !p.feasible);
-  return { pack, window: windows[0], windows, areaHa, risks, risksAfterFallow, prices, fx, baseline, alternatives, allPlans: all, excluded, notes };
+  return { pack, window: windows[0], windows, areaHa, risks, risksAfterFallow, prices, fx, baseline, alternatives, allPlans: all, excluded, notes, screen: { crops: screen, filtered } };
 }
 
 const n0 = (x: number) => (Number.isFinite(x) ? x : 0);

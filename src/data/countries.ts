@@ -29,12 +29,25 @@ function install(d: FaoData) {
 /** Load the FAOSTAT country table (idempotent; a failed chunk load can be retried). */
 export function loadFaostat(): Promise<void> {
   if (!loaded) {
-    loaded = import('./faostat/countries.json').then((m: any) => install((m.default ?? m) as FaoData));
+    loaded = Promise.all([import('./faostat/countries.json'), import('./faostat/grown.json')]).then(([m, g]: any[]) => {
+      GROWN = (g.default ?? g) as GrownData;
+      install((m.default ?? m) as FaoData);
+    });
     loaded.catch(() => { loaded = null; });
   }
   return loaded;
 }
 export const faostatReady = () => ready;
+
+// FAOSTAT QCL harvested area (element 5312) per country and crop, built by scripts/build-faostat-grown.py:
+// only crops "commonly grown" in the country (5-year mean ≥ 1,000 ha and ≥ 0.5% of the area of Field Shift crops).
+type GrownData = { years: [number, number]; rule: string; countries: Record<string, Record<string, number>> };
+let GROWN: GrownData = { years: [0, 0], rule: '', countries: {} };
+/** Commonly grown in the country per FAOSTAT: mean harvested area (ha) and its years, or null. */
+export function commonlyGrown(iso2: string | undefined, cropId: string): { ha: number; years: [number, number]; country: string } | null {
+  const ha = iso2 ? GROWN.countries[iso2]?.[cropId] : undefined;
+  return ha ? { ha, years: GROWN.years, country: DATA.countries[iso2!]?.name ?? iso2! } : null;
+}
 
 export const countries = () => DATA.countries;
 export const faostatRetrieved = () => DATA.retrieved;

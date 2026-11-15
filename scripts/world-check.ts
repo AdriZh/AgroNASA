@@ -15,6 +15,7 @@ import { effectiveSoil } from '../src/soil/soil';
 import { detectPack } from '../src/data/regionPacks';
 import { cropName } from '../src/data/crops';
 import { initialPlaceholder, refreshPlaceholder, runEngine, type PlanResult } from '../src/engine/plan';
+import { loadFaostat } from '../src/data/countries';
 import { blankScenario } from '../src/state/AppContext';
 import { DEMO_KAZAKHSTAN, DEMO_SENEGAL } from '../src/state/demo';
 import bambey from '../src/data/demo/bambey.json';
@@ -23,6 +24,7 @@ import kostanay from '../src/data/demo/kostanay.json';
 const SITES = [
   { key: 'nakuru', label: 'Nakuru, Kenya', lat: -0.4, lon: 35.95, iso2: 'KE' },
   { key: 'karnal', label: 'Karnal, India', lat: 29.75, lon: 76.85, iso2: 'IN' },
+  { key: 'ludhiana', label: 'Ludhiana, Punjab, India', lat: 30.9, lon: 75.85, iso2: 'IN' },
   { key: 'iowa', label: 'Ames, Iowa, USA', lat: 42.0, lon: -93.75, iso2: 'US' },
   { key: 'sorriso', label: 'Sorriso, Brazil', lat: -12.6, lon: -55.9, iso2: 'BR' },
   { key: 'kropyvnytskyi', label: 'Kropyvnytskyi, Ukraine', lat: 48.4, lon: 32.5, iso2: 'UA' },
@@ -56,6 +58,7 @@ export function check(sc: FarmScenario, s: DailySeries, soilGrid: any) {
   return { sc, out };
 }
 
+await loadFaostat(); // FAOSTAT prices and "commonly grown" context, as the app loads them at startup
 const dir = process.argv[2] ?? '.cache/power';
 const rows: string[][] = [];
 const scenarios: { name: string; sc: FarmScenario; s: DailySeries; soil: any }[] = [];
@@ -80,6 +83,10 @@ for (const { name, sc: sc0, s, soil } of scenarios) {
   for (const p of [out.baseline, ...out.alternatives]) {
     console.log(`  ${(p.isBaseline ? 'Usual' : p.label).padEnd(9)} ${title(p).padEnd(34)} cost ${fmt(p.budget.totalCash, cur).padStart(16)}  headroom ${fmt(p.budget.headroom, cur).padStart(16)}  ${p.budget.status.padEnd(12)} rel ${p.outcome.medianRel.toFixed(2)}  ${flags(p)}`);
   }
+  // location screen ("Why these crops here?"): every crop considered, ✓ / ✗ with its one-line NASA reason
+  const scr = out.screen.crops;
+  console.log(`  screen: ${scr.filter((c) => c.ok).length} ✓ / ${scr.filter((c) => !c.ok).length} ✗${out.screen.filtered ? ' (failing crops not offered)' : ''}`);
+  for (const c of scr) console.log(`    ${c.ok ? '✓' : '✗'} ${cropName(c.cropId)}${out.windows.length > 1 ? ` [${c.seasonLabel}]` : ''}${c.grown ? ' (FAOSTAT: commonly grown)' : ''} — ${c.line}`);
   const fit = out.allPlans.filter((p) => p.feasible).length;
   console.log(`  ${out.allPlans.length} screened · ${out.allPlans.filter((p) => p.eligible).length} pass rules · ${fit} fit the budget · prices: ${Object.entries(out.prices).map(([c, p]) => `${c} ${p.perT}`).join(', ')}`);
   rows.push([name, `${title(out.baseline)} (${fmt(b.totalCash, cur)}, ${fmt(b.headroom, cur)})`, ...out.alternatives.map((p) => `${title(p)} (${fmt(p.budget.headroom, cur)})`)]);

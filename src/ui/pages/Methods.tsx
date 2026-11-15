@@ -16,6 +16,7 @@ const CODES: [string, string][] = [
   ['BREAK_CROP · ALTERNATION', 'Cereal → legume, or any other change of crop group (cereal ↔ legume ↔ oilseed ↔ tuber); credited in the ranking (G-R8 / G-R9).'],
   ['SEED_UNAVAILABLE · MARKET_CONSTRAINT · LABOR_LIMIT · IRRIGATION_REQUIRED', 'Hard farmer constraints; never silently relaxed.'],
   ['CLIMATE_UNSUITABLE', 'Season mean temperature outside crop range in most years, or median water-limited yield < 35%.'],
+  ['SEASON_TOO_SHORT', 'Spring- or summer-sown crop whose FAO-56 cycle (sum of stage lengths) ends after the first killing autumn frost (NASA POWER Tmin ≤ 0 °C; −2 °C for frost-tolerant crops, as in the field window) in more than half of the replayed years. Frost-free locations and overwintering crops always pass (R8, R41).'],
   ['CLIMATE_RISK_HIGH · HEAT_EXPOSURE · FROST_RISK', 'Warnings from the NASA replay (≥35% severe years; ≥30% years with ≥3 hot days at flowering; ≥20% years with frost after emergence).'],
   ['SOIL_PH', 'SoilGrids or lab pH outside the crop’s usual range (warning only).'],
   ['SEASON_OVERLAP', 'Two-season systems: the first crop is still in the field when the second must be sown.'],

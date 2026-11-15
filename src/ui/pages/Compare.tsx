@@ -14,6 +14,7 @@ import { FieldWindowPanel } from '../components/FieldWindow';
 import { WeatherError } from '../components/NetStatus';
 import { RiskRow } from '../components/stress';
 import { CustomPlan, NearMisses } from '../components/CustomPlan';
+import { CropScreenPanel } from '../components/CropScreen';
 import type { PlanStress } from '../../engine/whatif';
 
 export const PRIORITY_LABEL = { cost: 'lowest cost', climate: 'lowest climate exposure', continuity: 'continuity', return: 'modeled return', soil: 'soil benefit' };
@@ -323,6 +324,8 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
           </table>
         </div>
       </details>
+
+      <CropScreenPanel engine={engine} />
     </div>
   );
 }

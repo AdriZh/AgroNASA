@@ -40,7 +40,7 @@ jobs:
           WANT=$(grep -o 'assets/index-[^"]*\.js' dist/index.html | head -1)
           echo "Waiting for $URL to serve $WANT"
           for i in $(seq 1 40); do
-            if curl -fsS "$URL" | grep -q "$WANT"; then echo "live after ~$((i*15))s"; break; fi
+            if curl -fsS "$URL" | grep -q "$WANT"; then echo "live after ~$(((i-1)*15))s"; break; fi
             [ "$i" = 40 ] && { echo "::error::live site did not update"; exit 1; }
             sleep 15
           done

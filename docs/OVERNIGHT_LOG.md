@@ -2,16 +2,31 @@
 
 ## Live URL
 
-https://adrizh.github.io/AgroNASA/  (work in progress — final status below)
+**https://adrizh.github.io/AgroNASA/** — live and verified. Every push to `main` runs the tests and build, publishes `dist/` to the `gh-pages` branch, then a CI step fetches the live URL until it serves the new `index-*.js` and checks every asset returns HTTP 200 (e.g. runs `43691539548`, `43718370424`). This session itself cannot open `*.github.io` (network policy), so the in-browser checks ran on the identical build locally (Playwright smoke test: both demos, every tab, a custom farm, online and fully offline, 0 console errors).
 
 > ⚠️ **Deadline:** search results for the official 2026 page say submissions close **Sun 15 Nov 2026, 23:59 local time** (judging from 16 Nov). spaceappschallenge.org returned HTTP 503 when checked on 2026-11-15, so this is unverified. **Submit today.**
+
+## What changed
+
+- **Deployed:** GitHub Pages via the `gh-pages` branch, tested + live-verified on every push to `main`.
+- **Design system v3** (`docs/DESIGN.md`): calm "NASA meets field notebook" look, light/dark mode with toggle, one hero number per plan card (cash cost vs budget), one-line honest caveat + Details, new landing hero ("Which crop next, and can you afford it?") with a live best-plan card showing cost, NASA-replay risk and the drier & hotter result. Pitch slides and printable report on the same tokens.
+- **Rotation validity:** monocultures excluded (MONOCULTURE), same-family warning, break-crop bonus; usual plan always shown and flagged.
+- **Budgets & prices:** realistic placeholder budget for new farms (≈ 90 % of the usual plan, labelled "Placeholder budget · set yours"); FAOSTAT price outlier guard; US Corn Belt + Brazil Cerrado packs (16 regional packs + global).
+- **Wow feature:** live **What-if climate stress test** (rain −30…+20 %, +0…+3 °C) re-running the NASA replay in ~30–50 ms; **shareable scenario links**.
+- **Science:** water-balance root-cause fixes (off-season snow/recharge, deep storage, FAO-33 stage Ky, failed-onset seasons) and a **hindcast against real FAOSTAT national yields** (Kazakhstan wheat r = 0.59; Senegal r ≈ 0.2, honestly labelled) on Evidence and slide 6.
+- **Robustness:** timeouts and fallbacks on every network call; SoilGrids offline → typical texture values (amber label); demo farms fully offline.
+- **Performance:** code-split; landing first load 527 → ~395 kB gzip.
+- **Security:** `docs/SECURITY.md` — npm audit 0 (vite 6 / vitest 4), validated share links/imports/API data, CSP, noopener, least-privilege SHA-pinned workflow.
+- **Pitch:** 7-slide cut with live mini-compare (slide 3), risk + stress test on the live result (slide 5), hindcast (slide 6), live URL + QR (slide 7). README with screenshots; copy-paste submission text in `docs/SUBMISSION.md`.
+- **Tests:** 37 → 135+, all green.
 
 ## Space Apps rules (checked 2026-11-15; official site down, secondary sources)
 
 - Video ≤ 30 s **or** ≤ 7 slides including the title slide, hosted externally (2025 guide; 2020 agrees). 2026 guide reportedly released 13 Nov. Re-check the Project tab before submitting.
 - Criteria: Impact, Creativity, Validity, Relevance, Presentation, scored 1–5 each (judging-awards-guide page; definitions from the 2022 guide PDF).
 
-## Decisions made (running)
+## Decisions made
+
 
 - **Deploy via `gh-pages` branch, not the Actions Pages artifact.** Pages was not enabled; `actions/deploy-pages` returned 404. Pushing a `gh-pages` branch auto-enabled Pages (the "pages build and deployment" run succeeded at 07:44 UTC). The workflow now tests, builds and force-pushes `dist/` to `gh-pages` on every push to `main`.
 - **Kept `base: './'`** instead of `/AgroNASA/`: with hash routing, relative asset paths work on the Pages sub-path and on any other static host, and the built site was verified locally with Playwright (0 console errors, both demos, all tabs).
@@ -59,3 +74,19 @@ Estimated rank: strong local winner / global nominee, not yet a global finalist.
    - Fixes (cited R37–R39): off-season from previous harvest with degree-day snowmelt (Hock 2003) and FAO-56 ch. 7 topsoil-only evaporation; FAO-56 ch. 8 deep storage; FAO-33 Table 24 stage-wise Ky; no-onset = failed season.
    - Severe pairs of 24, before → after (drier & hotter): Senegal usual 0 → 2 (5), A 0 → 0 (2), B 1 → 1 (4); Kazakhstan usual wheat→wheat 21 → 9 (16), A fallow→rapeseed 2 → 2 (6), B now fallow→wheat 5 (7). Single wheat seasons 20 % severe incl. 2004, 2010, 2012. Budgets unchanged.
    - Hindcast vs **real FAOSTAT national yields** (bulk download, retrieved 2026-11-15, detrended): Kazakhstan wheat r = 0.59 (n = 24); Senegal millet r = 0.18, groundnut r = 0.20 (n = 24; one grid cell vs a whole country — stated on the card). All four known drought years (SN 2002, 2011; KZ 2010, 2012) fall in the model's driest third. Shown on Evidence and slide 6 (replaces NDVI r = 0.55).
+7. `cb902da` pitch & first-impression fixes (risk + stress test on landing card and slides, accurate data claims, modeled net + placeholder chip on cards, live mini-compare slide 3, QR + URL slide 7) and docs refresh (README + screenshots, PITCH.md, SUBMISSION.md) — 135 tests, smoke online/offline exit 0. (A second "blank page" smoke failure had the same harness cause: `npm ci` deleted `node_modules` under the running preview server; restarted, exit 0.)
+8. `71ec1ac` slide 6 legibility (compact hindcast chart fits 1280×720), 16 packs on slide 7.
+
+## Judge review #2 (re-score, ~13:30 UTC, Opus — the two Fable slots were spent on design lead + judge #1)
+
+| Criterion | #1 | #2 | Why (#2) |
+|---|---|---|---|
+| Impact | 6 | 6 | real problem; no user tests yet, synthetic prices |
+| Creativity | 6 | 6 | budget-first + live stress test is a good twist, still a planner |
+| Validity | 5 | **6** | replay + FAOSTAT hindcast + honest labels; Senegal r ≈ 0.2, packs unreviewed |
+| Relevance | 7 | **8** | NASA POWER drives every number; stress test = real adaptation |
+| Presentation | 8 | 8 | polished deck, live URL + QR; label inconsistencies |
+
+Estimated rank: roughly top 15–20 % globally — strong for a local prize, borderline global finalist.
+
+**Honest assessment of what is left below 8:** Impact and Creativity are capped by things only the team can supply — real farmer/agronomist conversations, a named pilot partner, dated local prices. I did not fabricate any of these. Validity can rise with a reviewed rule pack and a sub-national yield hindcast (district statistics) — both need human sourcing. The last polish round addresses the judge's remaining presentation/consistency issues (one "Best fit" label + trade-off line, 24-pair denominators, "no harvest income or credit assumed" caption, hindcast labels, what-if reset between farms, slide timing).

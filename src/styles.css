@@ -190,6 +190,12 @@ hr { border: 0; border-top: 1px dashed var(--border); margin: var(--s-3) 0; }
   .cols > *:first-child { padding-top: 0; border-top: 0; }
 }
 
+@media (max-width: 1000px) and (min-width: 641px) {
+  .cols.kpi-strip { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--s-3); }
+  .cols.kpi-strip > * { border-left: 0; padding: 0 var(--s-3) 0 0; }
+}
+.kpi-strip .mini { overflow-wrap: anywhere; }
+
 /* ---------- stats ---------- */
 .stat { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
 .hero-num { font-size: 32px; line-height: 36px; font-weight: var(--w-strong); letter-spacing: -.02em; white-space: nowrap; color: var(--text); }
@@ -205,7 +211,8 @@ hr { border: 0; border-top: 1px dashed var(--border); margin: var(--s-3) 0; }
 .dl > div:last-child { border-bottom: 0; }
 .dl dt { font-size: 13px; line-height: 20px; color: var(--text-muted); min-width: 0; }
 .dl dd { margin: 0; font-size: 13px; line-height: 20px; font-weight: var(--w-strong); white-space: nowrap; text-align: right; }
-.dl dd.wrap { white-space: normal; font-weight: var(--w-regular); overflow-wrap: anywhere; }
+.dl dd.wrap { white-space: normal; font-weight: var(--w-regular); overflow-wrap: anywhere; max-width: 75%; }
+.dl dd .url { display: block; text-align: left; }
 
 /* ---------- buttons ---------- */
 .btn { height: 40px; padding: 0 var(--s-3); border-radius: var(--r); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; line-height: 20px; font-weight: var(--w-strong); display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); white-space: nowrap; transition: background var(--t-fast) var(--ease), filter var(--t-fast) var(--ease); text-decoration: none !important; }
@@ -399,6 +406,8 @@ details.disclose > .body { margin-top: var(--s-3); }
 .leaflet-control-attribution a { color: var(--accent) !important; }
 :root[data-theme="dark"] .leaflet-tile-pane { filter: brightness(.75) contrast(1.1) saturate(.8); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .leaflet-tile-pane { filter: brightness(.75) contrast(1.1) saturate(.8); } }
+.legend i.lg-field { background: var(--brand); border-radius: 50%; }
+.legend i.lg-cell { border: 1.5px dashed var(--accent); background: transparent; }
 .layer-bar { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; margin-bottom: var(--s-2); }
 
 /* ---------- landing ---------- */

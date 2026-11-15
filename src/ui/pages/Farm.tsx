@@ -10,7 +10,7 @@ import { LocationSearch, PresetGrid } from '../components/LocationPicker';
 import { normalizeApplication, fmtNum } from '../../domain/units';
 import { TEXTURE_LABEL } from '../../soil/soil';
 import { MapView } from '../components/MapView';
-import { CardTitle, Callout, Field, NumInput, Tag, uid } from '../components/common';
+import { CardTitle, Callout, Empty, Field, NumInput, StatRows, Tag, uid } from '../components/common';
 import { powerGridCell } from '../../weather/power';
 
 export function FarmPage({ go }: { go: (r: Route) => void }) {
@@ -59,25 +59,25 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
     <div>
       <div className="page-head">
         <div>
-          <div className="eyebrow">Step 1 of 4</div>
+          <span className="caption">Step 1 of 4</span>
           <h1>Farm & history</h1>
           <p>Where is the field, what grew there and what was applied? Unknown values are allowed — they stay “unknown” and are never silently turned into zero.</p>
         </div>
-        <button className="btn primary" onClick={() => go('resources')}>Next: Resources <ArrowRight size={16} /></button>
+        <div className="page-actions"><button className="btn primary" onClick={() => go('resources')}>Next: Resources <ArrowRight /></button></div>
       </div>
 
       <div className="grid g-side">
         <div className="card">
-          <div className="card-head"><CardTitle icon={<MapPin size={17} />}>Field location</CardTitle><Tag t="farmer" /></div>
-          <div style={{ marginBottom: 12 }}><LocationSearch onPick={(p) => setLocation(p.lat, p.lon, p.label, p.iso2)} /></div>
+          <div className="card-head"><CardTitle icon={<MapPin />}>Field location</CardTitle><Tag t="farmer" /></div>
+          <div style={{ marginBottom: 16 }}><LocationSearch onPick={(p) => setLocation(p.lat, p.lon, p.label, p.iso2)} /></div>
           <MapView lat={sc.location.lat} lon={sc.location.lon} onPick={(a, b) => setLocation(a, b)} defaultLayer="none" zoom={6} />
-          <p className="mini" style={{ marginTop: 6 }}>Works anywhere on Earth: click the map, search, or pick an example. Only coordinates are sent to NASA POWER / SoilGrids — never your history or budget.</p>
-          <details style={{ marginTop: 8 }}><summary style={{ fontSize: '.85rem' }}>Example farming regions (one per regional pack)</summary><div style={{ marginTop: 10 }}><PresetGrid onPick={(p) => setLocation(p.lat, p.lon, p.label, p.iso2)} /></div></details>
+          <p className="chart-cap">Works anywhere on Earth: click the map, search, or pick an example. Only coordinates are sent to NASA POWER / SoilGrids — never your history or budget.</p>
+          <details className="disclose group"><summary className="mini">Example farming regions (one per regional pack)</summary><div className="body"><PresetGrid onPick={(p) => setLocation(p.lat, p.lon, p.label, p.iso2)} /></div></details>
         </div>
 
         <div className="stack">
           <div className="card">
-            <CardTitle icon={<Sprout size={17} />}>Field basics</CardTitle>
+            <div className="card-head"><CardTitle icon={<Sprout />}>Field</CardTitle></div>
             <div className="grid g2">
               <Field label="Latitude"><NumInput value={sc.location.lat} onChange={(v) => v != null && setLocation(v, sc.location.lon)} /></Field>
               <Field label="Longitude"><NumInput value={sc.location.lon} onChange={(v) => v != null && setLocation(sc.location.lat, v)} /></Field>
@@ -92,33 +92,33 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
             </div>
           </div>
           <div className="card">
-            <div className="card-head"><CardTitle icon={<BookMarked size={17} />} tone="violet">Regional knowledge pack</CardTitle><Tag t="rule" /></div>
+            <div className="card-head"><CardTitle icon={<BookMarked />}>Regional knowledge pack</CardTitle><Tag t="rule" /></div>
             <Field label="Country (prices, currency & FAOSTAT context)" hint={country ? `${country.currencyName ?? ''} (${country.currency}) · FAOSTAT exchange rate ${country.lcuPerUsd?.toLocaleString('en-US', { maximumFractionDigits: 2 })} per USD (${country.fxYear}) · ${Object.keys(country.prices).length} crop prices` : 'Detecting from the map location…'}>
               <select className="input" value={sc.countryIso2 ?? ''} onChange={(e) => setCountry(e.target.value)}>
                 <option value="" disabled>Detecting…</option>
                 {countryList().map((c) => <option key={c.iso2} value={c.iso2}>{c.name}</option>)}
               </select>
             </Field>
-            <div style={{ height: 10 }} />
+            <div style={{ height: 16 }} />
             <select className="input" value={sc.regionPackId ?? ''} onChange={(e) => update((s) => ({ ...s, regionPackId: e.target.value || undefined }))} aria-label="Regional pack">
               <option value="">Auto-detect: {detectPack(sc.location.lat, sc.location.lon, sc.countryIso2).name}</option>
               {PACKS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <p className="mini" style={{ marginTop: 8 }}>{pack.description}</p>
-            <div className="row" style={{ gap: 6, marginBottom: 8 }}>{pack.seasons.map((x) => <span key={x.id} className="chip nasa">{x.label} · {x.method === 'rain-onset' ? 'NASA rain onset' : x.method === 'temperature' ? 'soil warming' : 'fixed window'} {x.earliest !== 'auto' ? `${x.earliest}→${x.latest}` : '(auto from NASA climatology)'}</span>)}</div>
+            <div className="chips" style={{ margin: '8px 0' }}><span className="chip" title="Review status">{pack.reviewStatus}</span>{pack.seasons.map((x) => <span key={x.id} className="chip">{x.label} · {x.method === 'rain-onset' ? 'NASA rain onset' : x.method === 'temperature' ? 'soil warming' : 'fixed window'} {x.earliest !== 'auto' ? `${x.earliest}→${x.latest}` : '(auto from NASA climatology)'}</span>)}</div>
             {pack.id === 'global-screening' && <Callout tone="warn">No reviewed local pack covers this location. Field Shift will screen a generic crop library against the NASA climate record and apply only generic rotation principles. Treat results as a demonstration.</Callout>}
-            <div className="mini">NASA POWER grid cell centre: {cell.cLat.toFixed(2)}°, {cell.cLon.toFixed(3)}° · {data.series ? `elevation ${Math.round(data.series.meta.elevation)} m` : ''}</div>
+            <div className="doc-meta" style={{ marginTop: 8 }}>{cell.cLat.toFixed(2)}°, {cell.cLon.toFixed(3)}° · NASA POWER cell{data.series ? ` · ${Math.round(data.series.meta.elevation)} m` : ''}</div>
           </div>
         </div>
       </div>
 
       <div className="card section">
         <div className="card-head">
-          <div><CardTitle icon={<CalendarDays size={17} />} tone="sky">Crop history (last 1–3 seasons)</CardTitle><p className="mini" style={{ margin: 0 }}>Dates drive the past-season review. If you only remember the month, tick “approx.”. Leave dates empty to let NASA rain-onset/temperature rules estimate them.</p></div>
-          <div className="row"><Tag t="farmer" /><button className="btn sm" onClick={addH}><Plus size={14} /> Add season</button></div>
+          <div><CardTitle icon={<CalendarDays />}>Crop history</CardTitle><p className="mini">Last 1–3 seasons. Dates drive the past-season review. If you only remember the month, tick “approx.”. Leave dates empty to let NASA rain-onset/temperature rules estimate them.</p></div>
+          <div className="row"><Tag t="farmer" /><button className="btn sm" onClick={addH}><Plus /> Add season</button></div>
         </div>
-        {histSorted.length === 0 ? <div className="empty">No history yet. Field Shift still works — the usual plan will default to the first crop in the pack.</div> : (
-          <div className="table-wrap">
+        {histSorted.length === 0 ? <Empty icon={<CalendarDays />} action={<button className="btn" onClick={addH}><Plus /> Add season</button>}>Past seasons will appear here. Field Shift still works without them: the usual plan defaults to the first crop in the pack.</Empty> : (
+          <div className="table-wrap sticky-first">
             <table>
               <thead><tr><th>Year</th>{multiSeason && <th>Season</th>}<th>Crop</th><th>Planted</th><th>Harvested</th><th>Approx.</th><th>Outcome</th><th>Yield t/ha</th><th>Residue</th><th>Notes</th><th /></tr></thead>
               <tbody>
@@ -134,7 +134,7 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
                     <td style={{ width: 90 }}><NumInput className="sm" allowNull value={h.yieldTHa ?? null} onChange={(v) => setH(h.id, { yieldTHa: v })} /></td>
                     <td><select className="input sm" style={{ minWidth: 100 }} value={h.residueUse ?? 'unknown'} onChange={(e) => setH(h.id, { residueUse: e.target.value as any })}>{['left', 'grazed', 'removed', 'burned', 'unknown'].map((o) => <option key={o}>{o}</option>)}</select></td>
                     <td><input className="input sm" value={h.notes ?? ''} onChange={(e) => setH(h.id, { notes: e.target.value })} /></td>
-                    <td><button className="btn ghost danger" onClick={() => delH(h.id)} aria-label="Delete season"><Trash2 size={15} /></button></td>
+                    <td><button className="btn ghost danger icon sm" onClick={() => delH(h.id)} aria-label="Delete season"><Trash2 /></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -143,11 +143,11 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
         )}
       </div>
 
-      <details className="card section" open={sc.fertilizer.length > 0}>
-        <summary><span className="ic violet"><FlaskConical size={17} /></span>Fertilizer & manure applications ({sc.fertilizer.length}) — optional, detailed record</summary>
-        <div style={{ marginTop: 12 }}>
+      <details className="card section disclose" open={sc.fertilizer.length > 0}>
+        <summary><FlaskConical />Fertilizer and manure ({sc.fertilizer.length})<span className="mini hide-sm" style={{ fontWeight: 400 }}>optional, detailed record</span></summary>
+        <div className="body">
           <Callout tone="info">Records are historical context. Field Shift converts them to product rate and label nutrients (N, P₂O₅, K₂O) only when units and treated area are known. It never infers present soil N–P–K from purchases and never charges past purchases to a new plan.</Callout>
-          <div className="row" style={{ justifyContent: 'flex-end', margin: '10px 0' }}><button className="btn sm" onClick={addF} disabled={!sc.history.length}><Plus size={14} /> Add application</button></div>
+          <div className="row" style={{ justifyContent: 'flex-end', margin: '8px 0' }}><button className="btn sm" onClick={addF} disabled={!sc.history.length}><Plus /> Add application</button></div>
           {sc.fertilizer.length > 0 && (
             <div className="table-wrap">
               <table>
@@ -168,8 +168,8 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
                         <td style={{ width: 100 }}><NumInput className="sm" allowNull value={f.paidCost ?? null} onChange={(v) => setF(f.id, { paidCost: v })} /></td>
                         <td className="num">{fmtNum(nm.rateKgHa, 0)}</td>
                         <td className="num">{fmtNum(nm.nKgHa, 1)}</td>
-                        <td className="mini" style={{ minWidth: 200, maxWidth: 260 }}>{nm.flags.join('; ') || '—'}</td>
-                        <td><button className="btn ghost danger" onClick={() => delF(f.id)} aria-label="Delete application"><Trash2 size={15} /></button></td>
+                        <td className="mini wrap" style={{ minWidth: 200, maxWidth: 260 }}>{nm.flags.join('; ') || '—'}</td>
+                        <td><button className="btn ghost danger icon sm" onClick={() => delF(f.id)} aria-label="Delete application"><Trash2 /></button></td>
                       </tr>
                     );
                   })}
@@ -182,7 +182,7 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
 
       <div className="grid g2 section">
         <div className="card">
-          <div className="card-head"><CardTitle icon={<Shovel size={17} />} tone="soil">Soil you know</CardTitle><Tag t="farmer" /></div>
+          <div className="card-head"><CardTitle icon={<Shovel />}>Soil you know</CardTitle><Tag t="farmer" /></div>
           <div className="grid g2">
             <Field label="Texture (feel / local name)" hint="Overrides the SoilGrids estimate for the water-balance model.">
               <select className="input" value={sc.soil.texture} onChange={(e) => update((s) => ({ ...s, soil: { ...s.soil, texture: e.target.value as SoilTexture } }))}>
@@ -193,18 +193,18 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
           </div>
         </div>
         <div className="card">
-          <div className="card-head"><CardTitle icon={<Layers size={17} />} tone="soil">Soil map at this point</CardTitle><Tag t="soilgrids" /></div>
+          <div className="card-head"><CardTitle icon={<Layers />}>Soil map at this point</CardTitle><Tag t="soilgrids" /></div>
           {data.soilGrid ? (
-            <div className="table-wrap"><table><tbody>
-              <tr><td>Texture (0–60 cm)</td><td><b>{TEXTURE_LABEL[data.soilGrid.texture]}</b> · sand {fmtNum(data.soilGrid.sandPct, 0)}% · clay {fmtNum(data.soilGrid.clayPct, 0)}%</td></tr>
-              <tr><td>Organic carbon</td><td>{fmtNum(data.soilGrid.socPct, 2)} %</td></tr>
-              <tr><td>pH (H₂O)</td><td>{fmtNum(data.soilGrid.ph, 1)}</td></tr>
-              <tr><td>Total N</td><td>{fmtNum(data.soilGrid.nitrogenGKg, 2)} g/kg</td></tr>
-              <tr><td>CEC</td><td>{fmtNum(data.soilGrid.cec, 1)} cmol(c)/kg</td></tr>
-              <tr><td>Water-balance AWC used</td><td><b>{fmtNum(soil?.awcMmPerM, 0)} mm/m</b> <Tag t={soil?.source === 'farmer' ? 'farmer' : 'modeled'}>{soil?.source === 'farmer' ? 'from your texture' : 'Saxton & Rawls'}</Tag></td></tr>
-            </tbody></table></div>
+            <StatRows rows={[
+              ['Texture (0–60 cm)', `${TEXTURE_LABEL[data.soilGrid.texture]} · sand ${fmtNum(data.soilGrid.sandPct, 0)}% · clay ${fmtNum(data.soilGrid.clayPct, 0)}%`],
+              ['Organic carbon', `${fmtNum(data.soilGrid.socPct, 2)} %`],
+              ['pH (H₂O)', fmtNum(data.soilGrid.ph, 1)],
+              ['Total N', `${fmtNum(data.soilGrid.nitrogenGKg, 2)} g/kg`],
+              ['CEC', `${fmtNum(data.soilGrid.cec, 1)} cmol(c)/kg`],
+              ['Water-balance AWC used', <>{fmtNum(soil?.awcMmPerM, 0)} mm/m <span className="muted" style={{ fontWeight: 400 }}>({soil?.source === 'farmer' ? 'from your texture' : 'Modeled, Saxton & Rawls'})</span></>],
+            ]} />
           ) : <p className="mini">{data.soilStatus === 'loading' ? 'Loading SoilGrids…' : `SoilGrids unavailable${data.soilError ? ` (${data.soilError})` : ''}. Using ${soil?.source === 'farmer' ? 'your texture' : 'a default loam (140 mm/m)'}.`}</p>}
-          <p className="mini" style={{ marginTop: 8 }}>A 250 m modeled map, not a soil test. Present nutrient status remains unknown unless measured.</p>
+          <p className="chart-cap">A 250 m modeled map, not a soil test. Present nutrient status remains unknown unless measured.</p>
         </div>
       </div>
     </div>

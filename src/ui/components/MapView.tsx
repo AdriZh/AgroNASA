@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, Rectangle, useMap, useMapEvents 
 import 'leaflet/dist/leaflet.css';
 import { powerGridCell } from '../../weather/power';
 import { addDays, todayISO } from '../../domain/dates';
+import { useChartTheme } from './charts';
 
 export interface GibsLayer { id: string; label: string; layer: string; matrix: string; ext: 'png' | 'jpg'; lagDays: number; legend: string; source: string }
 export const GIBS_LAYERS: GibsLayer[] = [
@@ -25,6 +26,7 @@ function Picker({ onPick }: { onPick?: (lat: number, lon: number) => void }) {
 }
 
 export function MapView({ lat, lon, onPick, tall, defaultLayer = 'none', zoom = 8, showControls = true }: { lat: number; lon: number; onPick?: (lat: number, lon: number) => void; tall?: boolean; defaultLayer?: string; zoom?: number; showControls?: boolean }) {
+  const t = useChartTheme();
   const [layerId, setLayerId] = useState(defaultLayer);
   const layer = GIBS_LAYERS.find((l) => l.id === layerId)!;
   const [date, setDate] = useState(() => addDays(todayISO(), -(layer.lagDays || 1)));
@@ -52,15 +54,15 @@ export function MapView({ lat, lon, onPick, tall, defaultLayer = 'none', zoom = 
         <MapContainer center={[lat, lon]} zoom={zoom} scrollWheelZoom style={{ height: '100%', width: '100%' }} worldCopyJump>
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Imagery: NASA GIBS' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={18} />
           {url && <TileLayer key={url} url={url} opacity={opacity} maxNativeZoom={maxNative} maxZoom={18} attribution="NASA EOSDIS GIBS" />}
-          <Rectangle bounds={[[cell.south, cell.west], [cell.north, cell.east]]} pathOptions={{ color: '#1d5fbf', weight: 1.5, dashArray: '5 4', fillOpacity: 0.04 }} />
-          <CircleMarker center={[lat, lon]} radius={8} pathOptions={{ color: '#fff', weight: 3, fillColor: '#1f7a4d', fillOpacity: 1 }} />
+          <Rectangle bounds={[[cell.south, cell.west], [cell.north, cell.east]]} pathOptions={{ color: t.accent, weight: 1.5, dashArray: '5 4', fillOpacity: 0.04 }} />
+          <CircleMarker center={[lat, lon]} radius={8} pathOptions={{ color: t.surface, weight: 3, fillColor: t.brand, fillOpacity: 1 }} />
           <Recenter lat={lat} lon={lon} />
           <Picker onPick={onPick} />
         </MapContainer>
       </div>
-      <div className="legend" style={{ marginTop: 6 }}>
-        <span><i style={{ background: '#1f7a4d', borderRadius: '50%' }} />Your field</span>
-        <span><i style={{ border: '1.5px dashed #1d5fbf', background: 'transparent' }} />NASA POWER grid cell (~0.5° × 0.625°) — weather is regional, not field-level</span>
+      <div className="legend" style={{ marginTop: 8 }}>
+        <span><i className="lg-field" />Your field</span>
+        <span><i className="lg-cell" />NASA POWER grid cell (~0.5° × 0.625°): weather is regional, not field-level</span>
         {layer.legend && <span>🛰️ {layer.legend} · {date}</span>}
       </div>
     </div>

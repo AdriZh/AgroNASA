@@ -88,6 +88,11 @@ export function Kpi({ label, value, sub, tone }: { label: ReactNode; value: Reac
   );
 }
 
+/** A top-of-page KPI strip: one card, columns divided by dashed rules. */
+export function KpiStrip({ children }: { children: ReactNode }) {
+  return <div className="card"><div className="cols kpi-strip">{children}</div></div>;
+}
+
 /* ---------- status badges (budget verdicts only) ---------- */
 export const STATUS: Record<Affordability, { cls: 'good' | 'bad' | 'warn'; t: string; i: ReactNode }> = {
   affordable: { cls: 'good', t: 'Fits budget', i: <CheckCircle2 /> },

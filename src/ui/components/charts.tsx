@@ -117,7 +117,7 @@ export function MonthlyClimChart({ data }: { data: MonthClim[] }) {
         <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} syncId="clim">
           <CartesianGrid {...gridProps(t)} />
           <XAxis dataKey="month" {...xAxisProps(t)} interval={0} />
-          <YAxis {...axisProps(t)} width={44} tickCount={4} domain={['auto', 'auto']} />
+          <YAxis {...axisProps(t)} width={44} tickCount={4} allowDecimals={false} domain={[(m: number) => Math.floor(m / 5) * 5, (m: number) => Math.ceil(m / 5) * 5]} />
           <Tooltip {...tipProps(t, (v) => `${n0(v)} °C`)} />
           <Line isAnimationActive={false} dataKey="tmax" name="Mean Tmax" stroke={t.c2} strokeWidth={2} dot={false} />
         </LineChart>
@@ -281,7 +281,7 @@ export function ForecastChart({ days }: { days: ForecastDay[] }) {
         <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} syncId="fc">
           <CartesianGrid {...gridProps(t)} />
           <XAxis dataKey="label" {...xAxisProps(t)} />
-          <YAxis {...axisProps(t)} width={44} tickCount={4} domain={['auto', 'auto']} />
+          <YAxis {...axisProps(t)} width={44} tickCount={4} allowDecimals={false} domain={[(m: number) => Math.floor(m / 5) * 5, (m: number) => Math.ceil(m / 5) * 5]} />
           <Tooltip {...tipProps(t, (v) => `${n0(v)} °C`)} />
           <Legend {...legendProps} />
           <Line isAnimationActive={false} dataKey="tmax" name="Tmax" stroke={t.c2} strokeWidth={2} dot={false} />

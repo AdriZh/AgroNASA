@@ -5,7 +5,8 @@ import { CalendarRange, Play } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
 import { defaultWindow, fitWindow, fmtMMDD, skippedSeason, type WindowFit, type WindowResult, type WindowSpec } from '../../engine/window';
 import { completeYears } from '../../weather/indicators';
-import { cropEmoji, cropName } from '../../data/crops';
+import { cropName } from '../../data/crops';
+import { CropIcon } from './CropIcon';
 import { fxPerUsd } from '../../data/countries';
 import { fmtApprox } from '../../domain/units';
 import { CardTitle, Tag } from './common';
@@ -29,7 +30,7 @@ function Option({ f, rec, cur }: { f: WindowFit; rec: boolean; cur: string }) {
   const seed = f.seedUsdPerHa == null ? null : fx ? fmtApprox(f.seedUsdPerHa * fx, cur) : fmtApprox(f.seedUsdPerHa, 'USD');
   return (
     <li className={`fw-opt ${rec ? 'rec' : ''}`}>
-      <span className="fw-icon" aria-hidden>{cropEmoji(f.cropId)}</span>
+      <span className="fw-icon"><CropIcon id={f.cropId} size={36} /></span>
       <div className="fw-name">
         <b>{f.tag === 'rest' ? 'Rest the field (fallow)' : cropName(f.cropId)}</b>
         <span className={`fw-tag ${tag.cls}`}>{tag.t}</span>

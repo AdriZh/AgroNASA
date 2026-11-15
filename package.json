@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Field Shift \u2014 budget-aware, NASA-informed crop-rotation planner (NASA Space Apps 2026)",
+  "description": "Field Shift — budget-aware, NASA-informed crop-rotation planner (NASA Space Apps 2026)",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -30,9 +30,10 @@
     "@types/node": "^22.10.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^4.7.0",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11",
-    "vitest": "^2.1.8"
+    "vite": "^6.4.6",
+    "vite-node": "^3.2.4",
+    "vitest": "^4.1.12"
   }
 }

@@ -13,6 +13,7 @@ import { MethodsPage } from './ui/pages/Methods';
 import { PitchPage } from './ui/pages/Pitch';
 import { VideoPage, VideoRender } from './ui/pages/Video';
 import { LogoMark } from './ui/components/Logo';
+import { ShareButton } from './ui/components/ShareButton';
 import { fmtDate } from './domain/dates';
 
 export type Route = 'overview' | 'farm' | 'resources' | 'compare' | 'evidence' | 'report' | 'methods' | 'pitch' | 'video' | 'video-render';
@@ -91,6 +92,7 @@ export default function App() {
           <div className="crumbs"><span className="hide-sm">{scenario.name}</span><ChevronRight size={14} className="hide-sm" /><b>{TITLES[route] ?? 'Overview'}</b></div>
           <span className="spacer" />
           {engine && <span className="pill hide-sm"><span className={`dot ${wDot}`} />{engine.pack.short}</span>}
+          <ShareButton />
           <button className="btn sm dark" onClick={() => go('pitch')}><Presentation size={15} /> Present</button>
         </header>
         <main key={route} className="fade-in">

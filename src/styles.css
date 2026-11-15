@@ -372,3 +372,86 @@ details[open] > summary::after { transform: rotate(-135deg); }
 .loading-banner .bar { height: 6px; border-radius: 6px; background: #dbeafe; overflow: hidden; margin-top: 8px; }
 .loading-banner .bar i { display: block; height: 100%; width: 40%; border-radius: 6px; background: linear-gradient(90deg, #3b82f6, #10b981); animation: slide 1.4s ease-in-out infinite; }
 @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
+
+/* ==========================================================================
+   BEGIN what-if climate stress test + share link (WhatIf.tsx, ShareButton.tsx)
+   Uses existing tokens only; safe to restyle.
+   ========================================================================== */
+.whatif { position: relative; overflow: hidden; }
+.whatif::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--sky-2), var(--violet), var(--amber)); }
+.wi-grid { display: grid; grid-template-columns: minmax(250px, 320px) minmax(0, 1fr); gap: 22px; align-items: start; }
+.wi-controls { display: flex; flex-direction: column; gap: 14px; padding: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r); }
+.wi-slider { display: flex; flex-direction: column; gap: 6px; font-size: .84rem; color: var(--ink-2); }
+.wi-label { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--ink); }
+.wi-label b { margin-left: auto; font-family: var(--mono); font-size: .82rem; padding: 2px 8px; border-radius: 999px; background: var(--surface-3); color: var(--ink-2); }
+.wi-label b.neg { background: var(--amber-soft); color: var(--amber); }
+.wi-label b.pos { background: var(--sky-soft); color: var(--sky); }
+.wi-slider input[type=range] { width: 100%; accent-color: var(--violet); cursor: pointer; margin: 2px 0; }
+.wi-ticks { display: flex; justify-content: space-between; font-size: .7rem; color: var(--ink-3); }
+.wi-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.wi-presets .btn.on { background: var(--violet-soft); border-color: var(--violet); color: var(--violet); }
+.wi-honest { margin: 0; font-size: .8rem; font-weight: 600; color: var(--ink-2); padding-left: 10px; border-left: 3px solid var(--line-2); }
+.wi-method { margin: 0; color: var(--ink-3); }
+.wi-results { display: flex; flex-direction: column; gap: 8px; transition: opacity .15s var(--ease); min-width: 0; }
+.wi-results.pending .wi-row { opacity: .72; }
+.wi-headline { font-family: var(--display); font-weight: 700; font-size: 1.02rem; line-height: 1.4; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); }
+.wi-headline.ok { background: var(--brand-soft); border-color: var(--brand-ring); color: var(--brand); }
+.wi-headline.warn { background: var(--amber-soft); border-color: #fde68a; color: var(--amber); }
+.wi-headline.bad { background: var(--red-soft); border-color: #fecaca; color: var(--red); }
+.wi-headline.idle { font-weight: 600; font-size: .92rem; color: var(--ink-2); }
+.wi-head-row, .wi-row { display: grid; grid-template-columns: minmax(170px, 1.25fr) minmax(190px, 1.75fr) 78px 74px; gap: 12px; align-items: center; }
+.wi-head-row { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--ink-3); padding: 4px 12px 0; }
+.wi-head-row span { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.wi-key { display: inline-block; width: 14px; height: 6px; border-radius: 3px; background: var(--line-2); }
+.wi-key.new { background: var(--violet); }
+.wi-row { padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); transition: opacity .15s var(--ease); }
+.wi-row.is-base { background: var(--surface-2); }
+.wi-plan { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.wi-tag { align-self: flex-start; font-size: .64rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #fff; background: var(--sky); padding: 2px 8px; border-radius: 999px; }
+.wi-tag.base { background: var(--ink-2); }
+.wi-crops { font-size: .84rem; font-weight: 600; color: var(--ink); line-height: 1.35; }
+.wi-risk { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.wi-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 60px; }
+.wi-bar { height: 7px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.wi-bar > i { display: block; height: 100%; border-radius: 99px; transition: width .35s var(--ease), background .2s; }
+.wi-bar.rec > i { background: var(--line-2); }
+.wi-bar.new { height: 10px; }
+.wi-bar.new > i { background: var(--violet); }
+.wi-bar.new.ok > i { background: var(--brand-2); }
+.wi-bar.new.warn > i { background: #f59e0b; }
+.wi-bar.new.bad > i { background: var(--red); }
+.wi-nums { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: .86rem; white-space: nowrap; }
+.wi-now { color: var(--ink-3); font-weight: 600; }
+.wi-arrow { color: var(--ink-3); }
+.wi-then { font-size: 1rem; }
+.wi-then.ok, .wi-harvest.ok b, .wi-delta.ok, .wi-verdict.ok { color: var(--brand); }
+.wi-then.warn, .wi-harvest.warn b, .wi-delta.warn { color: var(--amber); }
+.wi-then.bad, .wi-harvest.bad b, .wi-delta.bad, .wi-verdict.bad { color: var(--red); }
+.wi-delta { font-family: var(--font); font-size: .7rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--surface-3); }
+.wi-harvest { display: flex; flex-direction: column; align-items: flex-end; }
+.wi-harvest .t { display: none; white-space: nowrap; font-size: .64rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); font-weight: 700; }
+.wi-harvest b { font-family: var(--mono); font-size: .95rem; color: var(--ink-2); }
+.wi-verdict { justify-self: end; font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.wi-verdict.ok { background: var(--brand-soft); padding: 3px 8px; border-radius: 999px; }
+.wi-verdict.bad { background: var(--red-soft); padding: 3px 8px; border-radius: 999px; }
+.wi-verdict.warn { background: var(--amber-soft); color: var(--amber); padding: 3px 8px; border-radius: 999px; }
+.wi-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--ink-3); padding: 2px 4px; }
+.wi-foot .spacer { flex: 1; }
+@media (max-width: 1100px) { .wi-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .wi-head-row { display: none; }
+  .wi-row { grid-template-columns: 1fr auto; }
+  .wi-risk { grid-column: 1 / -1; }
+  .wi-harvest { align-items: flex-start; }
+  .wi-harvest .t { display: block; }
+}
+.share-toast { position: fixed; z-index: 1000; right: 20px; bottom: 20px; max-width: min(460px, calc(100vw - 40px)); display: flex; align-items: flex-start; gap: 10px; padding: 12px 12px 12px 14px; border-radius: 14px; background: var(--space); color: var(--space-ink); box-shadow: var(--shadow-lg); animation: share-in .22s var(--ease); }
+.share-toast > svg { flex: 0 0 auto; margin-top: 1px; color: var(--brand-3); }
+.share-toast.warn > svg { color: #fcd34d; }
+.share-toast-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; font-size: .86rem; }
+.share-toast-url { font-family: var(--mono); font-size: .7rem; color: var(--space-ink-2); word-break: break-all; }
+.share-toast .input { color: var(--ink); min-height: 32px; font-size: .75rem; }
+.share-toast .btn.ghost { color: var(--space-ink-2); padding: 2px 4px; }
+.share-toast .btn.ghost:hover { background: var(--space-3); color: #fff; }
+@keyframes share-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* END what-if climate stress test + share link */

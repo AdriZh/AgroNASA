@@ -8,6 +8,7 @@ import { fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDayMonth, fmtDate } from '../../domain/dates';
 import { CashTimeline, CostChart, RangeBar, ReplayChart } from '../components/charts';
 import { CardTitle, Callout, Meter, NasaLoading, pct, ReasonList, Tag } from '../components/common';
+import { WhatIfPanel } from '../components/WhatIf';
 
 const STATUS: Record<string, { cls: string; t: string; i: ReactNode }> = {
   affordable: { cls: 'ok', t: 'Affordable', i: <CheckCircle2 /> }, unaffordable: { cls: 'bad', t: 'Over budget', i: <XCircle /> }, unverified: { cls: 'warn', t: 'Budget not verified', i: <HelpCircle /> }, timing: { cls: 'bad', t: 'Cash-timing gap', i: <Clock /> },
@@ -91,6 +92,8 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
       <div className="grid g3" style={{ marginTop: 18 }}>
         {plans.map((p, i) => <PlanCard key={p.id} p={p} cur={cur} prices={engine.prices} priority={sc.priority} isBest={i === 1} selected={chosen.id === p.id} onWhy={() => setSel(p.id)} />)}
       </div>
+
+      <WhatIfPanel />
 
       <div className="grid g2 section">
         <div className="card">

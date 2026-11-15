@@ -62,6 +62,14 @@ export const xAxisProps = (t: ChartTheme) => ({ tick: { fontSize: 12, fill: t.ax
 export const gridProps = (t: ChartTheme) => ({ stroke: t.grid, vertical: false });
 export const lastDot = (t: ChartTheme, color: string, n: number) => (p: any) => (p.index === n - 1 && p.value != null ? <circle key="last" cx={p.cx} cy={p.cy} r={4} fill={color} stroke={t.surface} strokeWidth={2} /> : <g key={p.index} />);
 const kfmt = (v: number) => (Math.abs(v) >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : Math.abs(v) >= 1e3 ? `${Math.round(v / 1e3)}k` : `${v}`);
+/** Four round steps from 0 that cover max. */
+export function niceTicks(max: number, n = 4) {
+  const raw = Math.max(max, 1) / n;
+  const p = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].map((m) => m * p).find((s) => s >= raw) ?? raw;
+  const ticks = Array.from({ length: n + 1 }, (_, i) => i * step);
+  return { ticks, max: ticks[n] };
+}
 const n0 = (v: any) => (typeof v === 'number' ? v.toLocaleString('en-US', { maximumFractionDigits: 1 }) : v);
 
 /** Tooltip: surface card, muted label, values in text color with a series swatch. */
@@ -188,12 +196,13 @@ export function CostChart({ plans, cap, currency }: { plans: PlanResult[]; cap: 
     for (const c of cats) row[c] = p.budget.lines.filter((l) => l.cash && l.category === c).reduce((a, l) => a + (l.total ?? 0), 0);
     return row;
   });
+  const top = niceTicks(Math.max(cap, ...data.map((r) => cats.reduce((a, c) => a + (r[c] ?? 0), 0))));
   return (
     <ResponsiveContainer width="100%" height={h}>
-      <BarChart data={data} margin={{ top: 4, right: 76, left: 0, bottom: 0 }}>
+      <BarChart data={data} margin={{ top: 4, right: 92, left: 0, bottom: 0 }}>
         <CartesianGrid {...gridProps(t)} />
         <XAxis dataKey="name" {...xAxisProps(t)} interval={0} />
-        <YAxis {...axisProps(t)} tickFormatter={kfmt} width={44} tickCount={5} domain={[0, (max: number) => Math.max(max, cap) * 1.08]} />
+        <YAxis {...axisProps(t)} tickFormatter={kfmt} width={44} ticks={top.ticks} domain={[0, top.max]} />
         <Tooltip {...tipProps(t, (v) => `${Math.round(v).toLocaleString('en-US')} ${currency}`)} />
         <Legend {...legendProps} />
         {cats.map((c) => <Bar isAnimationActive={false} key={c} dataKey={c} stackId="a" fill={t[CAT_TOKEN[c]]} stroke={t.surface} strokeWidth={2} name={c} maxBarSize={56} />)}

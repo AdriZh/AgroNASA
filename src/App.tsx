@@ -52,7 +52,7 @@ export default function App() {
   const wDot = data.weatherStatus === 'loading' ? 'load' : data.weatherStatus === 'ready' ? (data.weatherError ? 'warn' : 'ok') : data.weatherStatus === 'error' ? 'err' : '';
   const sDot = data.soilStatus === 'loading' ? 'load' : data.soilStatus === 'ready' ? 'ok' : data.soilStatus === 'error' ? 'warn' : '';
   const origin = data.weatherOrigin === 'live' ? 'live' : 'cached';
-  const nasaLine = data.weatherStatus === 'loading' ? 'NASA POWER · loading…' : data.series ? `NASA POWER ${data.series.meta.start.slice(0, 4)}–${data.series.meta.end.slice(0, 4)} · ${origin}` : data.weatherError ? 'NASA POWER unavailable' : 'NASA POWER';
+  const nasaLine = data.weatherStatus === 'loading' ? 'NASA POWER · loading…' : data.series ? `NASA POWER ${data.series.meta.start.slice(0, 4)}–${data.series.meta.end.slice(0, 4)}` : data.weatherError ? 'NASA POWER unavailable' : 'NASA POWER';
   const nasaText = data.weatherStatus === 'loading' ? 'Loading NASA POWER…' : data.series ? `${data.weatherOrigin === 'bundled' ? 'Archived snapshot' : data.weatherOrigin === 'cache' ? 'Cached' : 'Live'} · ${data.series.meta.start.slice(0, 4)}–${fmtDate(data.series.meta.end)}` : data.weatherError ?? '—';
   const item = (n: NavItem) => (
     <button key={n.id} className={`nav-item ${route === n.id ? 'active' : ''}`} aria-current={route === n.id ? 'page' : undefined} onClick={() => go(n.id)}>
@@ -65,7 +65,7 @@ export default function App() {
     <div className="app">
       {open && <div className="scrim" onClick={() => setOpen(false)} />}
       <aside className={`sidebar ${open ? 'open' : ''}`} aria-label="Navigation">
-        <a className="brand" href="#/overview"><BrandMark size={32} /><span>Field Shift</span></a>
+        <a className="brand-link" href="#/overview"><BrandMark size={32} /><span>Field Shift</span></a>
         <div className="scenario-pick">
           <label htmlFor="scenario" className="caption">Farm scenario</label>
           <select id="scenario" className="input sm" value={scenario.id} onChange={(e) => (e.target.value === '__new' ? createNew() : select(e.target.value))}>
@@ -81,7 +81,7 @@ export default function App() {
         <nav className="nav-group" aria-label="Present"><div className="nav-title caption">Present</div>{SHOW.map(item)}</nav>
         <div className="side-status">
           <details>
-            <summary title="Data status"><span className={`dot ${wDot}`} /><span>{nasaLine}</span></summary>
+            <summary title={`Data status: NASA POWER ${origin}`}><span className={`dot ${wDot}`} /><span>{nasaLine}</span></summary>
             <div className="popover">
               <dl className="dl">
                 <div><dt><span className={`dot ${wDot}`} /> NASA POWER</dt><dd className="wrap">{nasaText}</dd></div>

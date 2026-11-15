@@ -1,2 +1,2 @@
-// Team list exactly as given by the project owner (no roles or bios added).
-export const TEAM = ["ayu.ogura", "zhamilya.toleukhan", "fernando.stoll", "francisco.correia", "Iuliia Zakhartsova", "Ruslan Kan"] as const;
+// Team list as given by the project owner and corrected by the team in README (no roles or bios added).
+export const TEAM = ["Ayu Ogura", "Zhamilya Toleukhan", "Fernando Stoll", "Francisco Correia", "Iuliia Zakhartsova", "Ruslan Kan"] as const;

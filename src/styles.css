@@ -730,3 +730,28 @@ details.disclose > .body { margin-top: var(--s-3); }
   .fw-controls > .btn { flex-basis: 100%; height: 44px; }
   .fw-presets .btn { height: auto; min-height: 40px; white-space: normal; text-align: left; padding: 6px 12px; }
 }
+/* ---------- near misses + "Try my own plan" (Compare) ---------- */
+.near-misses { margin-top: var(--s-4); }
+.near-misses .card-head { margin-bottom: var(--s-2); }
+.near-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.near-list > li { display: grid; grid-template-columns: minmax(240px, 340px) minmax(0, 1fr) auto; gap: var(--s-1) var(--s-3); align-items: center; padding: var(--s-2) 0; border-top: 1px dashed var(--border); }
+.near-why { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.near-why .mini { color: var(--text-muted); }
+.near-why .refs { display: inline-flex; gap: var(--s-1); flex-wrap: wrap; margin-left: var(--s-1); vertical-align: 1px; }
+.near-fix { display: flex; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; font-size: 14px; line-height: 20px; }
+.near-fix b { font-weight: var(--w-strong); color: var(--text); }
+.custom-pick { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--s-2) var(--s-3); align-items: end; max-width: 720px; }
+.custom-pick .field { display: flex; flex-direction: column; gap: var(--s-1); font-size: 13px; font-weight: var(--w-strong); }
+.custom-select { display: flex; align-items: center; gap: var(--s-2); }
+.custom-select > .crop-ic { flex: none; }
+.custom-arrow { display: inline-flex; height: 40px; align-items: center; color: var(--text-muted); }
+.custom-verdict { margin: var(--s-3) 0 0; font-size: 14px; line-height: 26px; }
+.custom-verdict .chip.code { color: var(--text); margin-right: var(--s-1); }
+.custom-body { margin-top: var(--s-3); gap: var(--s-5); border-top: 1px dashed var(--border); padding-top: var(--s-3); }
+@media (max-width: 640px) {
+  .near-list > li { grid-template-columns: minmax(0, 1fr) auto; }
+  .near-list > li .near-why { grid-column: 1 / -1; grid-row: 2; }
+  .custom-pick { grid-template-columns: minmax(0, 1fr); }
+  .custom-arrow { display: none; }
+  .custom-body { gap: var(--s-3); }
+}

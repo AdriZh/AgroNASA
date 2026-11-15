@@ -36,3 +36,26 @@ https://adrizh.github.io/AgroNASA/  (work in progress — final status below)
 - ~08:30–12:30 UTC — **account usage limit hit**; the UI-rebuild, security and rules-check agents stopped mid-task. Their work was saved (UI rebuild had committed phases 1–4 in its worktree). All three were resumed after the reset rather than restarted. `main` stayed at the last verified state (`560bb7e`) throughout.
 4. `fdb47ba` design system v3 (tokens, light/dark + toggle, hero-number plan cards, one-line caveat + Details, new landing hero with live best-plan card, restyled Farm/Resources/Evidence/Report/Methods/Pitch) — 93 tests, build OK, smoke online/offline 0 errors at 1440, 1280, 390.
 - 12:45 UTC — **process slip:** I piped the smoke test through `tail`, so its non-zero exit did not stop the push of `fdb47ba` to `main`. It had reported a blank page. Diagnosis: the local `vite preview` server had died with the earlier worker restart (port 4173 refused connections), so the page was blank because nothing served it, not an app bug. Restarted the server, re-ran (exit 0, 0 errors). No revert needed. Smoke runs now gate on the exit code.
+5. `3017b21` security review (see `docs/SECURITY.md`): vite 6.4 / vitest 4.1 (npm audit 0), validated imports/stored scenarios/share links/API shapes, EONET `javascript:` links dropped, CSP meta (no inline scripts), `noopener` everywhere, workflow least-privilege + SHA-pinned — 131 tests, build OK, smoke online/offline exit 0, no CSP violations. Conflicts in 4 UI files (design rewrite vs `rel` edits) resolved by keeping the redesign and applying `noopener noreferrer` globally.
+
+## Judge review #1 (fresh-eyes agent, ~13:00 UTC, judged the local copy of the live build)
+
+| Criterion | Score | Why |
+|---|---|---|
+| Impact | 6 | real problem, but no farmer/agronomist evidence yet |
+| Creativity | 6 | affordability-first replay is fresh; output still reads like a cost table |
+| Validity | 5 | Kazakhstan wheat severe-stress 88 % of years (implausible); Senegal millet 0 of 24 despite a 309 mm year; NDVI r = 0.55 is weak validation |
+| Relevance | 7 | on-brief, but NASA data barely changes the Senegal answer |
+| Presentation | 8 | clean, fast, honest |
+
+Estimated rank: strong local winner / global nominee, not yet a global finalist.
+
+**Pivot decisions (all < 8):**
+- Validity → science agent: diagnose the replay's root causes (failed/no-onset seasons, winter soil-water recharge, drought sensitivity) with literature-backed fixes, and **hindcast against real FAOSTAT national yields** (Senegal millet/groundnut, Kazakhstan wheat) with drought-year hits — replaces the NDVI slide.
+- Relevance/Creativity/Presentation → pitch agent: put NASA risk + the drier/hotter stress test on the landing card and slides; fix the "SMAP/MODIS/IMERG replayed" overclaim; modeled net on cards (fallow trade-off visible); "placeholder budget" chip so over-budget usual plans don't look staged; live URL + QR on the closing slide.
+- Rejected: inventing a team list, farmer quote or pilot evidence (honesty rule). Impact stays capped until the owner adds real interviews — listed as a manual to-do.
+6. `174795c` science calibration + hindcast — 135 tests, build OK, offline smoke exit 0.
+   - Root causes (from `scripts/diagnose-replay.ts`): pre-season evaporation drained the whole 1.2 m profile for 120 days ignoring autumn recharge/snowmelt (Kazakhstan); water percolating below young roots was discarded instead of stored for later root growth (both); a single season-wide Ky hid flowering/grain-fill dry spells (Senegal); no-onset years were silently sown on the last window day.
+   - Fixes (cited R37–R39): off-season from previous harvest with degree-day snowmelt (Hock 2003) and FAO-56 ch. 7 topsoil-only evaporation; FAO-56 ch. 8 deep storage; FAO-33 Table 24 stage-wise Ky; no-onset = failed season.
+   - Severe pairs of 24, before → after (drier & hotter): Senegal usual 0 → 2 (5), A 0 → 0 (2), B 1 → 1 (4); Kazakhstan usual wheat→wheat 21 → 9 (16), A fallow→rapeseed 2 → 2 (6), B now fallow→wheat 5 (7). Single wheat seasons 20 % severe incl. 2004, 2010, 2012. Budgets unchanged.
+   - Hindcast vs **real FAOSTAT national yields** (bulk download, retrieved 2026-11-15, detrended): Kazakhstan wheat r = 0.59 (n = 24); Senegal millet r = 0.18, groundnut r = 0.20 (n = 24; one grid cell vs a whole country — stated on the card). All four known drought years (SN 2002, 2011; KZ 2010, 2012) fall in the model's driest third. Shown on Evidence and slide 6 (replaces NDVI r = 0.55).

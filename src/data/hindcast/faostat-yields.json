@@ -1,0 +1,409 @@
+{
+ "source": "FAOSTAT, Crops and livestock products (QCL), regional bulk download (wide CSV)",
+ "urls": [
+  "https://bulks-faostat.fao.org/production/Production_Crops_Livestock_E_Africa.zip",
+  "https://bulks-faostat.fao.org/production/Production_Crops_Livestock_E_Asia.zip"
+ ],
+ "faostatPage": "https://www.fao.org/faostat/en/#data/QCL",
+ "retrieved": "2026-11-15",
+ "fileLastModified": "2025-12-31",
+ "flags": "A official, E estimated, I imputed, X from international organizations (FAOSTAT flag codes)",
+ "series": {
+  "SN-millet": {
+   "area": "Senegal",
+   "areaCode": 195,
+   "m49": "686",
+   "item": "Millet",
+   "itemCode": 79,
+   "element": "Yield",
+   "elementCode": 5412,
+   "unit": "kg/ha",
+   "points": [
+    {
+     "year": 2001,
+     "kgHa": 694.9,
+     "flag": "A"
+    },
+    {
+     "year": 2002,
+     "kgHa": 506.1,
+     "flag": "A"
+    },
+    {
+     "year": 2003,
+     "kgHa": 732.9,
+     "flag": "A"
+    },
+    {
+     "year": 2004,
+     "kgHa": 471.3,
+     "flag": "A"
+    },
+    {
+     "year": 2005,
+     "kgHa": 760.0,
+     "flag": "A"
+    },
+    {
+     "year": 2006,
+     "kgHa": 660.6,
+     "flag": "A"
+    },
+    {
+     "year": 2007,
+     "kgHa": 464.2,
+     "flag": "A"
+    },
+    {
+     "year": 2008,
+     "kgHa": 767.5,
+     "flag": "A"
+    },
+    {
+     "year": 2009,
+     "kgHa": 770.3,
+     "flag": "A"
+    },
+    {
+     "year": 2010,
+     "kgHa": 787.2,
+     "flag": "A"
+    },
+    {
+     "year": 2011,
+     "kgHa": 616.5,
+     "flag": "A"
+    },
+    {
+     "year": 2012,
+     "kgHa": 810.6,
+     "flag": "A"
+    },
+    {
+     "year": 2013,
+     "kgHa": 683.3,
+     "flag": "A"
+    },
+    {
+     "year": 2014,
+     "kgHa": 571.2,
+     "flag": "A"
+    },
+    {
+     "year": 2015,
+     "kgHa": 813.3,
+     "flag": "A"
+    },
+    {
+     "year": 2016,
+     "kgHa": 747.0,
+     "flag": "A"
+    },
+    {
+     "year": 2017,
+     "kgHa": 930.5,
+     "flag": "A"
+    },
+    {
+     "year": 2018,
+     "kgHa": 965.0,
+     "flag": "A"
+    },
+    {
+     "year": 2019,
+     "kgHa": 916.7,
+     "flag": "A"
+    },
+    {
+     "year": 2020,
+     "kgHa": 1119.0,
+     "flag": "A"
+    },
+    {
+     "year": 2021,
+     "kgHa": 1074.0,
+     "flag": "A"
+    },
+    {
+     "year": 2022,
+     "kgHa": 1131.3,
+     "flag": "A"
+    },
+    {
+     "year": 2023,
+     "kgHa": 1253.3,
+     "flag": "A"
+    },
+    {
+     "year": 2024,
+     "kgHa": 1106.0,
+     "flag": "X"
+    }
+   ]
+  },
+  "SN-groundnut": {
+   "area": "Senegal",
+   "areaCode": 195,
+   "m49": "686",
+   "item": "Groundnuts, excluding shelled",
+   "itemCode": 242,
+   "element": "Yield",
+   "elementCode": 5412,
+   "unit": "kg/ha",
+   "points": [
+    {
+     "year": 2001,
+     "kgHa": 964.0,
+     "flag": "A"
+    },
+    {
+     "year": 2002,
+     "kgHa": 320.4,
+     "flag": "A"
+    },
+    {
+     "year": 2003,
+     "kgHa": 839.7,
+     "flag": "A"
+    },
+    {
+     "year": 2004,
+     "kgHa": 806.4,
+     "flag": "A"
+    },
+    {
+     "year": 2005,
+     "kgHa": 910.7,
+     "flag": "A"
+    },
+    {
+     "year": 2006,
+     "kgHa": 774.9,
+     "flag": "A"
+    },
+    {
+     "year": 2007,
+     "kgHa": 545.5,
+     "flag": "A"
+    },
+    {
+     "year": 2008,
+     "kgHa": 873.8,
+     "flag": "A"
+    },
+    {
+     "year": 2009,
+     "kgHa": 975.0,
+     "flag": "A"
+    },
+    {
+     "year": 2010,
+     "kgHa": 1076.4,
+     "flag": "A"
+    },
+    {
+     "year": 2011,
+     "kgHa": 609.3,
+     "flag": "A"
+    },
+    {
+     "year": 2012,
+     "kgHa": 976.9,
+     "flag": "A"
+    },
+    {
+     "year": 2013,
+     "kgHa": 739.0,
+     "flag": "A"
+    },
+    {
+     "year": 2014,
+     "kgHa": 761.8,
+     "flag": "A"
+    },
+    {
+     "year": 2015,
+     "kgHa": 924.9,
+     "flag": "A"
+    },
+    {
+     "year": 2016,
+     "kgHa": 817.0,
+     "flag": "X"
+    },
+    {
+     "year": 2017,
+     "kgHa": 1120.5,
+     "flag": "A"
+    },
+    {
+     "year": 2018,
+     "kgHa": 1322.9,
+     "flag": "A"
+    },
+    {
+     "year": 2019,
+     "kgHa": 1279.4,
+     "flag": "A"
+    },
+    {
+     "year": 2020,
+     "kgHa": 1467.2,
+     "flag": "A"
+    },
+    {
+     "year": 2021,
+     "kgHa": 1381.7,
+     "flag": "A"
+    },
+    {
+     "year": 2022,
+     "kgHa": 1225.5,
+     "flag": "A"
+    },
+    {
+     "year": 2023,
+     "kgHa": 1336.5,
+     "flag": "A"
+    },
+    {
+     "year": 2024,
+     "kgHa": 1326.9,
+     "flag": "E"
+    }
+   ]
+  },
+  "KZ-wheat": {
+   "area": "Kazakhstan",
+   "areaCode": 108,
+   "m49": "398",
+   "item": "Wheat",
+   "itemCode": 15,
+   "element": "Yield",
+   "elementCode": 5412,
+   "unit": "kg/ha",
+   "points": [
+    {
+     "year": 2001,
+     "kgHa": 1180.3,
+     "flag": "A"
+    },
+    {
+     "year": 2002,
+     "kgHa": 1089.5,
+     "flag": "A"
+    },
+    {
+     "year": 2003,
+     "kgHa": 1025.0,
+     "flag": "A"
+    },
+    {
+     "year": 2004,
+     "kgHa": 843.2,
+     "flag": "A"
+    },
+    {
+     "year": 2005,
+     "kgHa": 948.0,
+     "flag": "A"
+    },
+    {
+     "year": 2006,
+     "kgHa": 1134.8,
+     "flag": "A"
+    },
+    {
+     "year": 2007,
+     "kgHa": 1298.3,
+     "flag": "A"
+    },
+    {
+     "year": 2008,
+     "kgHa": 971.5,
+     "flag": "A"
+    },
+    {
+     "year": 2009,
+     "kgHa": 1194.1,
+     "flag": "A"
+    },
+    {
+     "year": 2010,
+     "kgHa": 733.6,
+     "flag": "A"
+    },
+    {
+     "year": 2011,
+     "kgHa": 1660.9,
+     "flag": "A"
+    },
+    {
+     "year": 2012,
+     "kgHa": 792.9,
+     "flag": "A"
+    },
+    {
+     "year": 2013,
+     "kgHa": 1076.2,
+     "flag": "A"
+    },
+    {
+     "year": 2014,
+     "kgHa": 1090.1,
+     "flag": "A"
+    },
+    {
+     "year": 2015,
+     "kgHa": 1188.2,
+     "flag": "A"
+    },
+    {
+     "year": 2016,
+     "kgHa": 1211.1,
+     "flag": "A"
+    },
+    {
+     "year": 2017,
+     "kgHa": 1242.7,
+     "flag": "A"
+    },
+    {
+     "year": 2018,
+     "kgHa": 1228.1,
+     "flag": "A"
+    },
+    {
+     "year": 2019,
+     "kgHa": 1013.7,
+     "flag": "A"
+    },
+    {
+     "year": 2020,
+     "kgHa": 1182.5,
+     "flag": "A"
+    },
+    {
+     "year": 2021,
+     "kgHa": 928.8,
+     "flag": "A"
+    },
+    {
+     "year": 2022,
+     "kgHa": 1272.7,
+     "flag": "A"
+    },
+    {
+     "year": 2023,
+     "kgHa": 922.4,
+     "flag": "A"
+    },
+    {
+     "year": 2024,
+     "kgHa": 1421.6,
+     "flag": "A"
+    }
+   ]
+  }
+ }
+}

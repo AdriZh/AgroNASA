@@ -8,7 +8,7 @@ import { toHectares } from '../domain/units';
 import { addDays, diffDays } from '../domain/dates';
 import { median, quantile } from '../weather/indicators';
 import { evaluateBudget, costLine, placeholderBudget, PLACEHOLDER_SPEND_SHARE, type BudgetResult, type CostLine } from './budget';
-import { replayCrop, resolveSeasons, type CropRisk, type SowingWindow } from './replay';
+import { isSevere, replayCrop, resolveSeasons, type CropRisk, type SowingWindow } from './replay';
 
 export interface PlanSeason { season: 1 | 2; year: number; cropId: string; sowing: string; maturity: string; risk: CropRisk | null; seasonId: string; seasonLabel: string }
 
@@ -183,6 +183,9 @@ function outcomeFor(crops: [string, string], seasonRisks: [CropRisk | null, Crop
   const y1Att = yld(crops[0], e1?.attainableYieldTHa ?? 0), y2Att = yld(crops[1], e2?.attainableYieldTHa ?? 0);
   const byYear = (r: CropRisk | undefined) => new Map((r?.years ?? []).map((y) => [y.year, y.relYield]));
   const m1 = byYear(r1), m2 = byYear(r2);
+  // failed seasons (no rain onset) count as severe even when the late, window-end sowing still yields something
+  const sevYear = (r: CropRisk | undefined) => new Map((r?.years ?? []).map((y) => [y.year, isSevere(y)]));
+  const s1 = sevYear(r1), s2 = sevYear(r2);
   const rels: number[] = [], severe: boolean[] = [], revs: number[] = [];
   const isF1 = crops[0] === 'fallow', isF2 = crops[1] === 'fallow';
   // replay coherent historical season pairs (Y, Y + offset): same weather sequence a farmer would have lived through
@@ -194,7 +197,7 @@ function outcomeFor(crops: [string, string], seasonRisks: [CropRisk | null, Crop
     const active = [ra, rb].filter((x): x is number => x != null);
     if (!active.length) continue;
     rels.push(active.reduce((s, x) => s + x, 0) / active.length);
-    severe.push(active.some((x) => x < 0.5));
+    severe.push((!isF1 && !!s1.get(y)) || (!isF2 && !!s2.get(y + yearOffset)));
     if ((ra == null || pr1 != null) && (rb == null || pr2 != null)) {
       revs.push(((ra ?? 0) * y1Att * (pr1 ?? 0) + (rb ?? 0) * y2Att * (pr2 ?? 0)) * areaHa);
     }

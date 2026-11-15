@@ -1,0 +1,312 @@
+{
+ "generated": "2026-11-15",
+ "note": "Ya/Ym from replayCrop at the demo NASA POWER grid cell, rainfed, demo soil, sowing from the region pack rule. Regenerate with scripts/build-hindcast.ts.",
+ "series": {
+  "SN-millet": [
+   {
+    "year": 2001,
+    "relYield": 0.8328
+   },
+   {
+    "year": 2002,
+    "relYield": 0.5465
+   },
+   {
+    "year": 2003,
+    "relYield": 0.9777
+   },
+   {
+    "year": 2004,
+    "relYield": 0.9906
+   },
+   {
+    "year": 2005,
+    "relYield": 1
+   },
+   {
+    "year": 2006,
+    "relYield": 0.8209
+   },
+   {
+    "year": 2007,
+    "relYield": 0.9456
+   },
+   {
+    "year": 2008,
+    "relYield": 1
+   },
+   {
+    "year": 2009,
+    "relYield": 1
+   },
+   {
+    "year": 2010,
+    "relYield": 0.9999
+   },
+   {
+    "year": 2011,
+    "relYield": 0.8702
+   },
+   {
+    "year": 2012,
+    "relYield": 1
+   },
+   {
+    "year": 2013,
+    "relYield": 1
+   },
+   {
+    "year": 2014,
+    "relYield": 0.8295
+   },
+   {
+    "year": 2015,
+    "relYield": 0.9957
+   },
+   {
+    "year": 2016,
+    "relYield": 0.9552
+   },
+   {
+    "year": 2017,
+    "relYield": 0.9659
+   },
+   {
+    "year": 2018,
+    "relYield": 0.9146
+   },
+   {
+    "year": 2019,
+    "relYield": 0.676
+   },
+   {
+    "year": 2020,
+    "relYield": 1
+   },
+   {
+    "year": 2021,
+    "relYield": 0.9013
+   },
+   {
+    "year": 2022,
+    "relYield": 1
+   },
+   {
+    "year": 2023,
+    "relYield": 0.9929
+   },
+   {
+    "year": 2024,
+    "relYield": 1
+   },
+   {
+    "year": 2025,
+    "relYield": 1
+   }
+  ],
+  "SN-groundnut": [
+   {
+    "year": 2001,
+    "relYield": 0.6504
+   },
+   {
+    "year": 2002,
+    "relYield": 0.3085
+   },
+   {
+    "year": 2003,
+    "relYield": 0.9103
+   },
+   {
+    "year": 2004,
+    "relYield": 0.8827
+   },
+   {
+    "year": 2005,
+    "relYield": 0.9676
+   },
+   {
+    "year": 2006,
+    "relYield": 0.7314
+   },
+   {
+    "year": 2007,
+    "relYield": 0.8974
+   },
+   {
+    "year": 2008,
+    "relYield": 1
+   },
+   {
+    "year": 2009,
+    "relYield": 0.9962
+   },
+   {
+    "year": 2010,
+    "relYield": 1
+   },
+   {
+    "year": 2011,
+    "relYield": 0.7914
+   },
+   {
+    "year": 2012,
+    "relYield": 1
+   },
+   {
+    "year": 2013,
+    "relYield": 0.9996
+   },
+   {
+    "year": 2014,
+    "relYield": 0.8092
+   },
+   {
+    "year": 2015,
+    "relYield": 0.9786
+   },
+   {
+    "year": 2016,
+    "relYield": 1
+   },
+   {
+    "year": 2017,
+    "relYield": 0.9033
+   },
+   {
+    "year": 2018,
+    "relYield": 0.8729
+   },
+   {
+    "year": 2019,
+    "relYield": 0.4948
+   },
+   {
+    "year": 2020,
+    "relYield": 1
+   },
+   {
+    "year": 2021,
+    "relYield": 0.839
+   },
+   {
+    "year": 2022,
+    "relYield": 1
+   },
+   {
+    "year": 2023,
+    "relYield": 0.8905
+   },
+   {
+    "year": 2024,
+    "relYield": 0.864
+   },
+   {
+    "year": 2025,
+    "relYield": 0.9927
+   }
+  ],
+  "KZ-wheat": [
+   {
+    "year": 2001,
+    "relYield": 0.4523
+   },
+   {
+    "year": 2002,
+    "relYield": 0.6646
+   },
+   {
+    "year": 2003,
+    "relYield": 0.8943
+   },
+   {
+    "year": 2004,
+    "relYield": 0.402
+   },
+   {
+    "year": 2005,
+    "relYield": 0.6884
+   },
+   {
+    "year": 2006,
+    "relYield": 0.5275
+   },
+   {
+    "year": 2007,
+    "relYield": 0.7061
+   },
+   {
+    "year": 2008,
+    "relYield": 0.6753
+   },
+   {
+    "year": 2009,
+    "relYield": 0.5199
+   },
+   {
+    "year": 2010,
+    "relYield": 0.4368
+   },
+   {
+    "year": 2011,
+    "relYield": 0.8737
+   },
+   {
+    "year": 2012,
+    "relYield": 0.4712
+   },
+   {
+    "year": 2013,
+    "relYield": 0.5398
+   },
+   {
+    "year": 2014,
+    "relYield": 0.6383
+   },
+   {
+    "year": 2015,
+    "relYield": 0.5964
+   },
+   {
+    "year": 2016,
+    "relYield": 0.9465
+   },
+   {
+    "year": 2017,
+    "relYield": 0.9118
+   },
+   {
+    "year": 2018,
+    "relYield": 0.7602
+   },
+   {
+    "year": 2019,
+    "relYield": 0.517
+   },
+   {
+    "year": 2020,
+    "relYield": 0.6916
+   },
+   {
+    "year": 2021,
+    "relYield": 0.4661
+   },
+   {
+    "year": 2022,
+    "relYield": 0.7271
+   },
+   {
+    "year": 2023,
+    "relYield": 0.6591
+   },
+   {
+    "year": 2024,
+    "relYield": 0.9498
+   },
+   {
+    "year": 2025,
+    "relYield": 0.7549
+   }
+  ]
+ }
+}

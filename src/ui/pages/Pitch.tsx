@@ -16,6 +16,8 @@ import { OrbitVisual } from '../components/OrbitVisual';
 import { Seg, ThemeToggle } from '../components/common';
 import { CAT_TOKEN, SeasonRainChart, useChartTheme } from '../components/charts';
 import { PlanCard } from './Compare';
+import { HindcastChart } from '../components/Hindcast';
+import { allHindcasts } from '../../data/hindcast/hindcast';
 import type { PlanResult } from '../../engine/plan';
 import type { PlanStress } from '../../engine/whatif';
 import { useDrierHotter } from '../components/stress';
@@ -351,7 +353,15 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
           <Panel d={0.2}><span className="chip nasa"><Satellite /> Observed</span><p style={{ marginTop: 8, fontSize: 15 }}>NASA POWER rain, temperature, humidity, wind, radiation and soil wetness; GIBS satellite layers. Labeled as regional grid data.</p></Panel>
           <Panel d={0.3}><span className="chip"><Calculator /> Modeled</span><p style={{ marginTop: 8, fontSize: 15 }}>ET₀, sowing dates, soil water, water-limited yield, revenue range: conditional historical scenarios, never forecasts.</p></Panel>
           <Panel d={0.4}><span className="chip"><FlaskConical /> Farmer or synthetic</span><p style={{ marginTop: 8, fontSize: 15 }}>History, budget and prices from the farmer; demo prices and farms are labeled synthetic until replaced.</p></Panel>
-          <Panel d={0.5} style={{ gridColumn: 'span 2' }}><b><Check size={16} style={{ verticalAlign: -3 }} /> 37 automated tests + a live satellite cross-check</b><p style={{ marginTop: 8, fontSize: 15 }}>Reproduce the archived NASA query exactly (9,131 records; Jun–Oct 2002 = 308.92 mm; 2009 = 975.63 mm), the FAO-56 textbook ET₀ example, budget boundaries (900 ✓ / 900.01 ✕) and “no affordable plan ever breaks cash timing”. In the app, the POWER-driven water model is compared with MODIS greenness at the field (Bambey: r = 0.55 over 10 seasons).</p></Panel>
+          <Panel d={0.5} style={{ gridColumn: 'span 2' }}>{(() => {
+            const hs = allHindcasts(), kz = hs.find((h) => h.c.key === 'KZ-wheat')!;
+            const drought = hs.flatMap((h) => h.hits.filter((x) => x.hit).map((x) => x.year));
+            return (<>
+              <b><Check size={16} style={{ verticalAlign: -3 }} /> Hindcast against real harvests (FAOSTAT, detrended)</b>
+              <HindcastChart h={kz} height={150} />
+              <p style={{ marginTop: 4, fontSize: 14 }}>Kazakhstan wheat r = {kz.r.toFixed(2)} (n = {kz.n}); {hs.filter((h) => h !== kz).map((h) => `${h.c.label.replace('Senegal · ', 'Senegal ')} r = ${h.r.toFixed(2)}`).join(', ')}. Drought years {[...new Set(drought)].sort().join(', ')} all fall in the model’s driest third. One grid cell vs a national yield is a weak test, and we say so. Plus automated tests: the archived NASA query, the FAO-56 ET₀ example, budget boundaries.</p>
+            </>);
+          })()}</Panel>
           <Panel d={0.6}><b><Ban size={16} style={{ verticalAlign: -3 }} /> Never claimed</b><p style={{ marginTop: 8, fontSize: 15 }}>Guaranteed yields or profit · why a crop failed · fertilizer doses · soil N–P–K from purchases.</p></Panel>
         </div>
       </>

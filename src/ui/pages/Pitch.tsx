@@ -3,6 +3,7 @@ import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-
 import {
   ArrowRight, BadgeCheck, Ban, BookMarked, Calculator, Check, ChevronLeft, ChevronRight, CloudRain, Droplets, Eye, FileDown, FlaskConical, Globe2, Layers, Leaf,
   NotebookPen, Satellite, Shovel, Sprout, Tractor, Users, Wallet, WifiOff, X, Sun, Thermometer,
+  Languages, Bot, Mic, LayoutDashboard, Cpu, Rocket, Database, Workflow, Target, Code,
 } from 'lucide-react';
 import type { Route } from '../../App';
 import { useApp } from '../../state/AppContext';
@@ -13,12 +14,12 @@ import { addDays, dayIndex, fmtDayMonth } from '../../domain/dates';
 import { rainOnset, temperatureSowing, yearlyWindow } from '../../weather/indicators';
 import { BrandMark } from '../components/Logo';
 import { OrbitVisual } from '../components/OrbitVisual';
-import { Seg, ThemeToggle } from '../components/common';
+import { ThemeToggle } from '../components/common';
 import { CAT_TOKEN, SeasonRainChart, useChartTheme } from '../components/charts';
 import { BEST_FIT, CASH_CAPTION, PlanCard, PRIORITY_LABEL, tradeOffText } from './Compare';
 import { HindcastChart } from '../components/Hindcast';
 import { allHindcasts } from '../../data/hindcast/hindcast';
-import { TEAM } from '../../data/team';
+import { TEAM, TEAM_NAME, TEAM_PROFILES } from '../../data/team';
 import type { PlanResult } from '../../engine/plan';
 import type { PlanStress } from '../../engine/whatif';
 import { useDrierHotter } from '../components/stress';
@@ -223,10 +224,37 @@ function MiniCompare({ plans, cur, stress }: { plans: PlanResult[]; cur: string;
   );
 }
 
+/** Slide 5: where Field Shift sits against similar tools (placed by zone from each tool's public pages, Nov 2026). */
+function PositionMap() {
+  const t = useChartTheme();
+  const x0 = 70, y0 = 10, w = 440, h = 300, mx = x0 + w / 2, my = y0 + h / 2;
+  const item = (x: number, y: number, label: string) => (
+    <g key={label}><circle cx={x} cy={y - 4} r={4} fill="none" stroke={t.axis} strokeWidth={1.25} /><text x={x + 10} y={y} fill={t.text} fontSize={13}>{label}</text></g>
+  );
+  return (
+    <svg viewBox="0 0 520 360" width="100%" role="img" aria-label="Positioning map: only Field Shift both checks cash and computes each plan's weather risk">
+      <rect x={mx} y={y0} width={w / 2} height={h / 2} fill={t.brand} fillOpacity={0.1} />
+      <rect x={x0} y={y0} width={w} height={h} fill="none" stroke={t.border} />
+      <line x1={mx} x2={mx} y1={y0} y2={y0 + h} stroke={t.border} /><line x1={x0} x2={x0 + w} y1={my} y2={my} stroke={t.border} />
+      <text x={x0 + 10} y={y0 + 20} fill={t.muted} fontSize={11.5}>Money, risk left to the reader</text>
+      {item(x0 + 18, y0 + 50, 'E-PICSA (Zambia, Malawi)')}{item(x0 + 18, y0 + 72, 'PICSA paper method')}{item(x0 + 18, y0 + 94, 'Crop Planner (UK)')}
+      <text x={mx + 10} y={y0 + 20} fill={t.muted} fontSize={11.5}>Money + computed risk</text>
+      <circle cx={mx + 22} cy={y0 + 56} r={7} fill={t.brand} /><text x={mx + 36} y={y0 + 61} fill={t.text} fontSize={15} fontWeight={700}>Field Shift</text>
+      <text x={x0 + 10} y={my + 20} fill={t.muted} fontSize={11.5}>Neither</text>
+      {item(x0 + 18, my + 46, 'Precision Development (SMS)')}{item(x0 + 18, my + 68, 'FarmerChat (AI chat)')}{item(x0 + 18, my + 90, 'Cropin · OneSoil')}{item(x0 + 18, my + 112, 'ENACTS climate maps')}
+      <text x={mx + 10} y={my + 20} fill={t.muted} fontSize={11.5}>Risk, no money</text>
+      <text x={mx + 18} y={my + 50} fill={t.muted} fontSize={13}>No tool found</text>
+      <text x={x0} y={y0 + h + 20} fill={t.muted} fontSize={11.5}>Past weather: none or graphs</text>
+      <text x={x0 + w} y={y0 + h + 20} textAnchor="end" fill={t.muted} fontSize={11.5}>computed for each plan →</text>
+      <text transform={`rotate(-90 20 ${my})`} x={20} y={my} textAnchor="middle" fill={t.muted} fontSize={11.5}>Money: not considered → budget / cash check</text>
+    </svg>
+  );
+}
+
 // ---------- deck ----------
 export function PitchPage({ go }: { go: (r: Route) => void }) {
   const { engine, data, scenario } = useApp();
-  const [cut, setCut] = useState<'full' | 'submission'>('full');
+  const cut = 'pitch';
   const [i, setI] = useState(0);
   const [printing, setPrinting] = useState(false);
   const rows = useMemo(() => (data.series && engine ? yearlyWindow(data.series, engine.window.earliest, seasonEndOf(engine)) : []), [data.series, engine]);
@@ -242,28 +270,37 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     { id: 'title', kicker: 'NASA Space Apps 2026 · Field Shift challenge', icon: <BadgeCheck size={14} />, body: (
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.15fr .85fr', gap: 32, alignItems: 'center' }}>
         <div>
-          <motion.div {...up(0.1)} style={{ display: 'flex', alignItems: 'center', gap: 16 }}><BrandMark size={56} /><span style={{ fontWeight: 600, fontSize: 28 }}>Field Shift</span></motion.div>
-          <motion.h1 {...up(0.2)} style={{ margin: '24px 0 16px' }}>Crop plans farmers can <G>afford</G>, informed by <G>25 years of NASA Earth data</G>.</motion.h1>
-          <motion.p {...up(0.3)} style={{ maxWidth: 620 }}>We replay NASA POWER daily weather, add NASA satellite context, combine it with what the farmer already knows (past crops, soil, budget and constraints) and explain every trade-off.</motion.p>
-          <motion.div {...up(0.4)} className="row" style={{ marginTop: 24 }}>{['Informs, never dictates', 'Demo farms work offline', 'Any location on Earth'].map((x) => <span key={x} className="chip" style={{ fontSize: 13, padding: '4px 10px' }}>{x}</span>)}</motion.div>
+          <motion.div {...up(0.1)} style={{ display: 'flex', alignItems: 'center', gap: 20 }}><BrandMark size={88} /><span style={{ fontWeight: 700, fontSize: 'clamp(36px, 5vw, 64px)', letterSpacing: '-.02em' }}>Field Shift</span></motion.div>
+          <motion.h1 {...up(0.2)} style={{ margin: '24px 0 12px' }}><G>From space to soil.</G></motion.h1>
+          <motion.p {...up(0.3)} style={{ maxWidth: 620 }}>Crop plans farmers can afford, tested against 25 years of NASA Earth data.</motion.p>
+          <motion.p {...up(0.4)} className="quote" style={{ marginTop: 32 }}>by Team <b>{TEAM_NAME}</b></motion.p>
         </div>
         <motion.div {...fade(0.3)} style={{ height: 260 }}><OrbitVisual /></motion.div>
       </div>
     ) },
     { id: 'problem', kicker: 'The problem', icon: <CloudRain size={14} />, body: (
       <>
-        <motion.h2 {...up(0.1)}>Every season, farmers bet their savings on the sky.</motion.h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 32, flex: 1, alignItems: 'center' }}>
+        <motion.h2 {...up(0.1)}>Every season, farmers bet their savings on the sky, before they know the rain.</motion.h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 24, flex: 1, alignItems: 'center' }}>
           <motion.div {...fade(0.2)}>
-            {rows.length > 0 && minRow && maxRow && <SeasonRainChart rows={rows} highlight={[minRow.year, maxRow.year]} height={300} />}
-            <div className="muted" style={{ fontSize: 13 }}>Season rainfall by year at {place}, mm, NASA POWER PRECTOTCORR (grid cell, not a field station). Driest and wettest years highlighted.</div>
+            {rows.length > 0 && minRow && maxRow && <SeasonRainChart rows={rows} highlight={[minRow.year, maxRow.year]} height={210} />}
+            <div className="muted" style={{ fontSize: 12 }}>Season rain by year at {place}, mm, NASA POWER (grid cell). Driest and wettest years highlighted.</div>
           </motion.div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Panel d={0.4}><div className="num-xl">{(mx / Math.max(1, mn)).toFixed(1)}×</div><p style={{ marginTop: 8 }}>swing in season rain at the same place ({Math.round(mn)}–{Math.round(mx)} mm). An “average year” hides it.</p></Panel>
-            {minRow && maxRow && <Panel d={0.5}><b style={{ fontSize: 20 }}>Live from NASA POWER</b><p style={{ marginTop: 8 }}>Driest season {minRow.year}: <b className="ink">{Math.round(mn)} mm</b>. Wettest {maxRow.year}: <b className="ink">{Math.round(mx)} mm</b>. Same field, same calendar.</p></Panel>}
-            <Panel d={0.6}><b style={{ fontSize: 20 }}>Patchy records</b><p style={{ marginTop: 8 }}>Past crops, doses and dates live in memory, and timing matters as much as totals.</p></Panel>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Panel d={0.3}><div className="num-xl" style={{ fontSize: 40 }}>{(mx / Math.max(1, mn)).toFixed(1)}×</div><p style={{ marginTop: 6, fontSize: 14 }}>swing in season rain at one place ({Math.round(mn)}–{Math.round(mx)} mm)</p></Panel>
+            <Panel d={0.35}><div className="num-xl" style={{ fontSize: 40 }}>$170 B</div><p style={{ marginTop: 6, fontSize: 14 }}>yearly smallholder finance gap; 70% of need unmet (ISF Advisors 2019)</p></Panel>
+            <Panel d={0.4}><div className="num-xl" style={{ fontSize: 40 }}>1 : 1,000+</div><p style={{ marginTop: 6, fontSize: 14 }}>extension agents to farmers in many countries (Fabregas et al., Science 2019)</p></Panel>
+            <Panel d={0.45}><div className="num-xl" style={{ fontSize: 40 }}>608 M</div><p style={{ marginTop: 6, fontSize: 14 }}>farms worldwide, 84% under 2 ha: the market (FAO)</p></Panel>
           </div>
         </div>
+        <motion.div {...up(0.5)} style={{ marginTop: 12, marginBottom: 20 }}>
+          <b style={{ fontSize: 15 }}>Why it happens</b>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginTop: 6 }}>
+            {[['Rain decides', 'Rain-fed farms give 52% of world crop output (FAO 2025).'], ['Cash comes before rain', 'Inputs are paid before sowing; credit and insurance rarely reach smallholders.'], ['Advice is scarce', 'Generic tips, no check of what a plan costs or how it fails in a bad year.'], ['Markets push one crop', 'Wheat ≈ 56% of Kazakhstan’s sown area (2024 plan).']].map(([h, d]) => (
+              <div key={h} style={{ fontSize: 13, lineHeight: 1.35 }}><b className="ink">{h}</b><div className="muted">{d}</div></div>
+            ))}
+          </div>
+        </motion.div>
       </>
     ) },
     { id: 'cash', kicker: 'The cash gap', icon: <Wallet size={14} />, body: (
@@ -293,9 +330,99 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     ) },
     { id: 'solution', kicker: 'Our solution', icon: <Sprout size={14} />, body: (
       <>
-        <motion.h2 {...up(0.1)}>Which next two-season plans can I <G>realistically afford</G>?</motion.h2>
-        <motion.p {...up(0.2)}>Your usual plan against the two best alternatives, live for {place}: priced, cash-checked, replayed on NASA weather.</motion.p>
+        <motion.h2 {...up(0.1)}>Which next plans can I <G>afford</G>, and how do they hold up in a <G>bad year</G>?</motion.h2>
+        <motion.p {...up(0.2)} style={{ fontSize: 15 }}><b className="ink">1</b> Pin the field · <b className="ink">2</b> Enter crops &amp; budget · <b className="ink">3</b> Compare affordable plans · <b className="ink">4</b> Print or share. Live for {place}:</motion.p>
         {engine && plans.length > 0 ? <MiniCompare plans={plans} cur={cur} stress={stress} /> : null}
+      </>
+    ) },
+    { id: 'how', kicker: 'How it works', icon: <Cpu size={14} />, body: (
+      <>
+        <motion.h2 {...up(0.1)}>Published science in a free web app: no black box.</motion.h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 1fr', gap: 16, flex: 1, alignItems: 'stretch' }}>
+          <Panel d={0.2}><b className="row" style={{ gap: 6 }}><Database size={16} /> Data in</b>
+            <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 15 }}>
+              <li><b className="ink">NASA POWER</b> daily weather since 2001</li>
+              <li>NASA SMAP, MODIS, GRACE context</li>
+              <li>SoilGrids soil · FAOSTAT prices</li>
+              <li>The farmer’s crops and budget</li>
+            </ul>
+          </Panel>
+          <Panel d={0.3}><b className="row" style={{ gap: 6 }}><Calculator size={16} /> The engine, for every candidate rotation</b>
+            <ol style={{ margin: '8px 0 0', paddingLeft: 20, fontSize: 15 }}>
+              <li>Sowing date per past year (rain onset)</li>
+              <li>Daily soil-water balance (FAO-56)</li>
+              <li>Yield in 24 real season pairs (FAO-66)</li>
+              <li>Cash check at every due date</li>
+              <li>Rotation rules, then rank, with reasons</li>
+            </ol>
+          </Panel>
+          <Panel d={0.4}><b className="row" style={{ gap: 6 }}><Code size={16} /> Stack</b>
+            <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 15 }}>
+              <li>React + TypeScript + Vite</li>
+              <li>Static site, GitHub Pages CI</li>
+              <li>No backend; works offline</li>
+              <li>180 automated tests</li>
+            </ul>
+          </Panel>
+        </div>
+        <motion.div {...up(0.5)} className="row" style={{ gap: 8, margin: '12px 0 20px', fontSize: 14, flexWrap: 'wrap' }}>
+          <b className="row" style={{ gap: 6 }}><Workflow size={16} /> Process:</b>
+          {['Brief & research', 'Spec + evidence register', 'Engine first, tested on archived NASA data & the FAO-56 example', 'UI + 16 regional packs', 'Hindcast vs real FAOSTAT yields'].map((s, k, a) => <span key={s} className="row" style={{ gap: 8 }}><span className="chip" style={{ fontSize: 13, padding: '3px 8px' }}>{s}</span>{k < a.length - 1 && <ArrowRight size={14} className="muted" />}</span>)}
+        </motion.div>
+      </>
+    ) },
+    { id: 'edge', kicker: 'Why it is better', icon: <Target size={14} />, body: (
+      <>
+        <motion.h2 {...up(0.1)}>Others show what grows. Field Shift shows what you can <G>afford</G>.</motion.h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, flex: 1, alignItems: 'center' }}>
+          <motion.div {...fade(0.2)}><PositionMap /><div className="muted" style={{ fontSize: 12 }}>Placed from each tool’s public pages, Nov 2026. Nearest: E-PICSA shows rainfall history and budgets, but people read the risk.</div></motion.div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Panel d={0.3}><b className="ink">Affordability first</b><p style={{ marginTop: 4, fontSize: 14 }}>Plans that run out of cash before a due date are excluded, with the reason shown.</p></Panel>
+            <Panel d={0.35}><b className="ink">Bad years, not averages</b><p style={{ marginTop: 4, fontSize: 14 }}>Each plan replayed through 24 real consecutive season pairs, plus a drier &amp; hotter test.</p></Panel>
+            <Panel d={0.4}><b className="ink">Anywhere on Earth, day one</b><p style={{ marginTop: 4, fontSize: 14 }}>16 regional farming packs + global screening; no national data system needed.</p></Panel>
+            <Panel d={0.45}><b className="ink">Every number traceable</b><p style={{ marginTop: 4, fontSize: 14 }}>Reason codes and sources on every plan; no AI in the decision; checked against real harvests.</p></Panel>
+          </div>
+        </div>
+      </>
+    ) },
+    { id: 'next', kicker: 'What comes next', icon: <Rocket size={14} />, body: (
+      <>
+        <motion.h2 {...up(0.1)}>Next: every market, every language, every farmer.</motion.h2>
+        <div className="grid g2" style={{ gap: 12, flex: 1, alignContent: 'center' }}>
+          {([
+            [<Languages size={20} />, 'Every market, its own language', 'French, Wolof, Kazakh, Russian, Uzbek, Portuguese, Swahili, Hindi… (today: English).'],
+            [<Bot size={20} />, 'AI assistant', 'Explains each plan in plain words, using only the engine’s numbers.'],
+            [<Mic size={20} />, 'Voice', 'Read-out and voice input for farmers who don’t read easily.'],
+            [<LayoutDashboard size={20} />, 'Live data dashboard', 'Opt-in telemetry: plans compared and changed, by region, for co-ops and ministries.'],
+          ] as const).map(([ic, h, d], k) => (
+            <Panel key={h} d={0.2 + k * 0.07}><div className="row" style={{ gap: 8 }}><span className="muted">{ic}</span><b className="ink" style={{ fontSize: 18 }}>{h}</b><span className="chip" style={{ marginLeft: 'auto' }}>planned</span></div><p style={{ marginTop: 6, fontSize: 15 }}>{d}</p></Panel>
+          ))}
+        </div>
+        <motion.div {...up(0.5)} className="timeline" style={{ marginBottom: 20 }}>
+          {[['Now', 'Working prototype, 16 regional packs'], ['Next 90 days', 'Pilot with an NGO and a local agronomist; real local prices'], ['v2', 'Languages, voice, AI assistant'], ['Scale', 'Dashboard for co-ops, NGOs and governments']].map(([title, d], k) => (
+            <div key={title}><i className={k === 0 ? 'on' : ''} /><b>{title}</b><p style={{ fontSize: 14, marginTop: 4 }}>{d}</p></div>
+          ))}
+        </motion.div>
+      </>
+    ) },
+    { id: 'team', kicker: `Why us · Team ${TEAM_NAME}`, icon: <Users size={14} />, body: (
+      <>
+        <motion.h2 {...up(0.1)}>Builders, educators and founders: <G>Team {TEAM_NAME}</G>.</motion.h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 200px', gap: 20, flex: 1, alignItems: 'center' }}>
+          <div className="grid g3" style={{ gap: 12 }}>
+            {TEAM_PROFILES.map((m, k) => (
+              <Panel key={m.name} d={0.15 + k * 0.05}><b className="ink" style={{ fontSize: 18 }}>{m.name}</b><p style={{ marginTop: 6, fontSize: 14, lineHeight: 1.4 }}>{m.line}</p></Panel>
+            ))}
+          </div>
+          <motion.div {...quick(0.3)} className="qr-box">
+            <img src={`${base}media/qr-live.svg`} alt="QR code for https://adrizh.github.io/AgroNASA/" width={160} height={160} style={{ width: 160, height: 160 }} />
+            <span className="muted">Scan to try it</span>
+          </motion.div>
+        </div>
+        <motion.div {...quick(0.4)} className="live-url">
+          <span className="caption">Try it live</span>
+          <a href="https://adrizh.github.io/AgroNASA/" target="_blank" rel="noopener noreferrer">adrizh.github.io/AgroNASA</a>
+        </motion.div>
       </>
     ) },
     { id: 'fusion', kicker: 'Data fusion', icon: <Layers size={14} />, body: (<><motion.h2 {...up(0.1)}>NASA Earth data + ground truth → explainable plans</motion.h2><FusionDiagram /></>) },
@@ -402,8 +529,9 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
       </>
     ) },
   ];
-  const SUB = ['title', 'problem', 'solution', 'fusion', 'result', 'honest', 'impact'];
-  const slides = cut === 'full' ? all : all.filter((s) => SUB.includes(s.id));
+  // Exactly seven slides, in the order the team asked for. Older slides stay defined above but are not shown.
+  const PITCH = ['title', 'problem', 'solution', 'how', 'edge', 'next', 'team'];
+  const slides = PITCH.map((id) => all.find((s) => s.id === id)!);
   const n = slides.length;
   const idx = Math.min(i, n - 1);
 
@@ -446,7 +574,6 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         <div className="pitch-bar">
           <div className="row">
             <button className="btn sm" onClick={() => go('overview')}><X /> Exit</button>
-            <Seg label="Deck" value={cut} options={[{ v: 'full', label: 'Full story · 12' }, { v: 'submission', label: 'Submission · 7' }]} onChange={(v) => { setCut(v); setI(0); }} />
           </div>
           <div className="progress" role="tablist" aria-label="Slides">{slides.map((s, k) => <i key={s.id} role="tab" aria-selected={k === idx} aria-label={s.kicker} className={k === idx ? 'on' : ''} onClick={() => setI(k)} title={s.kicker} />)}</div>
           <div className="row">

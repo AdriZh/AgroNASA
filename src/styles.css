@@ -262,6 +262,7 @@ td .input.sm[type="number"] { text-align: right; min-width: 88px; }
 .badge.bad { background: var(--bad-soft); color: var(--bad); }
 .chip { display: inline-flex; align-items: center; gap: var(--s-1); padding: 1px 6px; border: 1px solid var(--border); border-radius: var(--r-sm); background: transparent; font-family: var(--mono); font-size: 12px; line-height: 18px; color: var(--text-muted); white-space: nowrap; text-decoration: none !important; }
 .chip svg { width: 12px; height: 12px; }
+th .chip { text-transform: none; letter-spacing: 0; font-weight: var(--w-regular); }
 .chip.nasa { color: var(--accent); }
 a.chip:hover { border-color: var(--accent); color: var(--accent); }
 .chips { display: inline-flex; gap: var(--s-1); flex-wrap: wrap; }
@@ -409,6 +410,14 @@ details.disclose > .body { margin-top: var(--s-3); }
 .hero-side { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
 .hero-art { height: 160px; }
 .preview { box-shadow: var(--shadow); }
+.ov-ring { fill: none; stroke: var(--border); stroke-width: 1.5; stroke-dasharray: 4 5; }
+.ov-beam { fill: var(--accent); opacity: .15; }
+.ov-tile-a { fill: var(--c3); }
+.ov-tile-b { fill: var(--c4); }
+.ov-body { fill: var(--text-muted); }
+.ov-panel { fill: var(--accent); }
+.ov-chip { fill: var(--surface); stroke: var(--border); }
+.ov-chip-t { font-family: var(--mono); font-size: 11px; fill: var(--accent); }
 @media (max-width: 1100px) { .hero-grid { grid-template-columns: 1fr; } .hero-art { display: none; } }
 @media (max-width: 640px) {
   .hero { padding: var(--s-4) var(--s-3); }
@@ -425,6 +434,7 @@ details.disclose > .body { margin-top: var(--s-3); }
 .preset > span:last-child { min-width: 0; }
 @media (max-width: 1180px) { .preset-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .preset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.step-link { color: var(--text); font-size: 16px; line-height: 24px; text-align: left; }
 .step-n { font-family: var(--mono); font-size: 12px; color: var(--brand); }
 .present-strip { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
 .statement { display: flex; flex-direction: column; gap: var(--s-1); }

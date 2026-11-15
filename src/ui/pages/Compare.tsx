@@ -74,11 +74,6 @@ export function PlanCard({ p, cur, label, tone, best, onWhy, selected, compact }
           </div>
         )}
       </>}
-      {compact && (
-        <div className="group" style={{ marginTop: 0 }}>
-          <StatRows rows={[['Harvest, typical year', harvestText(p)], ['Severe water stress', `${severe} of ${p.outcome.pairs} years`]]} />
-        </div>
-      )}
     </article>
   );
 }

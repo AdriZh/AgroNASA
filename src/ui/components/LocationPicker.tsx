@@ -24,7 +24,7 @@ export const WORLD_PRESETS: (Place & { flag: string; system: string })[] = [
   { label: 'Northam, Australia', lat: -31.6, lon: 116.9, iso2: 'AU', flag: '🇦🇺', system: 'Wheat · canola · lupin' },
 ];
 
-export function LocationSearch({ onPick, compact }: { onPick: (p: Place) => void; compact?: boolean }) {
+export function LocationSearch({ onPick }: { onPick: (p: Place) => void; compact?: boolean }) {
   const [q, setQ] = useState('');
   const [hits, setHits] = useState<GeoHit[]>([]);
   const [busy, setBusy] = useState(false);
@@ -48,20 +48,20 @@ export function LocationSearch({ onPick, compact }: { onPick: (p: Place) => void
   };
   return (
     <div>
-      <div className="row" style={{ flexWrap: compact ? 'wrap' : 'nowrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--text-muted)' }} />
-          <input className="input" style={{ paddingLeft: 36 }} placeholder="Search any village, district or region — or type lat, lon" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && search()} aria-label="Search location" />
+      <div className="row">
+        <div className="input-icon">
+          <Search aria-hidden />
+          <input className="input" placeholder="Search any village, district or region — or type lat, lon" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && search()} aria-label="Search location" />
         </div>
-        <button className="btn primary" onClick={search} disabled={busy}>{busy ? <Loader2 size={15} className="spin" /> : <Search size={15} />} Search</button>
-        <button className="btn" onClick={gps} title="Use device GPS"><Crosshair size={15} /> GPS</button>
+        <button className="btn" onClick={search} disabled={busy}>{busy ? <Loader2 className="spin" /> : null}Search</button>
+        <button className="btn" onClick={gps} title="Use device GPS"><Crosshair /> GPS</button>
       </div>
-      {err && <p className="mini" style={{ color: 'var(--warn)', margin: '8px 0 0' }}>{err}</p>}
+      {err && <p className="mini warn-t" style={{ marginTop: 8 }}>{err}</p>}
       {hits.length > 0 && (
-        <div className="stack" style={{ marginTop: 10 }}>
+        <div className="stack-sm" style={{ marginTop: 8 }}>
           {hits.map((h) => (
             <button key={`${h.lat},${h.lon}`} className="btn sm" style={{ justifyContent: 'flex-start', textAlign: 'left', whiteSpace: 'normal' }} onClick={() => { onPick({ lat: Number(h.lat.toFixed(4)), lon: Number(h.lon.toFixed(4)), label: h.label.split(',').slice(0, 3).join(','), iso2: h.iso2 }); setHits([]); setQ(''); }}>
-              <MapPin size={14} /> <span>{h.label}</span> <span className="chip rule" style={{ marginLeft: 'auto' }}>{detectPack(h.lat, h.lon, h.iso2).short}</span>
+              <MapPin /> <span>{h.label}</span> <span className="chip" style={{ marginLeft: 'auto' }}>{detectPack(h.lat, h.lon, h.iso2).short}</span>
             </button>
           ))}
         </div>

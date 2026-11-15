@@ -1,6 +1,15 @@
 # 🛰️🌾 Field Shift — NASA-informed, budget-aware crop-rotation planner
 
+## 🔗 Live app: **https://adrizh.github.io/AgroNASA/**
+
+*Which next two-season rotations can I afford, and how do they hold up in a bad year? Replays 25 years of NASA POWER weather against your budget.*
+
 **NASA Space Apps 2026 · Field Shift challenge (“Adapting farms with NASA data”)**
+
+Every push to `main` runs the tests, builds, publishes to the `gh-pages` branch and verifies that the live URL serves the new build.
+
+![Overview: story, live scenario summary and NASA seasonal variability](docs/img/overview.png)
+![Compare: the usual plan is 74,500 XOF over budget; two alternatives fit](docs/img/compare.png)
 
 Field Shift helps a farmer (or the extension worker sitting with them) answer one question:
 
@@ -16,7 +25,7 @@ Search a place, click the map, use GPS, or pick one of 15 example farming region
 
 1. downloads 25 years of daily **NASA POWER** data for that grid cell (live, ~2–40 s, then cached),
 2. detects the **country** (OpenStreetMap reverse geocoding) → local **currency**, **FAOSTAT** producer prices and exchange rate,
-3. selects the **regional farming system** — 14 packs plus a global fallback:
+3. selects the **regional farming system** — 16 regional packs plus global screening:
 
 | Pack | Seasons | Example |
 |---|---|---|
@@ -32,7 +41,9 @@ Search a place, click the map, use GPS, or pick one of 15 example farming region
 | N. Kazakhstan & S. Siberia steppe | spring–summer | Kostanay 🇰🇿 |
 | Europe & Black Sea | spring + autumn-sown | Kropyvnytskyi 🇺🇦 |
 | North America | spring + autumn-sown | Iowa 🇺🇸, Canada |
+| US Corn Belt | corn–soybean rotation | Iowa 🇺🇸 |
 | South America | summer crop + safrinha | Sorriso 🇧🇷, Argentina |
+| Brazil Cerrado | soy + safrinha | Sorriso 🇧🇷 |
 | Australia | winter grain (autumn break) | Northam 🇦🇺 |
 | Global screening | auto from NASA climatology | anywhere else |
 
@@ -43,11 +54,12 @@ Search a place, click the map, use GPS, or pick one of 15 example farming region
 | **Overview** | Story, live summary of the current scenario, NASA seasonal-variability chart, data-source map. |
 | **1 · Farm & history** | Map pin (search, GPS or click), area & units, auto-detected regional pack, last 1–3 crops with dates/outcomes, detailed fertilizer & manure records (normalized; unknowns stay unknown), farmer soil texture + SoilGrids profile. |
 | **2 · Resources** | Funds, reserve, dated confirmed inflows, irrigation (with seasonal water cap), labor, unavailable seed, sellable crops, residue need, fallow option, one priority, baseline override, full **editable price & yield pack**. |
-| **3 · Compare plans** | Usual plan + ≤2 ranked feasible alternatives: cash cost, headroom, upfront need, season split, modeled harvest range, modeled net, severe-stress risk, reason codes with source chips; cost-by-category chart vs budget; water-limited yield screening for every crop; “See why” with cost lines, cash timeline and 25-season replay; every excluded rotation with its blocking reason. |
-| **4 · Evidence** | NASA climate record (monthly climatology, ET₀, season totals, dry runs, heat days, provenance), **this season so far** vs history + onset + NASA soil wetness, **16-day forecast** & planting-readiness, **NASA satellite layers** (MODIS NDVI, SMAP L4 soil moisture, GPM IMERG, MODIS LST, true colour, with date & −1-year compare), **past-season review** (descriptive, never causal), fertilizer nutrient timeline. |
+| **3 · Compare plans** | Usual plan + ≤2 ranked feasible alternatives (the usual plan is always shown, flagged): cash cost, headroom, upfront need, season split, modeled harvest range, modeled net, severe-stress risk, reason codes with source chips; cost-by-category chart vs budget; water-limited yield screening for every crop; “See why” with cost lines, cash timeline and 25-season replay; every excluded rotation with its blocking reason. **What-if climate stress test** (rain −30…+20 %, +0…+3 °C as a delta change on the 2001–2025 NASA POWER record; “Drier & hotter” = −15 % rain, +2 °C) re-runs the 24-season-pair replay live in ~30–50 ms. **Share** button: the scenario is encoded in the URL hash (validated, size-limited). New farms get a clearly labeled placeholder budget (spendable ≈ 90 % of the usual plan’s cash cost). |
+| **4 · Evidence** | NASA climate record (monthly climatology, ET₀, season totals, dry runs, heat days, provenance), **this season so far** vs history + onset + NASA soil wetness, **16-day forecast** & planting-readiness, **NASA satellite layers** (MODIS NDVI, SMAP L4 soil moisture, GPM IMERG, MODIS LST, true colour, with date & −1-year compare), **past-season review** (descriptive, never causal), fertilizer nutrient timeline, and a **hindcast vs real FAOSTAT national yields**. |
 | **Report** | Printable / PDF plan summary with sources; export, import and delete-all-data controls. |
 | **Methods** | Pipeline, formulas, reason codes, rule packs (with review status), crop parameters, full evidence register, privacy & AI disclosure. |
-| **Presentation** | Animated 12-slide explainer deck (problem, cash gap, users, solution, data fusion, sowing science, soil-water bucket, decision funnel, live result, validity, impact) with a **7-slide submission cut** and one-click PDF export. Live data from the selected farm. |
+| **Presentation** | Animated 12-slide explainer deck (problem, cash gap, users, solution, data fusion, sowing science, soil-water bucket, decision funnel, live result, hindcast, impact) with a **7-slide submission cut** and one-click PDF export. Live data from the selected farm. |
+| **Design system** | [`docs/DESIGN.md`](docs/DESIGN.md): tokens and components, light and dark mode. |
 | **30-second video** | Narrated 1080p MP4 (`public/media/field-shift-30s.mp4`) with original synthesized soundtrack and burned-in captions, plus a live animated version. See [`docs/PITCH.md`](docs/PITCH.md). |
 
 ### Data — NASA and non-NASA
@@ -59,10 +71,10 @@ Search a place, click the map, use GPS, or pick one of 15 example farming region
 | **NASA GIBS** map layers: MODIS NDVI, SMAP L4, GPM IMERG, MODIS LST, true colour | NASA | Satellite context around the field |
 | **NASA values at the field pixel** (decoded from GIBS tiles + colormaps): MODIS Terra NDVI 16-day 2000→now, MODIS IGBP land cover, SMAP L4 root-zone soil moisture, GRACE/GRACE-FO water storage | NASA | Field greenness history, model-vs-satellite check (r), cropland check, soil moisture vs normal, groundwater trend, past-season review |
 | **NASA EONET** natural events | NASA | Wildfires, floods, storms, drought, dust within ~300 km |
-| **FAOSTAT** (FAO): producer prices, exchange rates, cropland nutrient budget, temperature change — from the team's Drive data index | non-NASA | Real crop prices & local currency for 240 countries; national N-budget and warming context |
+| **FAOSTAT** (FAO): producer prices, exchange rates, cropland nutrient budget, temperature change — from the team's Drive data index | non-NASA | Real crop prices (a price more than 3× off the global median is replaced by the median, labeled) & local currency for 240 countries; national N-budget and warming context |
 | Farmer records (history, fertilizer, budget, constraints, prices) | non-NASA | Everything farm-specific — stored only in the browser |
 | **ISRIC SoilGrids 2.0** (texture, SOC, pH, N, CEC, 0–60 cm) | non-NASA | Available water capacity via Saxton & Rawls (2006); pH warnings |
-| Regional rule packs (Senegal groundnut basin; Northern Kazakhstan steppe; global screening) | non-NASA | Crop calendars, return intervals, disease groups, legume/fallow benefits — each rule with source IDs and review status |
+| Regional rule packs (16 regional packs plus global screening) | non-NASA | Crop calendars, return intervals, disease groups, legume/fallow benefits — each rule with source IDs and review status |
 | **Open-Meteo** 16-day forecast | non-NASA | Short-term rain/temperature/ET₀, planting readiness |
 | OpenStreetMap tiles & Nominatim | non-NASA | Base map, place search |
 
@@ -70,9 +82,12 @@ Search a place, click the map, use GPS, or pick one of 15 example farming region
 
 * **ET₀**: FAO-56 Penman–Monteith (Hargreaves fallback).
 * **Sowing date per year**: Sahel/tropics — Sivakumar (1988) agronomic onset (3-day rain ≥ 20 mm, no > 7-day dry spell in the next 30 days). Temperate — 5-day mean T2M ≥ crop threshold, not before the climatological last spring frost + 7 days for frost-sensitive crops.
-* **Water balance**: FAO-56 single-Kc daily root-zone depletion, growing roots, Ks stress, antecedent spin-up (longer after fallow → moisture conservation), runoff assumption, optional irrigation to a declared cap.
-* **Yield response**: FAO-66 Ky, `1 − Ya/Ym = Ky (1 − ΣETa/ΣETc)`; two-season plans replay **coherent consecutive year pairs** (Y, Y+1).
+* **Water balance**: FAO-56 single-Kc daily root-zone depletion, growing roots, Ks stress, off-season soil water carried from the previous harvest with degree-day snowmelt (Hock 2003), FAO-56 deep storage (longer spin-up after fallow → moisture conservation), runoff assumption, optional irrigation to a declared cap.
+* **Yield response**: FAO-66 Ky with FAO-33 stage-wise Ky, `1 − Ya/Ym = Ky (1 − ΣETa/ΣETc)`; a year with no sowing onset counts as a failed season; two-season plans replay **coherent consecutive year pairs** (Y, Y+1).
 * **Budget**: integer minor-unit arithmetic; spendable = funds − reserve; cumulative cash checked at every due date with confirmed inflows only; never assumes harvest income or credit; missing essential price → “budget not verified”.
+* **Rotation rules**: monocultures are excluded (`MONOCULTURE`, G-R6), the same family gets a warning (`SAME_FAMILY`), break crops get a bonus (`BREAK_CROP`).
+* **Hindcast** (Evidence page): modeled water-limited yield vs detrended FAOSTAT national yields (bulk download, retrieved 2026-11-15). Kazakhstan wheat r = 0.59 (n = 24); Senegal millet r = 0.18 and groundnut r = 0.20 (n = 24). Weak by design of the comparison: one grid cell against a whole country. All four known drought years (Senegal 2002, 2011; Kazakhstan 2010, 2012) fall in the model’s driest third.
+* **Replay data**: only NASA POWER is replayed through the water balance. MODIS, SMAP, IMERG, GRACE and EONET are context layers shown next to the result, not inputs to the replay.
 * **Ranking**: eligible & affordable plans only, by the chosen priority with a documented deterministic tie-break; baseline always shown; 0–2 alternatives, never invented.
 
 ---
@@ -89,7 +104,7 @@ npm install
 npm run dev
 ```
 
-Open the printed URL (default http://localhost:5173). The two demo farms work fully offline from bundled NASA snapshots; any other location fetches NASA POWER and SoilGrids live (first fetch ≈ 10–40 s, then cached on the device).
+Open the printed URL (default http://localhost:5173). Offline-safe: every network call has a timeout, SoilGrids falls back to typical texture values, the two demo farms work fully offline from bundled NASA snapshots, and any other location is cached after its first download (≈ 10–40 s). The code-split landing page loads in about 395 kB gzip.
 
 ```bash
 npm test
@@ -103,7 +118,7 @@ npm run build
 
 ### Deploy (GitHub Pages)
 
-`.github/workflows/deploy.yml` tests, builds and deploys on every push to `main`. One-time setup: repository **Settings → Pages → Source: GitHub Actions**. The judging link must open without login — check it in a private window.
+`.github/workflows/deploy.yml` tests, builds, publishes to the `gh-pages` branch and verifies the live URL on every push to `main`. The judging link must open without login — check it in a private window.
 
 ---
 
@@ -118,7 +133,7 @@ npm run build
 
 ## Verification
 
-`npm test` runs 37 tests: 25 acceptance tests from the planning pack plus world-coverage tests (FAOSTAT lookups, currency conversion, two-season scheduling and overlap blocking, winter/spring crop sequencing, GIBS colormap decoding). The acceptance tests include:
+`npm test` runs 135 tests across 8 files: the acceptance tests from the planning pack plus world-coverage, what-if, share-link, rotation-rule and security tests (FAOSTAT lookups, currency conversion, two-season scheduling, GIBS colormap decoding). The acceptance tests include:
 
 * 100 kg / 2 ha = 50 kg/ha; 46 % N label → 23 kg applied N/ha; unknown manure composition stays unknown; unknown treated area never becomes the whole field.
 * Budget boundary: funds 1,000 − reserve 100 → 900 passes, 900.01 fails; synthetic fixture baseline 1,120 excluded, A/B/C headroom 40/120/210; cash-timing violation detected; missing price → not verified.

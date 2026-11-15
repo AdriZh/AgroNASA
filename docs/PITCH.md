@@ -32,21 +32,24 @@ Re-check the current guide before submitting.
 | 2 | Problem | “At Bambey, Senegal, NASA POWER shows season rainfall from 309 to 976 mm — 3.2×. An average year hides that. And an agronomically ideal plan you can’t fund before planting isn’t a plan.” | “Rain varies 3× year to year; cash is tight.” |
 | 3 | Solution | “Four short steps: farm & history, resources, compare, evidence. One question: which plans can I realistically consider and afford?” | “Enter your field, history and budget.” |
 | 4 | Data fusion | “NASA POWER daily weather and soil wetness, GIBS satellite layers; plus farmer records, SoilGrids soil, local prices, rule packs and a 16-day forecast. The engine is published science: FAO-56, FAO-66, Sivakumar onset.” | “NASA POWER, SMAP, MODIS, IMERG + SoilGrids + your records.” |
-| 5 | Live result | “The usual groundnut→millet plan is 74,500 XOF over budget. Field Shift shows two that fit, with headroom, cash timing and climate risk from replaying every past season — and the reason behind each.” | “Usual plan over budget → two that fit, with risk and reasons.” |
-| 6 | Validity | “25 automated tests reproduce the archived NASA query exactly and the FAO-56 textbook example. We never claim yields, causes or doses — and we label what’s synthetic.” | “Tested, transparent, honest about limits.” |
-| 7 | Impact | “Works anywhere POWER exists, offline, near-zero cost. Next: a 90-day pilot with farmers and a local agronomist.” | “Global, offline, free — pilot next.” |
+| 5 | Live result | “At Bambey the usual groundnut→millet plan costs 454,500 XOF, 74,500 over the 380,000 budget, with 2 of 24 season pairs severe (5 if drier and hotter). Sesame→millet costs 327,000, leaves 53,000 and has 0 of 24 severe (2 drier and hotter). Sesame→sorghum costs 337,200, leaves 42,800, 1 of 24 (4).” | “Usual plan over budget → two that fit, with risk and reasons.” |
+| 6 | Hindcast | “We checked the model against real FAOSTAT national yields, detrended. Kazakhstan wheat r = 0.59 over 24 years; Senegal millet 0.18 and groundnut 0.20, weak because one grid cell is compared with a whole country. All four known drought years, Senegal 2002 and 2011 and Kazakhstan 2010 and 2012, fall in the model’s driest third. 135 automated tests also reproduce the archived NASA query and the FAO-56 textbook example.” | “Checked against real harvests: known drought years land in the driest third.” |
+| 7 | Impact | “Works anywhere POWER exists, demo farms fully offline, near-zero cost. Next: a 90-day pilot with farmers and a local agronomist.” | “Global, offline, free — pilot next.” |
 
-The table above follows the 7-slide submission cut (Title, Problem, Solution, Data fusion, Live result, Validity, Impact). The full 12-slide story adds: Cash gap, Who it serves, Science 1 (sowing date), Science 2 (soil-water bucket), Decision funnel.
+The table above follows the 7-slide submission cut (Title, Problem, Solution, Data fusion, Live result, Hindcast, Impact). The full 12-slide story adds: Cash gap, Who it serves, Science 1 (sowing date), Science 2 (soil-water bucket), Decision funnel.
 
 ## Live demo script (90 s)
 
-1. **Overview** → click **Senegal demo**. Point at the NASA season-rainfall chart (309 → 976 mm).
-2. **Compare plans**: usual plan *Groundnut → Millet* is **over budget by 74,500 XOF**; Option A and B fit. Open “See why” → cost lines, cash timeline, historical replay.
-3. **Resources**: raise funds to 500,000 → the usual plan flips to “Affordable” instantly. Tick “Seed I cannot get: Sesame” → options change, with `SEED_UNAVAILABLE` reasons.
-4. **Evidence → Past-season review**: 2026 millet reported poor → “No clear weather explanation was found… other causes to check locally.” (No blame, no diagnosis.)
-5. **Evidence → Satellite layers**: NDVI now vs “−1 year”; SMAP root-zone soil moisture.
-6. Switch to **Kazakhstan demo**: wheat monoculture over budget and climate-risky → fallow/break-crop options; frost and heat warnings.
-7. **Farm**: click anywhere on the map (e.g. Kenya or Iowa) → live NASA POWER + SoilGrids fetch → global screening.
+1. **Overview** hero: one line on rain swinging 309 to 976 mm → click **Senegal demo**.
+2. **Compare** (one hero number per card): usual Groundnut→Millet 454,500 XOF, **74,500 over** the 380,000 budget; Option A 327,000 (53,000 left, 0 of 24 severe); Option B 337,200 (42,800 left, 1 of 24).
+3. **What-if → “Drier & hotter”** (−15 % rain, +2 °C): the usual plan goes from 2 to 5 of 24 severe; Option A goes to 2. The replay re-runs live in ~30–50 ms.
+4. Switch to the **Kazakhstan demo** (Kostanay, 200 ha), **Drier & hotter**: the wheat monoculture (over budget, flagged as a monoculture) jumps **9 → 16 of 24** severe; the fallow break holds (Fallow→Rapeseed 2 → 6, Fallow→Wheat 5 → 7). The fallow trades income for lower cost and risk; modeled net is on the cards.
+5. **Evidence → hindcast vs FAOSTAT harvests**: Kazakhstan wheat r = 0.59, Senegal weak (r ≈ 0.2) and why; all four known drought years in the driest third.
+6. **Share** button: the scenario is in the URL, so anyone opens the same view.
+
+## Prepared links
+
+Share links can be made on the spot with the **Share** button (top bar). Make one for each demo farm, with and without Drier & hotter, before presenting. The live app is https://adrizh.github.io/AgroNASA/. The closing slide carries a QR code to it.
 
 ## Judging criteria map
 
@@ -54,6 +57,6 @@ The table above follows the 7-slide submission cut (Title, Problem, Solution, Da
 |---|---|
 | **Influence** | Smallholders choosing rotations under rain and cash uncertainty; global coverage via NASA POWER; offline & free to run. |
 | **Creativity** | Affordability-first rotation comparison with coherent historical replay of *pairs* of seasons, cash-timing checks and reason codes — not another yield dashboard. |
-| **Validity** | Published methods (FAO-56, FAO-66, Sivakumar 1988, Saxton & Rawls 2006), 25 acceptance tests, archived queries, evidence register, no causal or yield guarantees, labeled synthetic values. |
+| **Validity** | Hindcast vs real FAOSTAT yields (Kazakhstan wheat r = 0.59; all four known drought years in the driest third); calibration citations (FAO-56, FAO-33 stage-wise Ky, FAO-66, Hock 2003 snowmelt, Sivakumar 1988, Saxton & Rawls 2006); 135 automated tests, archived queries, evidence register; no causal or yield guarantees; labeled synthetic values. |
 | **Relevance** | Directly answers the Field Shift brief: rotation exploration with NASA observations, local soil/crop information and farmer priorities. |
-| **Presentation** | Built-in 7-slide pitch with live data, printable report, 90-second demo path. |
+| **Presentation** | Live URL (https://adrizh.github.io/AgroNASA/) plus a QR on the closing slide, built-in 7-slide pitch with live data, printable report, 90-second demo path. |

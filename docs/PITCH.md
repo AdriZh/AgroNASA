@@ -5,10 +5,10 @@
 | Asset | Where | Notes |
 |---|---|---|
 | 30-second video | `public/media/field-shift-30s.mp4` · in-app *30-second video* | 1080p30, narrated, captions burned in, −14 LUFS |
-| Presentation | in-app *Presentation* (`#/pitch`) | 12 animated slides or the 7-slide submission cut; **PDF** button exports one slide per page |
+| Presentation | in-app *Presentation* (`#/pitch`) | 7 slides; **PDF** button exports one slide per page |
 | Poster frame | `public/media/field-shift-poster.jpg` | thumbnail for the submission page |
 
-Slides on the problem, cash gap, sowing science, decision funnel and live result use **live data from whichever farm is selected** — pick the Senegal or Kazakhstan demo before presenting.
+The problem and solution slides use **live data from whichever farm is selected** — pick the Senegal or Kazakhstan demo before presenting.
 
 ### Video script (as narrated)
 
@@ -30,7 +30,7 @@ Re-check the current guide before submitting.
 |---|---|---|
 | 1 | Title | “Field Shift, from space to soil. We are Team Minervitos.” |
 | 2 | Problem & market | “At Bambey, Senegal, season rain swings 3.2× between years, and farmers pay for seed and fertilizer before they know which year it is. Smallholders face a USD 170 billion yearly finance gap (ISF 2019), and in many countries one extension agent serves over 1,000 farmers (Fabregas et al., Science 2019). 608 million farms, 84% under 2 ha, are the market.” |
-| 3 | Solution | “One question: which next plans can I afford, and how do they hold up in a bad year? Here the usual groundnut → millet plan is 74,500 XOF over budget; two alternatives fit, with their NASA-replayed risk.” |
+| 3 | Solution | “One question: which next plans can I afford, and how do they hold up in a bad year? Here the usual groundnut → millet plan is 74,500 XOF over budget; two alternatives fit. Move a slider (say climate resilience) and every score and rank updates live, with the breakdown beside it.” |
 | 4 | How it works | “NASA POWER daily weather since 2001, SoilGrids, FAOSTAT prices and the farmer’s records go into published science: Sivakumar onset, FAO-56 water balance, FAO-66 yield response, a cash check at every due date. A static React + TypeScript app, no backend, 227 automated tests.” |
 | 5 | Why better | “Others show what grows; we show what you can afford. The closest tool, E-PICSA, shows rainfall history and budgets but leaves the risk to people. We compute it for every plan, anywhere on Earth, with every number traceable.” |
 | 6 | What comes next | “Planned, not built yet: every market in its own language, an AI assistant that explains plans using only the engine’s numbers, voice for farmers who don’t read easily, and a live data dashboard for co-ops, NGOs and ministries. First, a 90-day pilot with an NGO and an agronomist.” |

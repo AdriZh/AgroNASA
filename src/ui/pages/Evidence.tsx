@@ -16,6 +16,7 @@ import { countryInfo } from '../../data/countries';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { seasonEndOf } from './season';
+import { Hindcast } from '../components/Hindcast';
 export { seasonEndOf };
 
 type Tab = 'climate' | 'space' | 'season' | 'forecast' | 'satellite' | 'past' | 'fertilizer';
@@ -77,6 +78,7 @@ function ClimateTab() {
         <div className="card"><div className="card-head"><h3>Season rainfall by year</h3><Tag t="nasa" /></div><SeasonRainChart rows={rows} height={220} /><p className="chart-cap">Rain {fmtDayMonth(`2001-${w.earliest}`)}–{fmtDayMonth(`2001-${seasonEnd}`)} per year, mm, NASA POWER. A rainfall total is not effective rainfall or plant-available water.</p></div>
       </div>
       <div className="card"><div className="card-head"><h3>Dry runs and heat days by year</h3><Tag t="nasa" /></div><DryHeatChart rows={rows} /><p className="chart-cap">Days per year, NASA POWER. Longest run with &lt;1 mm/day, reset at the window edge (exploratory threshold, not drought injury). Hot days: Tmax ≥ 35 °C (exploratory).</p></div>
+      <Hindcast />
       <CountryContext />
       <div className="card"><div className="card-head"><h3>Data provenance</h3><div className="chips"><Ref id="R5" /><Ref id="R6" /><Ref id="R17" /><Ref id="R8" /></div></div>
         <StatRows rows={[

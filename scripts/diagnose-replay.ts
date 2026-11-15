@@ -1,12 +1,15 @@
 // Per-year diagnostic of the historical replay for both demo farms (science QA, not shipped to the app).
 // Usage: npx vite-node scripts/diagnose-replay.ts [cropId…]
 // Prints, for every replayed season: sowing date (and whether a rule actually fired), season rain, ETc, ETa,
-// ETa/ETc, water-stress (Ks < 1) days, plant-available soil water at sowing vs TAW, and Ya/Ym.
+// ETa/ETc, water-stress (Ks < 1) days, plant-available soil water at sowing vs TAW, and Ya/Ym; then the
+// usual plan and options A/B with severe-stress season pairs, on the record and at the −15% rain / +2 °C what-if.
 import { DEMOS } from '../src/state/demo';
 import { detectPack } from '../src/data/regionPacks';
 import { effectiveSoil } from '../src/soil/soil';
 import { cropFor } from '../src/data/crops';
 import { replayCrop, resolveSeasons } from '../src/engine/replay';
+import { runEngine } from '../src/engine/plan';
+import { stressTest } from '../src/engine/whatif';
 
 const only = process.argv.slice(2);
 for (const sc of DEMOS) {
@@ -30,5 +33,12 @@ for (const sc of DEMOS) {
     }
     const sev = r.years.filter((y) => y.relYield < 0.5 || y.failed).length;
     console.log(`severe (Ya/Ym<0.5 or failed): ${sev} of ${r.years.length} · median Ya/Ym ${r.medianRel.toFixed(2)} · pSevere ${(r.pSevere * 100).toFixed(0)}% · no-onset ${(r.pNoOnset * 100).toFixed(0)}%`);
+  }
+  const out = runEngine(sc, d.series, soil, pack);
+  const wi = stressTest(sc, d.series, soil, pack, out, { rainScale: 0.85, dT: 2 });
+  console.log('\nplan             id                    severe pairs: record -> what-if (−15% rain, +2 °C)   median Ya/Ym');
+  for (const p of wi.plans) {
+    const f = (k: 0 | 1) => `${Math.round(p.severe[k] * p.pairs[k])}/${p.pairs[k]}`;
+    console.log(`${p.label.padEnd(16)} ${p.id.padEnd(22)} ${f(0).padStart(5)} -> ${f(1).padEnd(36)} ${p.medianRel[0].toFixed(2)} -> ${p.medianRel[1].toFixed(2)}`);
   }
 }

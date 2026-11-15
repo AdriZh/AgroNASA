@@ -66,7 +66,7 @@ Influence/Impact, Creativity, Validity (scientific soundness), Relevance (to the
     - C: the wow feature.
     - D: performance and code-splitting.
     Give each agent a self-contained brief: goal, files it owns, files it must not touch, done criteria (`npm test && npm run build` green, Playwright check, commit on its worktree branch) and "report in under 200 words."
-  - **Model choice:** use `fable` for the hardest creative/design work (the wow feature, the landing view) and `opus` for the rest. Use `sonnet` or `haiku` for cheap mechanical jobs (screenshots, doc updates, checking the submission rules on the web).
+  - **Model choice (token budget is tight):** you, the orchestrator, run on Opus. Use `fable` for **only two agents in the whole night**: the design-lead agent and the final hackathon-judge review. Use `opus` for feature and engineering agents, and `sonnet` or `haiku` for mechanical jobs (screenshots, docs, web checks). Never use Fable for routine coding.
   - **Wave 3:** merge the agent branches one at a time. Run the tests and build after each merge, fix conflicts and push. Then spawn **one fresh-eyes "hackathon judge" agent** (`fable`). It opens the live site with Playwright, takes screenshots, scores the project against the 5 criteria with a 2-minute attention span, and returns its top 5 fixes. Do the fixes (delegating if they're large).
   - **Wave 4:** submission package and docs (priority 6) on a cheap model, then a final verification by you.
   - Don't spawn more than about 4 agents at once, and don't spawn agents for trivial edits. Every agent starts cold and re-reads code, so its brief must say exactly which files to read.

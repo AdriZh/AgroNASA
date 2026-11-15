@@ -2,6 +2,8 @@
 
 **Live demo:** https://adrizh.github.io/AgroNASA/  ·  **Repo:** https://github.com/AdriZh/AgroNASA  ·  **Challenge:** Field Shift: Adapting Farms with NASA Data (NASA Space Apps 2026)
 
+<img src="../public/media/qr-live.svg" alt="QR code: https://adrizh.github.io/AgroNASA/" width="140" />
+
 ## Short description (~150 words)
 
 Every season, smallholders bet their savings on the weather, and the "best" rotation is useless if they cannot pay for it before planting. **Field Shift** is a free web planner that answers one question: *which next two-season crop rotations can I realistically afford, and how do they hold up in a bad year?*

@@ -150,6 +150,7 @@ export function ReportPage() {
             {SOURCES.filter((s) => cited.has(s.id)).map((s) => <li key={s.id}><span className="mono">[{s.id}]</span> <a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a></li>)}
           </ol>
           <p className="mini">Field Shift informs rather than decides. Modeled values are conditional historical scenarios, not forecasts or guarantees. NASA does not endorse this tool.</p>
+          <div className="row" style={{ gap: 12, alignItems: 'center', flexWrap: 'nowrap' }}><img src={`${import.meta.env.BASE_URL}media/qr-live.svg`} alt="QR code for https://adrizh.github.io/AgroNASA/" width={72} height={72} className="qr-mini" /><p className="mini" style={{ margin: 0 }}>Open this planner on a phone: <b>adrizh.github.io/AgroNASA</b></p></div>
         </section>
       </article>
     </div>

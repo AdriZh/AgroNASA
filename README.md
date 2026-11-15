@@ -2,6 +2,8 @@
 
 ## 🔗 Live app: **https://adrizh.github.io/AgroNASA/**
 
+<img src="public/media/qr-live.svg" alt="QR code: scan to open https://adrizh.github.io/AgroNASA/ on a phone" width="140" />
+
 *Which next two-season rotations can I afford, and how do they hold up in a bad year? Replays 25 years of NASA POWER weather against your budget.*
 
 **NASA Space Apps 2026 · Field Shift challenge (“Adapting farms with NASA data”)**

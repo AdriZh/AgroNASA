@@ -164,7 +164,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
 
       <section className="card section">
         <div className="present-strip">
-          <div><h2>Presenting to judges?</h2><p className="mini">A slide deck and a 30-second narrated video are built in.</p></div>
+          <div className="row" style={{ gap: 16, alignItems: 'center', flexWrap: 'nowrap' }}><img src={`${import.meta.env.BASE_URL}media/qr-live.svg`} alt="QR code for https://adrizh.github.io/AgroNASA/" width={72} height={72} className="qr-mini" /><div><h2>Presenting to judges?</h2><p className="mini">Try it on your phone: scan, or open adrizh.github.io/AgroNASA. A slide deck and a 30-second narrated video are built in.</p></div></div>
           <div className="row"><button className="btn" onClick={() => go('pitch')}><Presentation /> Open presentation</button><button className="btn" onClick={() => go('video')}><Clapperboard /> Watch video</button></div>
         </div>
       </section>

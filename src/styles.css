@@ -720,3 +720,6 @@ details.disclose > .body { margin-top: var(--s-3); }
 /* goal selector (Compare header) */
 .goal-select { font: inherit; color: var(--brand); font-weight: 600; background: var(--brand-soft); border: 1px solid transparent; border-radius: 6px; padding: 1px 6px; cursor: pointer; }
 .goal-select:hover, .goal-select:focus-visible { border-color: var(--brand); outline: none; }
+
+/* phone QR */
+.qr-mini { flex: 0 0 auto; background: #fff; border-radius: 8px; padding: 4px; border: 1px solid var(--border); }

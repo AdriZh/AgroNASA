@@ -16,7 +16,7 @@ It replays 25 years (2001–2025) of daily **NASA POWER** weather for the farmer
 
 **NASA data.** NASA POWER daily (PRECTOTCORR, T2M, T2M_MAX/MIN, RH2M, WS2M, ALLSKY_SFC_SW_DWN; GWETROOT/GWETTOP) drives the sowing-date rules, ET₀, water balance and replay. NASA GIBS layers (MODIS NDVI and land cover, SMAP L4, GPM IMERG, MODIS LST, GRACE/GRACE-FO) and NASA EONET give satellite context at the clicked pixel. Non-NASA: ISRIC SoilGrids, FAOSTAT prices and exchange rates (240 countries), Open-Meteo forecast, OpenStreetMap.
 
-**Science.** FAO-56 Penman–Monteith ET₀, FAO-56 single-Kc root-zone balance, FAO-66 Ky yield response, Sivakumar (1988) onset in the tropics, temperature/frost rules in temperate zones; 16 regional rule packs plus a global screening fallback. Deterministic — no LLM in the decision path.
+**Science.** FAO-56 Penman–Monteith ET₀, FAO-56 single-Kc root-zone balance, FAO-33 stage-wise and FAO-66 Ky yield response, Sivakumar (1988) onset in the tropics, temperature/frost rules in temperate zones; 16 regional rule packs plus a global screening fallback. Deterministic — no LLM in the decision path. **Hindcast:** against detrended FAOSTAT national yields (retrieved 2026-11-15) the model scores r = 0.59 for Kazakhstan wheat and a weak 0.18 (millet) and 0.20 (groundnut) for Senegal, because one grid cell is compared with a whole country; all four known drought years (Senegal 2002, 2011; Kazakhstan 2010, 2012) fall in its driest third.
 
 **Honesty.** Demo prices are labelled synthetic; rule packs are labelled "demo-unreviewed" until a local agronomist signs off; risk is a replay of past seasons, not a forecast; we never claim yields, causes or doses.
 

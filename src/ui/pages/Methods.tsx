@@ -1,4 +1,5 @@
 import { PACKS } from '../../data/regionPacks';
+import { CropIcon } from '../components/CropIcon';
 import { CROPS } from '../../data/crops';
 import { SOURCES } from '../../data/sources';
 import { Ref, Tag } from '../components/common';
@@ -90,7 +91,7 @@ export function MethodsPage() {
               <div className="table-wrap"><table><thead><tr><th>Rule</th><th>Kind</th><th>Text</th><th>Sources</th><th>Reviewed</th></tr></thead>
                 <tbody>{p.rules.map((r) => <tr key={r.id}><td className="mono">{r.id}</td><td>{r.kind}</td><td className="wrap">{r.text}</td><td><span className="chips">{r.sources.map((x) => <Ref key={x} id={x} />)}</span></td><td>{r.reviewed ? 'yes' : 'no'}</td></tr>)}</tbody></table></div>
               <div className="table-wrap"><table><thead><tr><th>Crop</th><th>Kc ini/mid/end</th><th>Stages (d)</th><th className="num">Root m</th><th className="num">p</th><th className="num">Ky</th><th className="num">Heat °C</th><th>Season T °C</th><th className="num">Return</th></tr></thead>
-                <tbody>{p.crops.filter((c) => c !== 'fallow').map((c) => { const d = CROPS[c]; return <tr key={c}><td>{d.emoji} {d.name}</td><td>{d.kc.join(' / ')}</td><td>{d.stages.join('+')}</td><td className="num">{d.rootDepthM}</td><td className="num">{d.p}</td><td className="num">{d.ky}</td><td className="num">{d.heatThresholdC}</td><td>{d.tMeanRange.join('–')}</td><td className="num">{d.minReturnSeasons}</td></tr>; })}</tbody></table></div>
+                <tbody>{p.crops.filter((c) => c !== 'fallow').map((c) => { const d = CROPS[c]; return <tr key={c}><td><span className="crop-name"><CropIcon id={c} size={18} />{d.name}</span></td><td>{d.kc.join(' / ')}</td><td>{d.stages.join('+')}</td><td className="num">{d.rootDepthM}</td><td className="num">{d.p}</td><td className="num">{d.ky}</td><td className="num">{d.heatThresholdC}</td><td>{d.tMeanRange.join('–')}</td><td className="num">{d.minReturnSeasons}</td></tr>; })}</tbody></table></div>
             </div>
           </details>
         ))}

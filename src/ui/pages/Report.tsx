@@ -1,7 +1,8 @@
 import { Download, Printer, Trash2, Upload } from 'lucide-react';
+import { CropPair } from '../components/CropIcon';
 import { useRef, useState } from 'react';
 import { useApp } from '../../state/AppContext';
-import { cropEmoji, cropName } from '../../data/crops';
+import { cropName } from '../../data/crops';
 import { fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDate, fmtDayMonth, todayISO } from '../../domain/dates';
 import { SOURCES } from '../../data/sources';
@@ -90,7 +91,7 @@ export function ReportPage() {
                 {plans.map((p) => (
                   <tr key={p.id}>
                     <td>{p.isBaseline ? 'Usual plan' : p.label}</td>
-                    <td className="nowrap">{cropEmoji(p.crops[0])} {cropName(p.crops[0])} → {cropEmoji(p.crops[1])} {cropName(p.crops[1])}</td>
+                    <td className="nowrap"><CropPair crops={p.crops} /></td>
                     <td className="nowrap">{STATUS[p.budget.status].t}</td>
                     <td className="num">{fmtNum(p.budget.totalCash, 0)}</td>
                     <td className="num">{fmtNum(p.budget.headroom, 0)}</td>

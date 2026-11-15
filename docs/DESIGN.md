@@ -109,6 +109,7 @@ Minimum text size 12 px. Headings get `text-wrap: balance`. Paragraphs cap at `m
 **4.4 Badges and chips (two styles only).**
 - **Status badge** (verdicts): pill, 12 px / 600, 4 × 10 px padding, icon 14 px plus text, `--good`/`--warn`/`--bad` text on the matching soft fill. Texts: "Fits budget", "Over budget", "Cash-timing gap", "Budget not verified".
 - **Source chip** (provenance): `--r-sm`, 1 px `--border`, transparent fill, mono 12 px `--text-muted`, optional 12 px icon. One neutral style for NASA, Modeled, Farmer, Synthetic, FAOSTAT, rule IDs. The NASA chip alone uses `--accent` text. Once per card or table header, never per row.
+- **Crop icon** (`CropIcon`, owner request): wherever a crop or crop sequence is shown, a 16–22 px `--r-sm` chip with a 20 × 20, 1.5 px-stroke line glyph unique to the crop, coloured by crop group (`--crop-cereal|legume|oilseed|tuber|fallow|cover` on the matching `-soft` fill, light and dark). The only decorative colour exception; it makes cereal ↔ legume ↔ oilseed alternation visible at a glance. Unknown crop ids get a leaf glyph in their group colour. Emoji stay for `<option>` text and the video.
 
 **4.5 Buttons.** Height 40 px (32 px `.sm`), padding 0 16 px, radius `--r`, 14 px / 600, icon 16 px, gap 8 px. Focus: `box-shadow: var(--focus)`. Disabled: 50 % opacity.
 - **Primary:** `--brand` fill, `--on-brand` text, no border, no gradient. Hover: `filter: brightness(.92)`. One per view.

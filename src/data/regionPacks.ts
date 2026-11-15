@@ -77,12 +77,12 @@ export const SENEGAL: RegionPack = {
 };
 
 export const KAZAKHSTAN: RegionPack = {
-  id: 'kz-north-steppe', version: '1.1.0-demo', name: 'Northern Kazakhstan & South Siberian steppe — rainfed (Kostanay demo)', short: 'Kazakhstan · Steppe',
+  id: 'kz-north-steppe', version: '1.2.0-demo', name: 'Northern Kazakhstan & South Siberian steppe — rainfed (Kostanay demo)', short: 'Kazakhstan · Steppe',
   description: 'One short rainfed season per year (May–September) on chernozem/chestnut soils. Sowing follows soil warming; wheat dominates and break crops or fallow are the key rotation decision (R28). Prices are synthetic.',
   countries: ['KZ'], latRange: [48.3, 56.5],
   bbox: [[48.3, 50.0, 57.0, 90.0]], currency: 'KZT', mode: 'annual',
-  seasons: [{ id: 'spring', label: 'Spring–summer season', method: 'temperature', earliest: '05-12', latest: '06-05', crops: ['wheat', 'barley', 'flax', 'rapeseed', 'sunflower', 'lentil', 'fallow'] }],
-  crops: ['wheat', 'barley', 'flax', 'rapeseed', 'sunflower', 'lentil', 'fallow'],
+  seasons: [{ id: 'spring', label: 'Spring–summer season', method: 'temperature', earliest: '05-12', latest: '06-05', crops: ['wheat', 'barley', 'oats', 'flax', 'rapeseed', 'sunflower', 'lentil', 'pea', 'chickpea', 'fallow'] }],
+  crops: ['wheat', 'barley', 'oats', 'flax', 'rapeseed', 'sunflower', 'lentil', 'pea', 'chickpea', 'fallow'],
   rules: [
     ...GENERIC_RULES,
     { id: 'KZ-R1', kind: 'benefit', text: 'Wheat after fallow or a break crop (pulse/oilseed) benefits from stored moisture and interrupted cereal disease cycles.', sources: ['R28'], reviewed: false },
@@ -114,6 +114,19 @@ export const KAZAKHSTAN: RegionPack = {
     lentil: econ(1.1, 160000, [
       ['seed', 'Lentil seed', 70, 'kg', 400, -5], ['protection', 'Rhizobium inoculant', 1, 'ha', 2500, -1], ['protection', 'Herbicide', 1, 'ha', 12000, 20],
       ['land-prep', 'Fuel & machinery: sowing', 1, 'ha', 18000, 0], ['labor', 'Harvest (combine service)', 1, 'ha', 15000, 95], ['other', 'Transport', 1, 'ha', 5000, 100],
+    ]),
+    // break crops widened in v1.2 (oats, field pea, chickpea): synthetic per-ha templates in the same style, demo-unreviewed
+    oats: econ(2.0, 65000, [
+      ['seed', 'Oat seed', 120, 'kg', 130, -5], ['fertilizer', 'Ammophos 12-52', 40, 'kg', 320, 0], ['protection', 'Herbicide', 1, 'ha', 9000, 25],
+      ['land-prep', 'Fuel & machinery: sowing', 1, 'ha', 18000, 0], ['labor', 'Harvest (combine service)', 1, 'ha', 15000, 90], ['other', 'Grain transport', 1, 'ha', 5000, 95],
+    ]),
+    pea: econ(1.6, 115000, [
+      ['seed', 'Field pea seed', 220, 'kg', 220, -5], ['protection', 'Rhizobium inoculant', 1, 'ha', 2500, -1], ['protection', 'Herbicide', 1, 'ha', 12000, 20],
+      ['land-prep', 'Fuel & machinery: sowing', 1, 'ha', 18000, 0], ['labor', 'Harvest (combine service)', 1, 'ha', 15000, 85], ['other', 'Transport', 1, 'ha', 5000, 90],
+    ]),
+    chickpea: econ(1.0, 190000, [
+      ['seed', 'Chickpea seed', 110, 'kg', 450, -5], ['protection', 'Rhizobium inoculant', 1, 'ha', 2500, -1], ['protection', 'Herbicide', 1, 'ha', 12000, 20],
+      ['land-prep', 'Fuel & machinery: sowing', 1, 'ha', 18000, 0], ['labor', 'Harvest (combine service)', 1, 'ha', 15000, 100], ['other', 'Transport', 1, 'ha', 5000, 105],
     ]),
     fallow: econ(0, null, [['protection', 'Chemical fallow: herbicide passes', 2, 'pass', 9000, 30], ['land-prep', 'Fuel & machinery', 1, 'ha', 5000, 30]]),
   },

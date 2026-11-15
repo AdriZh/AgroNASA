@@ -18,6 +18,7 @@ ITEMS = {  # Field Shift crop id → FAOSTAT item code
     'wheat': '15', 'winterwheat': '15', 'barley': '44', 'flax': '333', 'rapeseed': '270', 'sunflower': '267',
     'lentil': '201', 'soybean': '236', 'potato': '116', 'rice': '27', 'bean': '176', 'chickpea': '191',
     'cotton': '328', 'pigeonpea': '197', 'mustard': '292', 'cassava': '125', 'fababean': '181', 'sweetpotato': '122',
+    'oats': '75', 'pea': '187',
 }
 CODE2CROPS = defaultdict(list)
 for k, v in ITEMS.items():

@@ -185,6 +185,29 @@ export const CROPS: Record<string, CropDef> = {
     minReturnSeasons: 0, diseaseGroups: [], labor: 'low', residueForLivestock: true, irrigationRequired: false,
     sources: ['R28'],
   },
+  // ---- Steppe break crops (demo-unreviewed: parameters from FAO tables, not locally calibrated) ----
+  // Oats: Kc 0.3 / 1.15 / 0.25 = FAO-56 Table 12 "Oats"; stages 15/25/40/20 d = FAO-56 Table 11 small grains,
+  // shortened to a ~100-day steppe spring crop like the wheat entry; root 1.0 m, p 0.55 = FAO-56 Table 22 small grains.
+  // Ky 1.0: FAO-33 has no oats row, so the small-grain analogue (barley, FAO-33 Table 24) is used. Range screens: ECOCROP.
+  // FAOSTAT producer-price item 75 "Oats" (scripts/build-faostat.py); until the table is rebuilt the pack placeholder price applies.
+  oats: {
+    id: 'oats', name: 'Oats', family: 'Poaceae', group: 'cereal', emoji: '🥣',
+    kc: [0.3, 1.15, 0.25], stages: [15, 25, 40, 20], rootDepthM: 1.0, p: 0.55, ky: 1.0,
+    heatThresholdC: 30, frostSensitive: false, sowTempC: 5, tMeanRange: [6, 25], phRange: [5.0, 8.0],
+    minReturnSeasons: 0, diseaseGroups: ['cereal-root-rot'], labor: 'low', residueForLivestock: true, irrigationRequired: false,
+    sources: ['R8', 'R18', 'R28'],
+  },
+  // Field pea (dry grain): Kc 0.5 / 1.15 / 0.30 = FAO-56 Table 12 "Peas" (dry harvest end value); stages 15/25/35/15 d
+  // = FAO-56 Table 11 "Peas" (Europe); root 0.8 m, p 0.35 = FAO-56 Table 22. Ky 1.15 = FAO-33 Table 24 "Peas".
+  // Aphanomyces / root-rot hosts with lentil and chickpea, so it shares their pulse-root-rot group and a 3-season break.
+  // FAOSTAT producer-price item 187 "Peas, dry"; until the table is rebuilt the pack placeholder price applies.
+  pea: {
+    id: 'pea', name: 'Field pea', family: 'Fabaceae', group: 'legume', emoji: '🟢',
+    kc: [0.5, 1.15, 0.3], stages: [15, 25, 35, 15], rootDepthM: 0.8, p: 0.35, ky: 1.15,
+    heatThresholdC: 30, frostSensitive: false, sowTempC: 5, tMeanRange: [7, 24], phRange: [5.5, 8.2],
+    minReturnSeasons: 3, diseaseGroups: ['pulse-root-rot'], labor: 'low', residueForLivestock: true, irrigationRequired: false,
+    sources: ['R8', 'R18', 'R32'],
+  },
 };
 
 export const cropName = (id: string) => CROPS[id]?.name ?? id;

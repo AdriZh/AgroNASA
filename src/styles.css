@@ -454,6 +454,5 @@ details[open] > summary::after { transform: rotate(-135deg); }
 .share-toast .btn.ghost:hover { background: var(--space-3); color: #fff; }
 @keyframes share-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 /* END what-if climate stress test + share link */
-=======
 /* Suspense placeholder for code-split routes and the map */
 .route-fallback { border-radius: 16px; background: var(--surface-3); animation: pulse 1.2s ease-in-out infinite; }

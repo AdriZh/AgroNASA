@@ -10,8 +10,12 @@ import { detectPack } from '../src/data/regionPacks';
 import { CROPS, cropFor } from '../src/data/crops';
 import { DEMO_KAZAKHSTAN, DEMO_SENEGAL } from '../src/state/demo';
 import { effectiveSoil } from '../src/soil/soil';
+import { loadFaostat } from '../src/data/countries';
 import bambey from '../src/data/demo/bambey.json';
 import kostanay from '../src/data/demo/kostanay.json';
+
+// Prices come from the lazily loaded FAOSTAT table, as in the app (AppContext loads it at startup).
+await loadFaostat();
 
 const DEMOS = [
   { sc: DEMO_SENEGAL, d: bambey as any },

@@ -90,3 +90,35 @@ Estimated rank: strong local winner / global nominee, not yet a global finalist.
 Estimated rank: roughly top 15–20 % globally — strong for a local prize, borderline global finalist.
 
 **Honest assessment of what is left below 8:** Impact and Creativity are capped by things only the team can supply — real farmer/agronomist conversations, a named pilot partner, dated local prices. I did not fabricate any of these. Validity can rise with a reviewed rule pack and a sub-national yield hindcast (district statistics) — both need human sourcing. The last polish round addresses the judge's remaining presentation/consistency issues (one "Best fit" label + trade-off line, 24-pair denominators, "no harvest income or credit assumed" caption, hindcast labels, what-if reset between farms, slide timing).
+9. `47ed665` judge #2 polish (one "Best fit" label + live trade-off line, ≈ 3-significant-figure nets, all plans on the same 24 season pairs, "no harvest income or credit assumed" caption, hindcast labels + "drought years listed before the model was run", what-if resets on farm change except from a share link, faster slide entrances, orbit chips, README) + my fix for a Best-fit card overflow at 1280 px — 137 tests, build OK, smoke online/offline exit 0 at 1440/1280/390.
+
+## What the owner must do manually
+
+1. **Submit before the deadline** (reportedly Sun 15 Nov 2026, 23:59 local — confirm on your team page). On the Space Apps project page:
+   - **Live demo / project link:** `https://adrizh.github.io/AgroNASA/`
+   - **Repository:** `https://github.com/AdriZh/AgroNASA`
+   - **Description:** paste the short and long text from `docs/SUBMISSION.md` (plus the AI-disclosure paragraph if the form asks).
+   - **Video or slides (pick one, hosted externally):** either upload `public/media/field-shift-30s.mp4` to YouTube/Vimeo/Drive (public or unlisted) and paste the link, **or** open the live app → *Presentation* → **Submission · 7** → **PDF** and upload the PDF to Drive/Slides and paste the link. Use `public/media/field-shift-poster.jpg` as the thumbnail.
+2. **Rehearse the demo once on the live URL** (script below) — first load is fast, but click both demos once so they are cached on the presenting laptop.
+3. **Team & evidence (only you can do this):** add real team names to the submission form; if you have spoken to any farmer, extension worker or agronomist, add one dated, attributable sentence to `docs/review-log.md` and the closing slide. This is the single biggest lift for **Impact** — I deliberately did not invent any.
+4. **Optional:** in repo Settings → Pages you will see "Deploy from a branch: gh-pages / root" — leave it; the workflow maintains it. Merge or delete the agent branches (`worktree-agent-*`) only if you want a tidy branch list; they are local to my session and were never pushed.
+
+## Demo script (90 s, live URL)
+
+1. **Overview (0–10 s).** "Which crop next, and can you afford it?" The best-fit card already shows cost vs budget, NASA-replay risk and the drier & hotter result. Click **Open Senegal demo**.
+2. **Compare (10–35 s).** Usual Groundnut → Pearl millet: **454,500 XOF, 74,500 over** the 380,000 budget (two-season cash, no harvest income or credit assumed). Best fit Sesame → Pearl millet fits with 53,000 left, 0 of 24 season pairs severe. Point at the trade-off line: Option B earns ≈ 31,000 more but carries more stress.
+3. **What-if (35–50 s).** Click **Drier & hotter** (−15 % rain, +2 °C): the replay of 24 NASA season pairs re-runs live; the usual plan goes 2 → 5 of 24 severe.
+4. **Kazakhstan (50–65 s).** Switch farm → Kazakhstan demo → Compare: wheat → wheat monoculture is flagged and over budget; **Drier & hotter** pushes it 9 → 16 of 24; the fallow-break options hold.
+5. **Evidence (65–80 s).** Hindcast: modeled water-limited yield vs **real FAOSTAT national yields**, Kazakhstan wheat r = 0.59, the 2010 and 2012 droughts caught. "One grid cell vs a whole country — we say so."
+6. **Close (80–90 s).** **Share** button → link copied (opens the exact scenario). "Works anywhere NASA POWER exists; the demo farms work offline; free to run."
+
+## Known issues
+
+- **Impact evidence is missing:** no user tests, no agronomist review (`docs/review-log.md` is honestly empty); demo prices are synthetic. Needs real people, not code.
+- **Senegal hindcast is weak** (millet r = 0.18, groundnut r = 0.20): one NASA grid cell vs Senegal's national yield. Shown honestly; a district-level yield series would be the next step.
+- **Steppe soil water at sowing is an upper estimate** (frozen-soil runoff not modelled), which slightly understates the fallow benefit in Kazakhstan.
+- **30-second video** was not re-rendered: its numbers still match the app, but it calls the best plan "Option A · best fit" and uses the old visual style.
+- **Satellite panels and map tiles** need the network; offline they show an "offline" message (the demo farms' NASA POWER record, plans and charts work fully offline).
+- **Third-party APIs** (SoilGrids, Open-Meteo) were intermittently down/rate-limited during testing; the app falls back with labels, but the browser still logs a "Failed to load resource" line for those requests.
+- **Framing/headers:** GitHub Pages cannot send security headers, so the CSP is a `<meta>` tag and the site can be framed (see `docs/SECURITY.md`).
+- Spaceappschallenge.org was returning 503 when the rules were checked; limits are from the 2025 guide — re-check the Project tab before submitting.

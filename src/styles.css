@@ -925,3 +925,14 @@ main.fit { padding-top: var(--s-3); padding-bottom: var(--s-3); }
 .slide .mini-compare .plan-profit { padding: 4px 10px; gap: 0; }
 .slide .mini-compare .plan-profit .caption { font-size: 11px; line-height: 14px; }
 .slide .mini-compare .plan-profit .sub { font-size: 12px; line-height: 15px; }
+/* Pitch slide 3: the Compare page in miniature (vertical plan list + score breakdown) */
+.mini-compare2 { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 3fr) minmax(230px, 1fr); gap: var(--s-3); align-items: center; margin-top: var(--s-2); }
+.mini-compare2 .plan-list { margin-top: 0; }
+.mini-compare2 .pl-row { padding: 10px 14px; grid-template-columns: minmax(180px, 1.7fr) repeat(4, minmax(0, 1fr)) 56px; }
+.mini-compare2 .pl-row.best { padding: 9px 13px; }
+.mini-compare2 .pl-add { align-items: center; gap: var(--s-2); }
+.mini-compare2 .pl-add .btn { pointer-events: none; border-style: dashed; }
+.mc2-score { padding: var(--s-2) var(--s-3); font-size: 13px; }
+.mc2-score .caption { margin-bottom: 6px; }
+@media (max-width: 900px) { .mini-compare2 { grid-template-columns: minmax(0, 1fr); } }
+.mini-compare2 .pl-row { grid-template-columns: minmax(220px, 1.7fr) 1.35fr 1.1fr 1.1fr .9fr 48px; gap: var(--s-2); }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { CropIcon, CropPair } from '../components/CropIcon';
 import type { Route } from '../../App';
 import { ArrowDown, ArrowLeft, ArrowRight, Plus, X } from 'lucide-react';
@@ -204,28 +204,33 @@ function TotalHarvest({ p }: { p: PlanResult }) {
   return <span>{Number.isFinite(t) ? `${fmtNum(t, 1)} t` : '—'}<span className="pl-sub">{harvestText(p)}</span></span>;
 }
 
+/** Sub-scores of one plan: grade among the compared plans and the points each adds to the score. */
+export function ScoreTable({ score }: { score: PlanScore }) {
+  return <>
+    <table className="score-table">
+      <thead><tr><th>Sub-score</th><th className="num">Grade</th><th className="num">Points</th></tr></thead>
+      <tbody>
+        {score.parts.map((x) => (
+          <tr key={x.key}>
+            <td>{SCORE_LABEL[x.key]}</td>
+            <td className="num"><span className="grade-bar" aria-hidden><i style={{ width: `${x.grade}%` }} /></span>{x.grade}</td>
+            <td className={`num ${x.points < -0.05 ? 'bad-t' : x.points > 0.05 && x.key !== 'profit' ? 'good-t' : ''}`}>{x.key !== 'profit' && x.weight === 0 ? '—' : pts(x.points)}</td>
+          </tr>
+        ))}
+        <tr className="total"><td>Score</td><td /><td className="num">{Math.round(score.final)}</td></tr>
+      </tbody>
+    </table>
+    <span className="mini">Best fit = 100. Grades compare the plans on each item alone (0–100); points add up to the score.</span>
+  </>;
+}
+
 /** Score with its sub-scores in a hover / focus popover. */
 function ScoreHover({ score }: { score?: PlanScore }) {
   if (!score) return <span className="muted">—</span>;
   return (
     <span className="score-hover" tabIndex={0} aria-label={`Score ${Math.round(score.final)}; hover for the breakdown`}>
       <b className="score-num">{Math.round(score.final)}</b>
-      <span className="score-pop" role="tooltip">
-        <table className="score-table">
-          <thead><tr><th>Sub-score</th><th className="num">Grade</th><th className="num">Points</th></tr></thead>
-          <tbody>
-            {score.parts.map((x) => (
-              <tr key={x.key}>
-                <td>{SCORE_LABEL[x.key]}</td>
-                <td className="num"><span className="grade-bar" aria-hidden><i style={{ width: `${x.grade}%` }} /></span>{x.grade}</td>
-                <td className={`num ${x.points < -0.05 ? 'bad-t' : x.points > 0.05 && x.key !== 'profit' ? 'good-t' : ''}`}>{x.key !== 'profit' && x.weight === 0 ? '—' : pts(x.points)}</td>
-              </tr>
-            ))}
-            <tr className="total"><td>Score</td><td /><td className="num">{Math.round(score.final)}</td></tr>
-          </tbody>
-        </table>
-        <span className="mini">Best fit = 100. Grades compare the plans on each item alone (0–100); points add up to the score.</span>
-      </span>
+      <span className="score-pop" role="tooltip"><ScoreTable score={score} /></span>
     </span>
   );
 }
@@ -239,6 +244,30 @@ function Cells({ p, cur, score }: { p: PlanResult; cur: string; score?: PlanScor
     <div className="pl-cell" data-h="Total harvest"><TotalHarvest p={p} /></div>
     <div className="pl-cell pl-score" data-h="Score"><ScoreHover score={score} /></div>
   </>;
+}
+
+/** The vertical plan list: header and one row per plan (Compare page and pitch slide 3). */
+export function PlanRows({ plans, labelOf, scores, cur, children }: { plans: PlanResult[]; labelOf: (p: PlanResult, i: number) => string; scores: Map<string, PlanScore>; cur: string; children?: ReactNode }) {
+  return (
+    <div className="plan-list" role="table" aria-label="Plans">
+      <div className="pl-row pl-head" role="row">
+        <div>Rotation</div><div>Budget</div><div>Expected profit</div><div>Soil impact</div><div>Total harvest</div><div className="pl-score">Score</div>
+      </div>
+      {plans.map((p, i) => (
+        <div key={p.id} className={`pl-row ${i === 1 ? 'best' : ''}`} role="row">
+          <div className="pl-rot"><span className={`caption ${i === 1 ? 'brand' : ''}`}>{labelOf(p, i)}</span><CropPair crops={p.crops} /></div>
+          <Cells p={p} cur={cur} score={scores.get(p.id)} />
+        </div>
+      ))}
+      {children}
+    </div>
+  );
+}
+
+/** Scores for the usual plan and every feasible plan (plus any extra), on one scale with the best fit = 100. */
+export function scoreAll(engine: EngineOutput, w: Parameters<typeof planScores>[2], extra: PlanResult[] = []) {
+  const byId = new Map([engine.baseline, ...engine.allPlans.filter((p) => p.feasible), ...extra].map((p) => [p.id, p]));
+  return planScores([...byId.values()], engine.alternatives[0] ?? null, w);
 }
 
 type Own = { id: number; crops: [string, string] };
@@ -270,9 +299,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
   const plans = [engine.baseline, ...engine.alternatives];
   const extra = ownPlans.filter((p): p is PlanResult => !!p);
   // one scale for every row, the farmer's own plans included; recomputed whenever the sliders change
-  const scored = [engine.baseline, ...engine.allPlans.filter((p) => p.feasible), ...extra];
-  const byId = new Map(scored.map((p) => [p.id, p]));
-  const scores = planScores([...byId.values()], engine.alternatives[0] ?? null, sc.weights);
+  const scores = scoreAll(engine, sc.weights, extra);
   const cur = sc.currency;
   const labelOf = (p: PlanResult, i: number) => (p.isBaseline ? 'Your usual plan' : i === 1 ? BEST_FIT : p.label || 'Option B');
   const setOwnList = (f: (l: Own[]) => Own[]) => setOwn({ pack: engine.pack.id, list: f(ownList) });
@@ -301,16 +328,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
         </div>
       )}
 
-      <div className="plan-list" role="table" aria-label="Plans">
-        <div className="pl-row pl-head" role="row">
-          <div>Rotation</div><div>Budget</div><div>Expected profit</div><div>Soil impact</div><div>Total harvest</div><div className="pl-score">Score</div>
-        </div>
-        {plans.map((p, i) => (
-          <div key={p.id} className={`pl-row ${i === 1 ? 'best' : ''}`} role="row">
-            <div className="pl-rot"><span className={`caption ${i === 1 ? 'brand' : ''}`}>{labelOf(p, i)}</span><CropPair crops={p.crops} /></div>
-            <Cells p={p} cur={cur} score={scores.get(p.id)} />
-          </div>
-        ))}
+      <PlanRows plans={plans} labelOf={labelOf} scores={scores} cur={cur}>
         {ownList.map((o, k) => {
           const p = ownPlans[k];
           const same = p && plans.find((q) => q.id === p.id);
@@ -328,7 +346,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
           );
         })}
         <div className="pl-add"><button type="button" className="btn sm" onClick={addOwn}><Plus /> Add your own plan</button></div>
-      </div>
+      </PlanRows>
     </div>
   );
 }

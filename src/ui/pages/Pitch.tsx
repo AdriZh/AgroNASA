@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight, BadgeCheck, Ban, BookMarked, Calculator, Check, ChevronLeft, ChevronRight, CloudRain, Droplets, Eye, FileDown, FlaskConical, Globe2, Layers, Leaf,
-  NotebookPen, Satellite, Shovel, Sprout, Tractor, Users, Wallet, WifiOff, X, Sun, Moon, Thermometer,
+  NotebookPen, Plus, Satellite, Shovel, Sprout, Tractor, Users, Wallet, WifiOff, X, Sun, Moon, Thermometer,
   Languages, Bot, Mic, LayoutDashboard, Cpu, Rocket, Workflow, Target, Code,
 } from 'lucide-react';
 import type { Route } from '../../App';
@@ -15,13 +15,13 @@ import { rainOnset, temperatureSowing, yearlyWindow } from '../../weather/indica
 import { BrandMark } from '../components/Logo';
 import { OrbitVisual } from '../components/OrbitVisual';
 import { CAT_TOKEN, SeasonRainChart, useChartTheme } from '../components/charts';
-import { BEST_FIT, CASH_CAPTION, PlanCard, tradeOffText } from './Compare';
+import { BEST_FIT, CASH_CAPTION, PlanCard, PlanRows, ScoreTable, scoreAll, tradeOffText } from './Compare';
 import { weightsSummary } from '../components/PrioritySliders';
 import { HindcastChart } from '../components/Hindcast';
 import { allHindcasts } from '../../data/hindcast/hindcast';
 import { TEAM, TEAM_NAME, TEAM_PROFILES } from '../../data/team';
-import type { PlanResult } from '../../engine/plan';
-import type { PlanStress } from '../../engine/whatif';
+import type { EngineOutput, PlanResult } from '../../engine/plan';
+import type { PriorityWeights } from '../../domain/types';
 import { useDrierHotter } from '../components/stress';
 
 const ease = [0.2, 0.7, 0.2, 1] as const;
@@ -205,24 +205,23 @@ function Funnel({ steps }: { steps: [string, number, string][] }) {
   );
 }
 
-/** Slide 3: the live Compare result in miniature, with three callouts on the rows that matter. */
-function MiniCompare({ plans, cur, stress }: { plans: PlanResult[]; cur: string; stress: Map<string, PlanStress> | null }) {
-  const pairs = plans[0]?.outcome.pairs ?? 0;
-  const call = (k: number, title: string, d: string, delay: number) => (
-    <motion.div className="mc-call" {...quick(delay)}>
-      <span className="mc-n">{k}</span>
-      <div><b>{title}</b><span>{d}</span></div>
-      <ArrowRight size={18} className="mc-arrow" aria-hidden />
-    </motion.div>
-  );
+/** Slide 3: the live Compare page in miniature: the vertical plan list and the best fit's score breakdown. */
+function MiniCompare({ engine, cur, weights }: { engine: EngineOutput; cur: string; weights: PriorityWeights }) {
+  const plans = [engine.baseline, ...engine.alternatives];
+  const scores = scoreAll(engine, weights);
+  const best = engine.alternatives[0] ? scores.get(engine.alternatives[0].id) : undefined;
+  const labelOf = (p: PlanResult, k: number) => (p.isBaseline ? 'Your usual plan' : k === 1 ? BEST_FIT : p.label || 'Option B');
   return (
-    <motion.div {...quick(0)} className="mini-compare">
-      <div className="mc-calls mc-r3">{call(1, 'Your budget', 'cost vs cash you can spend', 0.1)}</div>
-      <div className="mc-calls mc-r4">
-        {call(2, 'NASA weather replay', `${pairs} real season pairs`, 0.15)}
-        {call(3, 'Drier & hotter test', '−15% rain, +2 °C', 0.2)}
-      </div>
-      {plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Usual plan' : k === 1 ? BEST_FIT : p.label} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} />)}
+    <motion.div {...quick(0)} className="mini-compare2">
+      <PlanRows plans={plans} labelOf={labelOf} scores={scores} cur={cur}>
+        <div className="pl-add"><span className="btn sm" aria-hidden><Plus size={14} /> Add your own plan</span><span className="muted" style={{ fontSize: 13 }}>scored on the same scale as the plans above</span></div>
+      </PlanRows>
+      {best && (
+        <motion.div {...quick(0.2)} className="mc2-score boxed">
+          <div className="caption hl">Hover a score · {BEST_FIT} breakdown</div>
+          <ScoreTable score={best} />
+        </motion.div>
+      )}
     </motion.div>
   );
 }
@@ -401,15 +400,15 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
       <>
         <motion.h2 {...up(0.1)} style={{ marginBottom: 8, fontSize: 'clamp(20px, 2.3vw, 30px)' }}>Which next plans can I <G>afford</G>, and how do they hold up in a <G>bad year</G>?</motion.h2>
         <motion.div {...up(0.15)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          {['Pin your field', 'Enter crops & budget', 'Compare plans you can afford', 'Print or share'].map((s, k, a) => (
+          {['Your field', 'Budget & crops', 'Compare plans', 'Review evidence'].map((s, k, a) => (
             <span key={s} style={{ display: 'contents' }}>
               <span className="boxed" style={{ padding: '6px 12px', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}><span className="hl">{k + 1}</span> {s}</span>
               {k < a.length - 1 && <ArrowRight size={16} className="muted" aria-hidden />}
             </span>
           ))}
         </motion.div>
-        <motion.div {...up(0.2)} className="ink" style={{ fontSize: 15, fontWeight: 600 }}>Live for {place}: your usual plan against the two best plans that fit the budget</motion.div>
-        {engine && plans.length > 0 ? <MiniCompare plans={plans} cur={cur} stress={stress} /> : null}
+        <motion.div {...up(0.2)} className="ink" style={{ fontSize: 15, fontWeight: 600 }}>Live for {place}: your usual plan against the two best plans, with profit, soil and harvest side by side</motion.div>
+        {engine && plans.length > 0 ? <MiniCompare engine={engine} cur={cur} weights={scenario.weights} /> : null}
       </>
     ) },
     { id: 'how', kicker: '03 / How it works', icon: <Cpu size={14} />, body: (

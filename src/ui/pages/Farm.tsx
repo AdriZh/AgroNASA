@@ -1,12 +1,12 @@
-import { useState } from 'react';
 import type { Route } from '../../App';
-import { ArrowRight, BookMarked, CalendarDays, Crosshair, FlaskConical, Layers, MapPin, Plus, Shovel, Sprout, Trash2 } from 'lucide-react';
+import { ArrowRight, BookMarked, CalendarDays, FlaskConical, Layers, MapPin, Plus, Shovel, Sprout, Trash2 } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
 import type { CropSeason, FertilizerApplication, SoilTexture } from '../../domain/types';
 import { CROPS, cropName } from '../../data/crops';
 import { FERTILIZERS, fertById } from '../../data/fertilizers';
 import { detectPack, PACKS } from '../../data/regionPacks';
-import { geocode, type GeoHit } from '../../weather/forecast';
+import { countryInfo, countryList, fxFactor } from '../../data/countries';
+import { LocationSearch, PresetGrid } from '../components/LocationPicker';
 import { normalizeApplication, fmtNum } from '../../domain/units';
 import { TEXTURE_LABEL } from '../../soil/soil';
 import { MapView } from '../components/MapView';
@@ -15,24 +15,27 @@ import { powerGridCell } from '../../weather/power';
 
 export function FarmPage({ go }: { go: (r: Route) => void }) {
   const { scenario: sc, update, engine, data, soil } = useApp();
-  const [q, setQ] = useState('');
-  const [hits, setHits] = useState<GeoHit[]>([]);
-  const [geoErr, setGeoErr] = useState<string | null>(null);
-  const pack = engine?.pack ?? detectPack(sc.location.lat, sc.location.lon);
+  const pack = engine?.pack ?? detectPack(sc.location.lat, sc.location.lon, sc.countryIso2);
   const crops = [...new Set([...pack.crops, ...sc.history.map((h) => h.cropId)])].filter((c) => CROPS[c]);
 
-  const setLocation = (lat: number, lon: number, label?: string) => update((s) => {
-    const p = detectPack(lat, lon);
-    const switched = (packOf(s) !== p.id);
-    return { ...s, location: { lat, lon, label: label ?? `${lat.toFixed(3)}, ${lon.toFixed(3)}` }, regionPackId: undefined, ...(switched ? { currency: p.currency, priceOverrides: {} } : {}) };
+  // Moving the field: keep the country if the search told us; otherwise it is re-detected automatically.
+  // Budget amounts are converted when the currency changes (FAOSTAT exchange rates).
+  const setLocation = (lat: number, lon: number, label?: string, iso2?: string) => update((s) => {
+    const c = countryInfo(iso2);
+    const newCur = c?.currency;
+    const conv = newCur && newCur !== s.currency ? fxFactor(s.currency, newCur) : 1;
+    return {
+      ...s, location: { lat, lon, label: label ?? `${lat.toFixed(3)}, ${lon.toFixed(3)}` }, regionPackId: undefined, countryIso2: iso2,
+      ...(newCur && newCur !== s.currency ? { currency: newCur, priceOverrides: {}, availableFunds: Math.round(s.availableFunds * conv), reserve: Math.round(s.reserve * conv) } : {}),
+    };
   });
-  const packOf = (s: typeof sc) => s.regionPackId ?? detectPack(s.location.lat, s.location.lon).id;
-
-  const search = async () => {
-    setGeoErr(null);
-    try { const r = await geocode(q); setHits(r); if (!r.length) setGeoErr('No place found.'); } catch (e: any) { setGeoErr(`Search unavailable (${e.message}). Click the map or type coordinates instead.`); }
-  };
-  const myLocation = () => navigator.geolocation?.getCurrentPosition((p) => setLocation(Number(p.coords.latitude.toFixed(4)), Number(p.coords.longitude.toFixed(4)), 'My location'), () => setGeoErr('Location permission denied.'));
+  const setCountry = (iso2: string) => update((s) => {
+    const c = countryInfo(iso2);
+    const conv = c?.currency && c.currency !== s.currency ? fxFactor(s.currency, c.currency) : 1;
+    return { ...s, countryIso2: iso2, regionPackId: undefined, ...(c?.currency && c.currency !== s.currency ? { currency: c.currency, priceOverrides: {}, availableFunds: Math.round(s.availableFunds * conv), reserve: Math.round(s.reserve * conv) } : {}) };
+  });
+  const country = countryInfo(sc.countryIso2);
+  const multiSeason = pack.seasons.length > 1;
 
   const setH = (id: string, patch: Partial<CropSeason>) => update((s) => ({ ...s, history: s.history.map((h) => (h.id === id ? { ...h, ...patch } : h)) }));
   const addH = () => update((s) => {
@@ -66,19 +69,10 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
       <div className="grid g-side">
         <div className="card">
           <div className="card-head"><CardTitle icon={<MapPin size={17} />}>Field location</CardTitle><Tag t="farmer" /></div>
-          <div className="row" style={{ marginBottom: 10 }}>
-            <input className="input" style={{ flex: 1, minWidth: 200 }} placeholder="Search a village, district or region…" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && search()} />
-            <button className="btn" onClick={search}>Search</button>
-            <button className="btn" onClick={myLocation} title="Use device GPS"><Crosshair size={15} /> GPS</button>
-          </div>
-          {geoErr && <p className="mini" style={{ color: 'var(--amber)' }}>{geoErr}</p>}
-          {hits.length > 0 && (
-            <div className="stack" style={{ marginBottom: 10 }}>
-              {hits.map((h) => <button key={h.label} className="btn sm" style={{ justifyContent: 'flex-start', textAlign: 'left' }} onClick={() => { setLocation(Number(h.lat.toFixed(4)), Number(h.lon.toFixed(4)), h.label.split(',').slice(0, 3).join(',')); setHits([]); }}><MapPin size={14} /> {h.label}</button>)}
-            </div>
-          )}
-          <MapView lat={sc.location.lat} lon={sc.location.lon} onPick={(a, b) => setLocation(a, b)} defaultLayer="none" />
-          <p className="mini" style={{ marginTop: 6 }}>Click the map to move the field. Only these coordinates are sent to NASA POWER / SoilGrids — never your history or budget.</p>
+          <div style={{ marginBottom: 12 }}><LocationSearch onPick={(p) => setLocation(p.lat, p.lon, p.label, p.iso2)} /></div>
+          <MapView lat={sc.location.lat} lon={sc.location.lon} onPick={(a, b) => setLocation(a, b)} defaultLayer="none" zoom={6} />
+          <p className="mini" style={{ marginTop: 6 }}>Works anywhere on Earth: click the map, search, or pick an example. Only coordinates are sent to NASA POWER / SoilGrids — never your history or budget.</p>
+          <details style={{ marginTop: 8 }}><summary style={{ fontSize: '.85rem' }}>Example farming regions (one per regional pack)</summary><div style={{ marginTop: 10 }}><PresetGrid onPick={(p) => setLocation(p.lat, p.lon, p.label, p.iso2)} /></div></details>
         </div>
 
         <div className="stack">
@@ -99,11 +93,19 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
           </div>
           <div className="card">
             <div className="card-head"><CardTitle icon={<BookMarked size={17} />} tone="violet">Regional knowledge pack</CardTitle><Tag t="rule" /></div>
-            <select className="input" value={sc.regionPackId ?? ''} onChange={(e) => update((s) => ({ ...s, regionPackId: e.target.value || undefined, currency: (PACKS.find((p) => p.id === e.target.value) ?? detectPack(s.location.lat, s.location.lon)).currency, priceOverrides: {} }))}>
-              <option value="">Auto-detect from location ({detectPack(sc.location.lat, sc.location.lon).short})</option>
+            <Field label="Country (prices, currency & FAOSTAT context)" hint={country ? `${country.currencyName ?? ''} (${country.currency}) · FAOSTAT exchange rate ${country.lcuPerUsd?.toLocaleString('en-US', { maximumFractionDigits: 2 })} per USD (${country.fxYear}) · ${Object.keys(country.prices).length} crop prices` : 'Detecting from the map location…'}>
+              <select className="input" value={sc.countryIso2 ?? ''} onChange={(e) => setCountry(e.target.value)}>
+                <option value="" disabled>Detecting…</option>
+                {countryList().map((c) => <option key={c.iso2} value={c.iso2}>{c.name}</option>)}
+              </select>
+            </Field>
+            <div style={{ height: 10 }} />
+            <select className="input" value={sc.regionPackId ?? ''} onChange={(e) => update((s) => ({ ...s, regionPackId: e.target.value || undefined }))} aria-label="Regional pack">
+              <option value="">Auto-detect: {detectPack(sc.location.lat, sc.location.lon, sc.countryIso2).name}</option>
               {PACKS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <p className="mini" style={{ marginTop: 8 }}>{pack.description}</p>
+            <div className="row" style={{ gap: 6, marginBottom: 8 }}>{pack.seasons.map((x) => <span key={x.id} className="chip nasa">{x.label} · {x.method === 'rain-onset' ? 'NASA rain onset' : x.method === 'temperature' ? 'soil warming' : 'fixed window'} {x.earliest !== 'auto' ? `${x.earliest}→${x.latest}` : '(auto from NASA climatology)'}</span>)}</div>
             {pack.id === 'global-screening' && <Callout tone="warn">No reviewed local pack covers this location. Field Shift will screen a generic crop library against the NASA climate record and apply only generic rotation principles. Treat results as a demonstration.</Callout>}
             <div className="mini">NASA POWER grid cell centre: {cell.cLat.toFixed(2)}°, {cell.cLon.toFixed(3)}° · {data.series ? `elevation ${Math.round(data.series.meta.elevation)} m` : ''}</div>
           </div>
@@ -118,11 +120,12 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
         {histSorted.length === 0 ? <div className="empty">No history yet. Field Shift still works — the usual plan will default to the first crop in the pack.</div> : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Year</th><th>Crop</th><th>Planted</th><th>Harvested</th><th>Approx.</th><th>Outcome</th><th>Yield t/ha</th><th>Residue</th><th>Notes</th><th /></tr></thead>
+              <thead><tr><th>Year</th>{multiSeason && <th>Season</th>}<th>Crop</th><th>Planted</th><th>Harvested</th><th>Approx.</th><th>Outcome</th><th>Yield t/ha</th><th>Residue</th><th>Notes</th><th /></tr></thead>
               <tbody>
                 {histSorted.map((h) => (
                   <tr key={h.id}>
                     <td style={{ minWidth: 90 }}><NumInput className="sm" value={h.year} onChange={(v) => setH(h.id, { year: Math.round(v ?? h.year) })} /></td>
+                    {multiSeason && <td><select className="input sm" style={{ minWidth: 120 }} value={h.seasonId ?? pack.seasons.find((x) => x.crops.includes(h.cropId))?.id ?? pack.seasons[0].id} onChange={(e) => setH(h.id, { seasonId: e.target.value })}>{pack.seasons.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select></td>}
                     <td><select className="input sm" style={{ minWidth: 150 }} value={h.cropId} onChange={(e) => setH(h.id, { cropId: e.target.value })}>{[...new Set([...crops, ...Object.keys(CROPS)])].map((c) => <option key={c} value={c}>{CROPS[c].emoji} {cropName(c)}</option>)}</select></td>
                     <td><input className="input sm" type="date" value={h.plantedOn ?? ''} onChange={(e) => setH(h.id, { plantedOn: e.target.value || undefined })} /></td>
                     <td><input className="input sm" type="date" value={h.harvestedOn ?? ''} onChange={(e) => setH(h.id, { harvestedOn: e.target.value || undefined })} /></td>

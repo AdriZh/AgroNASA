@@ -15,6 +15,7 @@ const CODES: [string, string][] = [
   ['CLIMATE_UNSUITABLE', 'Season mean temperature outside crop range in most years, or median water-limited yield < 35%.'],
   ['CLIMATE_RISK_HIGH · HEAT_EXPOSURE · FROST_RISK', 'Warnings from the NASA replay (≥35% severe years; ≥30% years with ≥3 hot days at flowering; ≥20% years with frost after emergence).'],
   ['SOIL_PH', 'SoilGrids or lab pH outside the crop’s usual range (warning only).'],
+  ['SEASON_OVERLAP', 'Two-season systems: the first crop is still in the field when the second must be sown.'],
   ['HISTORY_INCOMPLETE · CLIMATE_CONTEXT_ONLY · UNREVIEWED_RULES · SYNTHETIC_PRICES', 'Transparency notes attached to every result.'],
 ];
 
@@ -49,7 +50,19 @@ export function MethodsPage() {
           <div className="row"><Tag t="farmer" /><span className="mini">history, fertilizer, budget, constraints, prices you edit</span></div>
           <div className="row"><Tag t="synthetic" /><span className="mini">default prices, yields, demo farms</span></div>
           <h3 style={{ marginTop: 14 }}>5 · Verification</h3>
-          <p className="mini">25 automated acceptance tests (<code>npm test</code>) reproduce the planning pack: 100 kg / 2 ha = 50 kg/ha; 46% N → 23 kg N/ha; 900 passes / 900.01 fails; synthetic fixture headroom 40/120/210; D1 has 9,131 records; Jun–Oct 2002 = 308.92 mm and 2009 = 975.63 mm; ≥10-day dry spells 20/25 vs 1/25; FAO-56 Example 18 ET₀ ≈ 3.9 mm/day; fill values never become zero; no causal language in reviews.</p>
+          <p className="mini">37 automated tests (acceptance + world coverage) (<code>npm test</code>) reproduce the planning pack: 100 kg / 2 ha = 50 kg/ha; 46% N → 23 kg N/ha; 900 passes / 900.01 fails; synthetic fixture headroom 40/120/210; D1 has 9,131 records; Jun–Oct 2002 = 308.92 mm and 2009 = 975.63 mm; ≥10-day dry spells 20/25 vs 1/25; FAO-56 Example 18 ET₀ ≈ 3.9 mm/day; fill values never become zero; no causal language in reviews.</p>
+        </div>
+      </div>
+
+      <div className="grid g2 section">
+        <div className="card">
+          <h3>6 · World coverage</h3>
+          <p className="mini">Any point on Earth works: NASA POWER provides daily weather for every 0.5° × 0.625° cell. The country (OpenStreetMap reverse geocoding or the farmer’s choice) selects one of {PACKS.length - 1} regional farming-system packs — one-season (Sahel, Ethiopia, Southern Africa, Mediterranean, Australia, steppe), two seasons in one year (East Africa long/short rains, South Asia Kharif/Rabi, Southeast Asia wet/dry, North China Plain, Brazil summer + safrinha) or autumn- and spring-sown temperate systems (Europe, North America, Central Asia) — and falls back to a global screening pack whose season is derived from the NASA climatology. Two-season plans replay both seasons of the same historical year; a crop still in the field at the next sowing is blocked (<code>SEASON_OVERLAP</code>).</p>
+          <p className="mini">Prices: crop sale prices are FAOSTAT producer prices for the country (latest year ≥ 2010) or the FAOSTAT global median, converted at the FAOSTAT exchange rate. Input costs are one synthetic per-crop template scaled by region and converted to local currency. Every value is editable. <Ref id="R33" /></p>
+        </div>
+        <div className="card">
+          <h3>7 · NASA values at the field pixel</h3>
+          <p className="mini">GIBS serves lossless PNG tiles plus a published colormap for each product. Field Shift reads the pixel under the field (3×3 median for continuous layers) and maps its colour back to the data value: MODIS Terra NDVI 16-day (≈300 m, 2000→now), MODIS IGBP land cover, SMAP L4 root-zone soil moisture (≈9 km, 2015→now) and GRACE/GRACE-FO total water storage (mascons, 2002–2022). Values are quantized to the colormap bins (NDVI 0.005, SMAP 0.003 m³/m³, GRACE 0.25 cm). NDVI season peaks are correlated with the FAO-56 replay to check the model against observation. Natural events come from NASA EONET. <Ref id="R35" /> <Ref id="R36" /></p>
         </div>
       </div>
 

@@ -7,7 +7,7 @@ import { CROPS, cropEmoji, cropName } from '../../data/crops';
 import { fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDayMonth, fmtDate } from '../../domain/dates';
 import { CashTimeline, CostChart, RangeBar, ReplayChart } from '../components/charts';
-import { CardTitle, Callout, Loading, Meter, pct, ReasonList, Tag } from '../components/common';
+import { CardTitle, Callout, Meter, NasaLoading, pct, ReasonList, Tag } from '../components/common';
 
 const STATUS: Record<string, { cls: string; t: string; i: ReactNode }> = {
   affordable: { cls: 'ok', t: 'Affordable', i: <CheckCircle2 /> }, unaffordable: { cls: 'bad', t: 'Over budget', i: <XCircle /> }, unverified: { cls: 'warn', t: 'Budget not verified', i: <HelpCircle /> }, timing: { cls: 'bad', t: 'Cash-timing gap', i: <Clock /> },
@@ -18,7 +18,7 @@ function Seq({ crops }: { crops: [string, string] }) {
   return <div className="seq"><span className="crop">{cropEmoji(crops[0])} {cropName(crops[0])}</span><span className="arrow"><ArrowRight size={16} /></span><span className="crop">{cropEmoji(crops[1])} {cropName(crops[1])}</span></div>;
 }
 
-function PlanCard({ p, cur, onWhy, selected, priority, isBest }: { p: PlanResult; cur: string; onWhy: () => void; selected: boolean; priority: string; isBest: boolean }) {
+function PlanCard({ p, cur, onWhy, selected, priority, isBest, prices }: { p: PlanResult; cur: string; onWhy: () => void; selected: boolean; priority: string; isBest: boolean; prices?: Record<string, { perT: number | null; source: string }> }) {
   const st = STATUS[p.budget.status];
   return (
     <div className={`card plan ${p.isBaseline ? 'baseline' : ''} ${isBest ? 'best' : ''}`} style={selected ? { outline: '3px solid #9cc3ff' } : undefined}>
@@ -27,7 +27,7 @@ function PlanCard({ p, cur, onWhy, selected, priority, isBest }: { p: PlanResult
       <div className="mini">
         {p.seasons.map((s) => (
           <div key={s.season}>
-            <b>{s.year}</b> {CROPS[s.cropId].emoji} {s.cropId === 'fallow' ? 'rest season' : <>sow ≈ {fmtDayMonth(s.sowing)}{s.risk?.p20Sowing && s.risk.p80Sowing ? <> (typical {fmtDayMonth(s.risk.p20Sowing)}–{fmtDayMonth(s.risk.p80Sowing)})</> : null}, mature ≈ {fmtDayMonth(s.maturity)}</>}
+            <b>{s.year}</b> <span className="chip nasa" style={{ padding: '1px 7px' }}>{s.seasonLabel}</span> {CROPS[s.cropId].emoji} {s.cropId === 'fallow' ? 'rest season' : <>sow ≈ {fmtDayMonth(s.sowing)}{s.risk?.p20Sowing && s.risk.p80Sowing ? <> (typical {fmtDayMonth(s.risk.p20Sowing)}–{fmtDayMonth(s.risk.p80Sowing)})</> : null}, mature ≈ {fmtDayMonth(s.maturity)}</>}
           </div>
         ))}
       </div>
@@ -49,6 +49,7 @@ function PlanCard({ p, cur, onWhy, selected, priority, isBest }: { p: PlanResult
           );
         })}
         {p.outcome.net && <div className="mini" style={{ marginTop: 6 }}>Modeled net after cash costs: <b>{fmtMoney(p.outcome.net.median, cur)}</b> (bad year {fmtMoney(p.outcome.net.p20, cur)})</div>}
+        {prices && <div className="mini" style={{ marginTop: 4, color: 'var(--ink-3)' }}>Sale prices: {p.crops.filter((c) => c !== 'fallow').map((c) => `${cropName(c)} ${fmtMoney(prices[c]?.perT, cur)}/t (${prices[c]?.source === 'faostat-country' ? 'FAOSTAT' : prices[c]?.source === 'faostat-median' ? 'FAOSTAT median' : prices[c]?.source === 'farmer' ? 'yours' : 'placeholder'})`).join(' · ')}</div>}
       </div>
       <div>
         <div className="spread mini"><b>Severe water-stress risk</b><span>{pct(p.outcome.pSevereAny)} of {p.outcome.pairs} replayed season pairs</span></div>
@@ -64,7 +65,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
   const { engine, engineError, scenario: sc, data } = useApp();
   const [sel, setSel] = useState<string | null>(null);
   if (engineError) return <Callout tone="bad">Engine error: {engineError}</Callout>;
-  if (!engine) return data.weatherStatus === 'error' ? <Callout tone="bad">NASA POWER data could not be loaded for this location ({data.weatherError}). Try “Refresh live NASA data” or another location.</Callout> : <Loading text="Replaying 25 years of NASA POWER weather for every candidate rotation…" />;
+  if (!engine) return data.weatherStatus === 'error' ? <Callout tone="bad">NASA POWER data could not be loaded for this location ({data.weatherError}). Try “Refresh live NASA data” or another location.</Callout> : <NasaLoading place={sc.location.label} />;
   const plans = [engine.baseline, ...engine.alternatives];
   const chosen = plans.find((p) => p.id === sel) ?? engine.allPlans.find((p) => p.id === sel) ?? (engine.alternatives[0] ?? engine.baseline);
   const cur = sc.currency;
@@ -76,7 +77,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
         <div>
           <div className="eyebrow">Step 3 of 4</div>
           <h1>Compare two-season plans</h1>
-          <p>{engine.pack.name}. {engine.areaHa.toFixed(2)} ha · {sc.firstSeasonYear}–{sc.firstSeasonYear + 1} · spendable {fmtMoney(engine.baseline.budget.cap, cur)}{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, cur)} confirmed inflows` : ''}. Ranked by <b>{PRIORITY_LABEL[sc.priority]}</b>.</p>
+          <p>{engine.pack.name}. {engine.areaHa.toFixed(2)} ha · {engine.baseline.seasons[0].year === engine.baseline.seasons[1].year ? `${engine.baseline.seasons[0].year} · ${engine.windows.map((w) => w.label).join(" + ")}` : `${engine.baseline.seasons[0].year}–${engine.baseline.seasons[1].year}`} · spendable {fmtMoney(engine.baseline.budget.cap, cur)}{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, cur)} confirmed inflows` : ''}. Ranked by <b>{PRIORITY_LABEL[sc.priority]}</b>.</p>
         </div>
         <div className="row"><button className="btn" onClick={() => go('resources')}><ArrowLeft size={16} /> Edit resources</button><button className="btn primary" onClick={() => go('evidence')}>Review evidence <ArrowRight size={16} /></button></div>
       </div>
@@ -88,7 +89,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
       )}
 
       <div className="grid g3" style={{ marginTop: 18 }}>
-        {plans.map((p, i) => <PlanCard key={p.id} p={p} cur={cur} priority={sc.priority} isBest={i === 1} selected={chosen.id === p.id} onWhy={() => setSel(p.id)} />)}
+        {plans.map((p, i) => <PlanCard key={p.id} p={p} cur={cur} prices={engine.prices} priority={sc.priority} isBest={i === 1} selected={chosen.id === p.id} onWhy={() => setSel(p.id)} />)}
       </div>
 
       <div className="grid g2 section">
@@ -105,7 +106,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
               <tbody>
                 {risks.map((r) => (
                   <tr key={r.cropId}>
-                    <td>{CROPS[r.cropId].emoji} {cropName(r.cropId)}</td>
+                    <td>{CROPS[r.cropId].emoji} {cropName(r.cropId)}{engine.windows.length > 1 && r.seasonLabel ? <span className="mini"> · {r.seasonLabel}</span> : null}</td>
                     <td><div className="row" style={{ gap: 6, flexWrap: 'nowrap' }}><RangeBar p20={r.p20Rel} med={r.medianRel} p80={r.p80Rel} width={110} /><span className="mini">{pct(r.medianRel)}</span></div></td>
                     <td className="num">{pct(r.pSevere)}</td>
                     <td className="num">{pct(r.pHeat)}</td>

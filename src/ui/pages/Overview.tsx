@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import {
-  ArrowRight, BadgeCheck, Ban, Bot, Calculator, Clapperboard, CloudRain, CloudSun, Droplets, Flame, Leaf, Lock, Map as MapIcon, Microscope, NotebookPen, Plus, Presentation, Satellite, Scale, Shovel, BookMarked, Wallet, Wheat,
+  ArrowRight, Globe2, BadgeCheck, Ban, Bot, Calculator, Clapperboard, CloudRain, CloudSun, Droplets, Flame, Leaf, Lock, Map as MapIcon, Microscope, NotebookPen, Plus, Presentation, Satellite, Scale, Shovel, BookMarked, Wallet, Wheat,
 } from 'lucide-react';
 import type { Route } from '../../App';
 import { useApp } from '../../state/AppContext';
@@ -10,7 +10,8 @@ import { cropEmoji, cropName } from '../../data/crops';
 import { fmtMoney } from '../../domain/units';
 import { yearlyWindow } from '../../weather/indicators';
 import { SeasonRainChart } from '../components/charts';
-import { CardTitle, Loading, pct } from '../components/common';
+import { CardTitle, Loading, NasaLoading, pct } from '../components/common';
+import { LocationSearch, PresetGrid } from '../components/LocationPicker';
 import { OrbitVisual } from '../components/OrbitVisual';
 
 export function Overview({ go }: { go: (r: Route) => void }) {
@@ -43,6 +44,20 @@ export function Overview({ go }: { go: (r: Route) => void }) {
         </div>
       </section>
 
+      <section className="section">
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <div className="eyebrow"><Globe2 size={13} /> Plan anywhere on Earth</div>
+              <h2 style={{ margin: 0 }}>Where is your field?</h2>
+              <p className="mini" style={{ margin: '4px 0 0' }}>Search any place or pick an example region. Field Shift fetches 25 years of NASA data for that grid cell, detects the country (currency + FAOSTAT prices) and the regional farming system — 14 regional packs plus a global fallback.</p>
+            </div>
+          </div>
+          <LocationSearch onPick={(p) => { createNew(p); go('compare'); }} />
+          <div style={{ marginTop: 14 }}><PresetGrid onPick={(p) => { createNew(p); go('compare'); }} /></div>
+        </div>
+      </section>
+
       <section className="section grid g-side">
         <div className="card">
           <div className="card-head">
@@ -52,7 +67,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
             </div>
             <button className="btn primary" onClick={() => go('compare')}>Open comparison <ArrowRight size={16} /></button>
           </div>
-          {!engine ? <Loading text="Loading NASA POWER climate record…" /> : (
+          {!engine ? (data.weatherStatus === 'error' ? <p className="mini">NASA POWER could not be loaded: {data.weatherError}</p> : <NasaLoading place={scenario.location.label} />) : (
             <>
               <div className="grid g3" style={{ gap: 12 }}>
                 <div className="card flat" style={{ padding: 16 }}>
@@ -115,12 +130,12 @@ export function Overview({ go }: { go: (r: Route) => void }) {
           <div className="eyebrow"><Satellite size={13} /> NASA data</div>
           <h3 style={{ marginBottom: 10 }}>From orbit and reanalysis</h3>
           {([
-            [<CloudRain size={18} />, 'NASA POWER daily (MERRA-2 / CERES)', 'Rain, Tmax/Tmin, humidity, wind, solar radiation 2001→now → ET₀, sowing dates, dry spells, heat, water-balance replay.'],
-            [<Droplets size={18} />, 'POWER GWETROOT / GWETTOP', 'Root-zone and surface soil wetness compared with the 25-year normal.'],
-            [<Leaf size={18} />, 'MODIS NDVI 8-day (GIBS)', 'Vegetation greenness around the field, this season vs last year.'],
-            [<Droplets size={18} />, 'SMAP L4 root-zone soil moisture (GIBS)', 'Current regional soil moisture at ~9 km.'],
-            [<CloudSun size={18} />, 'GPM IMERG precipitation (GIBS)', 'Recent satellite rainfall pattern at ~10 km.'],
-            [<Flame size={18} />, 'MODIS land-surface temperature (GIBS)', 'Daytime heat across the landscape.'],
+            [<CloudRain size={18} />, 'NASA POWER daily (MERRA-2 / CERES)', 'Rain, Tmax/Tmin, humidity, wind, solar radiation 2001→now for any point on Earth → ET₀, sowing dates, dry spells, heat, water-balance replay.'],
+            [<Droplets size={18} />, 'POWER soil wetness + SMAP L4 soil moisture', 'Root-zone wetness vs the 25-year normal, and SMAP soil moisture today vs the same date in past years.'],
+            [<Leaf size={18} />, 'MODIS NDVI 16-day at your field (2000→now)', 'Season-by-season greenness of your pixel — and an independent check of the water-balance model.'],
+            [<MapIcon size={18} />, 'MODIS IGBP land cover', 'Confirms the pin sits on cropland.'],
+            [<Droplets size={18} />, 'GRACE / GRACE-FO water storage', 'Groundwater + soil water trend since 2002 — is irrigation sustainable here?'],
+            [<Flame size={18} />, 'NASA EONET + GIBS imagery', 'Wildfires, floods, storms and dust nearby; IMERG rain, MODIS LST and true colour maps.'],
           ] as const).map(([i, t, d]) => <div key={t} className="source-tile"><span className="ico">{i}</span><div><b>{t}</b><div className="mini">{d}</div></div></div>)}
         </div>
         <div className="card">
@@ -128,9 +143,10 @@ export function Overview({ go }: { go: (r: Route) => void }) {
           <h3 style={{ marginBottom: 10 }}>From the farmer and the market</h3>
           {([
             [<NotebookPen size={18} />, 'Farmer records', 'Crop sequence, dates, outcomes, fertilizer product/quantity/area/cost — stored only on this device.'],
-            [<Wallet size={18} />, 'Budget & local prices', 'Funds, reserve, dated inflows, editable unit prices for every input.'],
+            [<Wallet size={18} />, 'Budget & local quotes', 'Funds, reserve, dated inflows, editable unit prices for every input.'],
             [<Shovel size={18} />, 'ISRIC SoilGrids 2.0', 'Texture, carbon, pH, N, CEC → water-holding capacity (Saxton & Rawls). Farmer texture overrides it.'],
             [<BookMarked size={18} />, 'Regional rule packs', 'Crop calendars, return intervals, disease groups, legume benefits — each with source IDs and review status.'],
+            [<Wallet size={18} />, 'FAOSTAT (FAO)', 'Real producer prices, exchange rates, cropland nitrogen budgets and warming for 240 countries.'],
             [<CloudSun size={18} />, 'Open-Meteo 16-day forecast', 'Short-term rain, temperature and ET₀ for planting readiness.'],
             [<MapIcon size={18} />, 'OpenStreetMap / Nominatim', 'Base map and place search.'],
           ] as const).map(([i, t, d]) => <div key={t} className="source-tile non"><span className="ico">{i}</span><div><b>{t}</b><div className="mini">{d}</div></div></div>)}

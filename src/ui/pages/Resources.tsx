@@ -120,7 +120,7 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
         <details className="card section" open>
           <summary><span className="ic amber"><Tags size={17} /></span>Prices & yields — edit to your dated local quotes ({Object.keys(sc.priceOverrides).length} edited)</summary>
           <div style={{ marginTop: 10 }}>
-            <Callout tone="warn">Default values in <b>{pack.short}</b> are <b>synthetic placeholders</b> with plausible orders of magnitude. Replace them with local quotes (with date and source) before using results. Clearing a field marks the price <b>missing</b> — the plan then shows “budget not verified”, never zero.</Callout>
+            <Callout tone="warn"><b>Crop sale prices</b> come from <b>FAOSTAT producer prices</b> for your country (or the global median when FAOSTAT has none), converted at the FAOSTAT exchange rate. <b>Input costs</b> are a <b>synthetic regional template</b>{engine && engine.fx.factor !== 1 ? ` converted ${engine.fx.from}→${engine.fx.to}` : ''} — replace them with dated local quotes before using results. Clearing a field marks the price <b>missing</b> — the plan then shows “budget not verified”, never zero.</Callout>
             <div className="grid g2" style={{ marginTop: 12 }}>
               {crops.map((c) => {
                 const e = pack.economics[c];
@@ -142,7 +142,7 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
                                 <td className="num">{it.qtyPerHa} {it.unit}</td>
                                 <td style={{ width: 150 }}>
                                   <div className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>
-                                    <NumInput className="sm" allowNull value={ov !== undefined ? ov : it.unitPrice} onChange={(v) => setPrice(k, v)} />
+                                    <NumInput className="sm" allowNull value={ov !== undefined ? ov : it.unitPrice == null ? null : Math.round(it.unitPrice * (engine?.fx.factor ?? 1) * 100) / 100} onChange={(v) => setPrice(k, v)} />
                                     {ov !== undefined && <button className="btn ghost" title="Reset to default" onClick={() => setPrice(k, undefined)}><RotateCcw size={14} /></button>}
                                   </div>
                                 </td>
@@ -151,7 +151,7 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
                           })}
                           {c !== 'fallow' && <>
                             <tr className="dim"><td>Attainable yield (water-unlimited, your management)</td><td className="num">t/ha</td><td><NumInput className="sm" value={sc.priceOverrides[yk] ?? e.attainableYieldTHa} onChange={(v) => setPrice(yk, v)} /></td></tr>
-                            <tr className="dim"><td>Expected farm-gate price</td><td className="num">{cur}/t</td><td><NumInput className="sm" allowNull value={sc.priceOverrides[pk] !== undefined ? sc.priceOverrides[pk] : e.pricePerT} onChange={(v) => setPrice(pk, v)} /></td></tr>
+                            <tr className="dim"><td>Expected farm-gate price<div className="mini" style={{ fontSize: '.7rem' }}>{engine?.prices[c]?.label}</div></td><td className="num">{cur}/t</td><td><div className="row" style={{ gap: 4, flexWrap: 'nowrap' }}><NumInput className="sm" allowNull value={sc.priceOverrides[pk] !== undefined ? sc.priceOverrides[pk] : engine?.prices[c]?.perT ?? null} onChange={(v) => setPrice(pk, v)} />{sc.priceOverrides[pk] !== undefined && <button className="btn ghost" title="Back to FAOSTAT price" onClick={() => setPrice(pk, undefined)}><RotateCcw size={14} /></button>}</div></td></tr>
                           </>}
                         </tbody>
                       </table>

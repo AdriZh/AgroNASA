@@ -15,10 +15,18 @@ export async function fetchForecast(lat: number, lon: number): Promise<Forecast>
   return { days, retrievedAt: new Date().toISOString(), source: 'Open-Meteo Forecast API' };
 }
 
-export interface GeoHit { label: string; lat: number; lon: number }
+export interface GeoHit { label: string; lat: number; lon: number; iso2?: string }
 export async function geocode(q: string): Promise<GeoHit[]> {
-  const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`, { headers: { 'Accept-Language': 'en' } });
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`, { headers: { 'Accept-Language': 'en' } });
   if (!res.ok) throw new Error(`Geocoder HTTP ${res.status}`);
   const j = await res.json();
-  return j.map((x: any) => ({ label: x.display_name, lat: Number(x.lat), lon: Number(x.lon) }));
+  return j.map((x: any) => ({ label: x.display_name, lat: Number(x.lat), lon: Number(x.lon), iso2: x.address?.country_code ? String(x.address.country_code).toUpperCase() : undefined }));
+}
+
+/** ISO 3166 alpha-2 country code for a point (OpenStreetMap Nominatim reverse geocoding, country level). */
+export async function reverseCountry(lat: number, lon: number): Promise<string | null> {
+  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=3&lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`, { headers: { 'Accept-Language': 'en' } });
+  if (!res.ok) throw new Error(`Reverse geocoder HTTP ${res.status}`);
+  const j = await res.json();
+  return j?.address?.country_code ? String(j.address.country_code).toUpperCase() : null;
 }

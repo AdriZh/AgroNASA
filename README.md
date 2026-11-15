@@ -10,6 +10,32 @@ It fuses **25 years of NASA Earth observations** with **what the farmer knows** 
 
 ---
 
+## Works anywhere on Earth
+
+Search a place, click the map, use GPS, or pick one of 15 example farming regions (each pin verified as cropland in MODIS land cover). Field Shift then:
+
+1. downloads 25 years of daily **NASA POWER** data for that grid cell (live, ~2–40 s, then cached),
+2. detects the **country** (OpenStreetMap reverse geocoding) → local **currency**, **FAOSTAT** producer prices and exchange rate,
+3. selects the **regional farming system** — 14 packs plus a global fallback:
+
+| Pack | Seasons | Example |
+|---|---|---|
+| West African Sahel & Sudan savanna | rainy season (rain onset) | Bambey 🇸🇳, Kano 🇳🇬 |
+| East Africa bimodal | long rains + short rains, same year | Nakuru 🇰🇪 |
+| Ethiopian highlands | Meher | Debre Zeit 🇪🇹 |
+| Southern Africa | summer rains | Lilongwe 🇲🇼, Zambia, Zimbabwe |
+| South Asia | Kharif + Rabi | Karnal 🇮🇳, Pakistan, Bangladesh |
+| Southeast Asia | wet + dry season | Can Tho 🇻🇳 |
+| East Asia (North China Plain) | summer crop + winter wheat | Shijiazhuang 🇨🇳 |
+| Mediterranean & West Asia | winter (autumn rains) | Settat 🇲🇦, Türkiye, Iran |
+| Central Asia irrigated | summer + autumn-sown | Fergana 🇺🇿 |
+| N. Kazakhstan & S. Siberia steppe | spring–summer | Kostanay 🇰🇿 |
+| Europe & Black Sea | spring + autumn-sown | Kropyvnytskyi 🇺🇦 |
+| North America | spring + autumn-sown | Iowa 🇺🇸, Canada |
+| South America | summer crop + safrinha | Sorriso 🇧🇷, Argentina |
+| Australia | winter grain (autumn break) | Northam 🇦🇺 |
+| Global screening | auto from NASA climatology | anywhere else |
+
 ## What’s inside
 
 | Screen | What it does |
@@ -30,7 +56,10 @@ It fuses **25 years of NASA Earth observations** with **what the farmer knows** 
 |---|---|---|
 | **NASA POWER daily** (MERRA-2, CERES/SYN1deg): `PRECTOTCORR, T2M, T2M_MAX, T2M_MIN, RH2M, WS2M, ALLSKY_SFC_SW_DWN` | NASA | Rain, heat, dry spells, FAO-56 ET₀, rain-onset / soil-warming sowing dates, water-balance replay, season-so-far |
 | **NASA POWER `GWETROOT`, `GWETTOP`** | NASA | Root-zone / surface soil wetness vs normal |
-| **NASA GIBS**: MODIS Terra NDVI 8-day, SMAP L4 root-zone soil moisture, GPM IMERG precipitation, MODIS LST, MODIS true colour | NASA | Satellite context around the field |
+| **NASA GIBS** map layers: MODIS NDVI, SMAP L4, GPM IMERG, MODIS LST, true colour | NASA | Satellite context around the field |
+| **NASA values at the field pixel** (decoded from GIBS tiles + colormaps): MODIS Terra NDVI 16-day 2000→now, MODIS IGBP land cover, SMAP L4 root-zone soil moisture, GRACE/GRACE-FO water storage | NASA | Field greenness history, model-vs-satellite check (r), cropland check, soil moisture vs normal, groundwater trend, past-season review |
+| **NASA EONET** natural events | NASA | Wildfires, floods, storms, drought, dust within ~300 km |
+| **FAOSTAT** (FAO): producer prices, exchange rates, cropland nutrient budget, temperature change — from the team's Drive data index | non-NASA | Real crop prices & local currency for 240 countries; national N-budget and warming context |
 | Farmer records (history, fertilizer, budget, constraints, prices) | non-NASA | Everything farm-specific — stored only in the browser |
 | **ISRIC SoilGrids 2.0** (texture, SOC, pH, N, CEC, 0–60 cm) | non-NASA | Available water capacity via Saxton & Rawls (2006); pH warnings |
 | Regional rule packs (Senegal groundnut basin; Northern Kazakhstan steppe; global screening) | non-NASA | Crop calendars, return intervals, disease groups, legume/fallow benefits — each rule with source IDs and review status |
@@ -89,13 +118,17 @@ npm run build
 
 ## Verification
 
-`npm test` runs 25 acceptance tests from the planning pack, including:
+`npm test` runs 37 tests: 25 acceptance tests from the planning pack plus world-coverage tests (FAOSTAT lookups, currency conversion, two-season scheduling and overlap blocking, winter/spring crop sequencing, GIBS colormap decoding). The acceptance tests include:
 
 * 100 kg / 2 ha = 50 kg/ha; 46 % N label → 23 kg applied N/ha; unknown manure composition stays unknown; unknown treated area never becomes the whole field.
 * Budget boundary: funds 1,000 − reserve 100 → 900 passes, 900.01 fails; synthetic fixture baseline 1,120 excluded, A/B/C headroom 40/120/210; cash-timing violation detected; missing price → not verified.
 * **NASA regression** on the archived D1 query: 9,131 records; Jun–Oct 2002 = 308.92 mm, 2009 = 975.63 mm; ≥10-day dry spells 20/25 (Jun–Oct) vs 1/25 (Jul–Sep); −999 fill values flagged, never zero.
 * FAO-56 Example 18 ET₀ ≈ 3.9 mm/day.
 * Engine: baseline always shown; no “affordable” plan violates cash timing; rule exclusions carry IDs; unavailable seed removed with reason; honest zero-result state; deterministic output; no causal language in past-season reviews.
+
+### Refreshing FAOSTAT data
+
+`scripts/build-faostat.py` turns the FAOSTAT bulk downloads (PP, PE, ESB, ET — the same files listed in the team's Drive data index) into `src/data/faostat/countries.json`. Requires Python with `pycountry`.
 
 ## Project structure
 
@@ -119,7 +152,9 @@ docs/          pitch kit, review log
 * **Default prices, yields and demo farms are synthetic.** Replace them with dated local quotes in *Resources*.
 * NASA POWER is a ~50 km grid estimate, not the field. Modeled yields are conditional historical scenarios, not forecasts. Rainfall totals are not plant-available water.
 * No fertilizer dosing, no soil-nutrient inference from purchases, no causal diagnosis of past failures, no profit guarantees.
-* Southern-hemisphere temperate sowing does not yet use the last-frost rule.
+* Input-cost templates are synthetic for every region; crop prices are national FAOSTAT averages, not farm-gate quotes.
+* GIBS-decoded values are quantized by the colormap and sit on 300 m–25 km pixels; land cover may misclassify small fields.
+* The team's `All_data_with_climate` trial dataset (cereal–legume field trials with NASA POWER weather) is not yet used: it was too large to transfer through the Drive connector. It is the obvious next step for validating yields.
 
 ## Privacy
 

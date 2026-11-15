@@ -4,7 +4,7 @@ import type { FarmScenario } from '../domain/types';
 
 export const DEMO_SENEGAL: FarmScenario = {
   id: 'demo-bambey', name: 'Demo · Groundnut-basin smallholder (Bambey, Senegal)', synthetic: true,
-  location: { lat: 14.71, lon: -16.46, label: 'Bambey, Diourbel, Senegal' },
+  location: { lat: 14.71, lon: -16.46, label: 'Bambey, Diourbel, Senegal' }, countryIso2: 'SN',
   area: 1.5, areaUnit: 'ha', currency: 'XOF',
   availableFunds: 420000, reserve: 40000, confirmedInflows: [], firstSeasonYear: 2027,
   irrigation: 'no', irrigationCapacityMm: 0, laborAvailable: 'high',
@@ -26,7 +26,7 @@ export const DEMO_SENEGAL: FarmScenario = {
 
 export const DEMO_KAZAKHSTAN: FarmScenario = {
   id: 'demo-kostanay', name: 'Demo · Family grain farm (Kostanay, Kazakhstan)', synthetic: true,
-  location: { lat: 53.0, lon: 64.0, label: 'Kostanay region, Kazakhstan' },
+  location: { lat: 53.0, lon: 64.0, label: 'Kostanay region, Kazakhstan' }, countryIso2: 'KZ',
   area: 200, areaUnit: 'ha', currency: 'KZT',
   availableFunds: 33000000, reserve: 3000000,
   confirmedInflows: [{ id: 'in1', date: '2027-06-15', amount: 4000000, label: 'Confirmed state input subsidy' }],

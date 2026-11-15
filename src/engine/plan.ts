@@ -1,18 +1,19 @@
 // Orchestrator: normalize → indicators → candidates → rules → costs → feasibility → rank → explain.
 // Pure and deterministic: identical inputs always give identical results (no LLM in this path).
-import type { DailySeries, FarmScenario, Reason, RegionPack, SoilProfile } from '../domain/types';
-import { CROPS, cropName } from '../data/crops';
-import { IRRIGATION_COST_PER_MM_HA } from '../data/regionPacks';
+import type { CostItemDef, DailySeries, FarmScenario, Reason, RegionPack, SoilProfile } from '../domain/types';
+import { CROPS, cropFor, cropName } from '../data/crops';
+import { IRRIGATION_USD_PER_MM_HA } from '../data/regionPacks';
+import { countryInfo, cropPriceUsd, fxFactor, fxPerUsd } from '../data/countries';
 import { toHectares } from '../domain/units';
-import { addDays } from '../domain/dates';
+import { addDays, diffDays } from '../domain/dates';
 import { median, quantile } from '../weather/indicators';
 import { evaluateBudget, costLine, type BudgetResult, type CostLine } from './budget';
-import { replayCrop, resolveWindow, type CropRisk, type SowingWindow } from './replay';
+import { replayCrop, resolveSeasons, type CropRisk, type SowingWindow } from './replay';
 
-export interface PlanSeason { season: 1 | 2; year: number; cropId: string; sowing: string; maturity: string; risk: CropRisk | null }
+export interface PlanSeason { season: 1 | 2; year: number; cropId: string; sowing: string; maturity: string; risk: CropRisk | null; seasonId: string; seasonLabel: string }
 
 export interface PlanOutcome {
-  pairs: number;               // consecutive historical year pairs replayed
+  pairs: number;               // coherent historical season pairs replayed
   medianRel: number; pSevereAny: number;
   revenue: { p20: number; median: number; p80: number } | null;
   net: { p20: number; median: number; p80: number } | null;
@@ -32,10 +33,14 @@ export interface PlanResult {
   rank?: number;
 }
 
+export interface PriceInfo { perT: number | null; label: string; source: 'farmer' | 'faostat-country' | 'faostat-median' | 'pack' }
+
 export interface EngineOutput {
-  pack: RegionPack; window: SowingWindow; areaHa: number;
-  risks: Record<string, CropRisk>;
+  pack: RegionPack; window: SowingWindow; windows: SowingWindow[]; areaHa: number;
+  risks: Record<string, CropRisk>;          // key: crop id (annual) or `${seasonId}:${crop}` (double)
   risksAfterFallow: Record<string, CropRisk>;
+  prices: Record<string, PriceInfo>;        // farm-gate sale price per crop, scenario currency per tonne
+  fx: { factor: number; from: string; to: string; year?: number };
   baseline: PlanResult;
   alternatives: PlanResult[];  // up to two ranked feasible alternatives
   allPlans: PlanResult[];
@@ -44,22 +49,49 @@ export interface EngineOutput {
 }
 
 const LABOR_RANK = { low: 0, medium: 1, high: 2 } as const;
-const HARD_DISEASE = new Set(['sclerotinia', 'fusarium-flax', 'groundnut-pests', 'solanaceae', 'pulse-root-rot']);
+const HARD_DISEASE = new Set(['sclerotinia', 'fusarium-flax', 'groundnut-pests', 'solanaceae', 'pulse-root-rot', 'bean-root-rot', 'fusarium-pulse', 'cotton-wilt']);
+
+/** Season window for a crop in a slot: fixed per slot in double-season packs, the crop's own season otherwise. */
+export function windowFor(pack: RegionPack, windows: SowingWindow[], slot: 0 | 1, cropId: string): SowingWindow {
+  if (pack.mode === 'double') return windows[slot] ?? windows[0];
+  return windows.find((w) => w.crops.includes(cropId)) ?? windows[0];
+}
+export const riskKey = (pack: RegionPack, w: SowingWindow, cropId: string) => (pack.mode === 'double' ? `${w.id}:${cropId}` : cropId);
+
+function historyOrder(sc: FarmScenario, pack: RegionPack) {
+  const idx = (h: FarmScenario['history'][number]) => {
+    const i = pack.seasons.findIndex((s) => s.id === h.seasonId);
+    if (i >= 0) return i;
+    const j = pack.seasons.findIndex((s) => s.crops.includes(h.cropId));
+    return j >= 0 ? j : 0;
+  };
+  return [...sc.history].filter((h) => CROPS[h.cropId]).sort((a, b) => a.year - b.year || idx(a) - idx(b));
+}
 
 export function baselineCrops(sc: FarmScenario, pack: RegionPack): [string, string] {
   if (sc.baselineOverride) return sc.baselineOverride;
-  const h = [...sc.history].sort((a, b) => a.year - b.year).map((x) => x.cropId).filter((c) => pack.crops.includes(c));
+  const hist = historyOrder(sc, pack);
+  if (pack.mode === 'double') {
+    const pick = (slot: number) => {
+      const allowed = pack.seasons[slot]?.crops ?? pack.crops;
+      const last = [...hist].reverse().find((h) => (h.seasonId ? h.seasonId === pack.seasons[slot]?.id : allowed.includes(h.cropId)) && allowed.includes(h.cropId));
+      return last?.cropId ?? allowed.find((c) => c !== 'fallow') ?? allowed[0];
+    };
+    return [pick(0), pick(1)];
+  }
+  const h = hist.map((x) => x.cropId).filter((c) => pack.crops.includes(c));
   if (h.length >= 2 && h[h.length - 1] !== h[h.length - 2]) return [h[h.length - 2], h[h.length - 1]];
   if (h.length >= 1) return [h[h.length - 1], h[h.length - 1]];
-  return [pack.crops[0], pack.crops[0]];
+  const first = pack.crops.find((c) => c !== 'fallow') ?? pack.crops[0];
+  return [first, first];
 }
 
 function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: RegionPack, plannedRisks: (CropRisk | null)[], soil: SoilProfile): Reason[] {
   const R: Reason[] = [];
   const has = (id: string) => pack.rules.some((r) => r.id === id);
   for (let k = plannedFrom; k < seq.length; k++) {
-    const c = CROPS[seq[k]];
-    const prev = k > 0 ? CROPS[seq[k - 1]] : undefined;
+    const c = cropFor(pack, seq[k]);
+    const prev = k > 0 ? cropFor(pack, seq[k - 1]) : undefined;
     const tag = `Season ${k - plannedFrom + 1} (${c.name})`;
     // return interval
     if (c.minReturnSeasons > 0) {
@@ -89,7 +121,7 @@ function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: R
     if (prev && prev.id === c.id && c.id !== 'fallow' && c.minReturnSeasons === 0) {
       R.push({ code: 'PRIOR_CROP_RULE', severity: 'warn', text: `${tag}: same crop as the previous season — rotation benefits lost; pest and disease carry-over.`, refs: ['G-R1', 'R31'] });
     }
-    if (k >= 2 && [seq[k - 2], seq[k - 1], seq[k]].every((x) => CROPS[x].group === 'cereal')) {
+    if (k >= 2 && [seq[k - 2], seq[k - 1], seq[k]].every((x) => CROPS[x]?.group === 'cereal')) {
       R.push({ code: 'PRIOR_CROP_RULE', severity: 'warn', text: `${tag}: third consecutive cereal season — pest, weed and fertility pressure rises.`, refs: ['G-R4'] });
     }
     // farmer constraints
@@ -121,21 +153,20 @@ function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: R
 
 function stats(v: number[]) { return { p20: quantile(v, 0.2), median: median(v), p80: quantile(v, 0.8) }; }
 
-function outcomeFor(crops: [string, string], seasonRisks: [CropRisk | null, CropRisk | null], pack: RegionPack, sc: FarmScenario, areaHa: number, budget: BudgetResult): PlanOutcome {
+function outcomeFor(crops: [string, string], seasonRisks: [CropRisk | null, CropRisk | null], yearOffset: number, pack: RegionPack, sc: FarmScenario, areaHa: number, budget: BudgetResult, prices: Record<string, PriceInfo>): PlanOutcome {
   const r1 = seasonRisks[0] ?? undefined, r2 = seasonRisks[1] ?? undefined;
   const e1 = pack.economics[crops[0]], e2 = pack.economics[crops[1]];
-  const price = (cropId: string, base: number | null) => { const o = sc.priceOverrides[`${cropId}:price`]; return o !== undefined ? o : base; };
-  const pr1 = price(crops[0], e1?.pricePerT ?? null), pr2 = price(crops[1], e2?.pricePerT ?? null);
+  const pr1 = prices[crops[0]]?.perT ?? null, pr2 = prices[crops[1]]?.perT ?? null;
   const yld = (cropId: string, base: number) => { const o = sc.priceOverrides[`${cropId}:yield`]; return o != null ? o : base; };
   const y1Att = yld(crops[0], e1?.attainableYieldTHa ?? 0), y2Att = yld(crops[1], e2?.attainableYieldTHa ?? 0);
   const byYear = (r: CropRisk | undefined) => new Map((r?.years ?? []).map((y) => [y.year, y.relYield]));
   const m1 = byYear(r1), m2 = byYear(r2);
   const rels: number[] = [], severe: boolean[] = [], revs: number[] = [];
   const isF1 = crops[0] === 'fallow', isF2 = crops[1] === 'fallow';
-  // replay coherent consecutive historical year pairs (Y, Y+1)
-  const years = [...new Set([...m1.keys(), ...[...m2.keys()].map((y) => y - 1)])].sort();
+  // replay coherent historical season pairs (Y, Y + offset): same weather sequence a farmer would have lived through
+  const years = [...new Set([...m1.keys(), ...[...m2.keys()].map((y) => y - yearOffset)])].sort();
   for (const y of years) {
-    const a = m1.get(y), b = m2.get(y + 1);
+    const a = m1.get(y), b = m2.get(y + yearOffset);
     if ((!isF1 && a === undefined) || (!isF2 && b === undefined)) continue;
     const ra = isF1 ? null : a!, rb = isF2 ? null : b!;
     const active = [ra, rb].filter((x): x is number => x != null);
@@ -154,54 +185,100 @@ function outcomeFor(crops: [string, string], seasonRisks: [CropRisk | null, Crop
 
 export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, pack: RegionPack): EngineOutput {
   const areaHa = toHectares(sc.area, sc.areaUnit);
-  const window = resolveWindow(pack, s);
+  const windows = resolveSeasons(pack, s);
   const irrigation = { on: sc.irrigation === 'yes', capMm: sc.irrigationCapacityMm || 0 };
   const risks: Record<string, CropRisk> = {};
   const risksAfterFallow: Record<string, CropRisk> = {};
-  for (const id of pack.crops) if (id !== 'fallow') risks[id] = replayCrop(s, window, CROPS[id], soil, irrigation);
-  const fallowInPlay = pack.crops.includes('fallow') && (sc.allowFallow || sc.history.some((h) => h.cropId === 'fallow') || sc.baselineOverride?.includes('fallow'));
-  if (fallowInPlay) for (const id of pack.crops) if (id !== 'fallow') risksAfterFallow[id] = replayCrop(s, window, CROPS[id], soil, irrigation, true);
+  const fallowInPlay = pack.mode === 'annual' && pack.crops.includes('fallow') && (sc.allowFallow || sc.history.some((h) => h.cropId === 'fallow') || !!sc.baselineOverride?.includes('fallow'));
+  for (const w of windows) {
+    for (const id of w.crops) {
+      if (id === 'fallow' || !CROPS[id]) continue;
+      const key = riskKey(pack, w, id);
+      if (risks[key]) continue;
+      const crop = cropFor(pack, id);
+      risks[key] = { ...replayCrop(s, w, crop, soil, irrigation), seasonId: w.id, seasonLabel: w.label };
+      if (fallowInPlay) risksAfterFallow[key] = { ...replayCrop(s, w, crop, soil, irrigation, true), seasonId: w.id, seasonLabel: w.label };
+    }
+  }
 
-  const history = [...sc.history].sort((a, b) => a.year - b.year).map((h) => h.cropId).filter((c) => CROPS[c]);
+  // currency: pack economics are in pack.currency; convert into the scenario currency with FAOSTAT exchange rates
+  const fx = { factor: fxFactor(pack.currency, sc.currency), from: pack.currency, to: sc.currency, year: countryInfo(sc.countryIso2)?.fxYear };
+  const toLocalPerUsd = fxPerUsd(sc.currency) ?? (sc.currency === 'USD' ? 1 : null);
+  const prices: Record<string, PriceInfo> = {};
+  for (const c of pack.crops) {
+    if (c === 'fallow') continue;
+    const o = sc.priceOverrides[`${c}:price`];
+    if (o !== undefined) { prices[c] = { perT: o, label: 'Your price', source: 'farmer' }; continue; }
+    const ref = toLocalPerUsd ? cropPriceUsd(sc.countryIso2, c) : null;
+    if (ref && toLocalPerUsd) prices[c] = { perT: Math.round(ref.usdPerT * toLocalPerUsd), label: ref.label, source: ref.source };
+    else prices[c] = { perT: pack.economics[c]?.pricePerT != null ? Math.round(pack.economics[c].pricePerT! * (pack.currency === 'USD' ? (toLocalPerUsd ?? 1) : fx.factor)) : null, label: 'Placeholder price (synthetic; FAOSTAT has none)', source: 'pack' };
+  }
+
+  const hist = historyOrder(sc, pack);
+  const history = hist.map((h) => h.cropId);
   const base = baselineCrops(sc, pack);
+  const nSeasons = Object.values(risks)[0]?.years.length ?? 0;
   const notes: Reason[] = [];
   if (pack.reviewStatus !== 'reviewed') notes.push({ code: 'UNREVIEWED_RULES', severity: 'info', text: `Rule pack "${pack.short}" v${pack.version} has not been signed off by a local agronomist — results are a demonstration.`, refs: pack.rules.map((r) => r.id) });
-  notes.push({ code: 'SYNTHETIC_PRICES', severity: 'info', text: 'Default prices and yields are synthetic placeholders. Edit them in Resources to use dated local quotes.', refs: ['price-pack'] });
-  notes.push({ code: 'CLIMATE_CONTEXT_ONLY', severity: 'info', text: `Risk comes from replaying ${Object.values(risks)[0]?.years.length ?? 0} historical NASA POWER seasons for this grid cell — a conditional historical scenario, not a forecast.`, refs: ['D1', 'R17', 'R8'] });
+  const country = countryInfo(sc.countryIso2);
+  const priceNote = Object.values(prices).some((p) => p.source === 'faostat-country') ? `Crop sale prices: FAOSTAT producer prices${country ? ` for ${country.name}` : ''}` : 'Crop sale prices: FAOSTAT global medians (no country prices)';
+  notes.push({ code: 'SYNTHETIC_PRICES', severity: 'info', text: `${priceNote}. Input costs are a synthetic regional template${fx.factor !== 1 ? ` converted ${fx.from}→${fx.to} at the FAOSTAT ${fx.year ?? ''} exchange rate` : ''} — edit them in Resources with dated local quotes.`, refs: ['R33', 'price-pack'] });
+  notes.push({ code: 'CLIMATE_CONTEXT_ONLY', severity: 'info', text: `Risk comes from replaying ${nSeasons} historical NASA POWER seasons for this grid cell${windows.length > 1 ? ` in each of ${windows.length} seasons (${windows.map((w) => w.label).join(', ')})` : ''} — a conditional historical scenario, not a forecast.`, refs: ['D1', 'R17', 'R8'] });
+  if (pack.irrigationTypical && sc.irrigation !== 'yes') notes.push({ code: 'IRRIGATION_REQUIRED', severity: 'info', text: `Most farms in "${pack.short}" are irrigated. Rainfed results here will look poor — set irrigation to “Yes” in Resources if your field is irrigated.`, refs: ['input:irrigation'] });
   if (sc.history.some((h) => !h.plantedOn) || sc.fertilizer.some((f) => f.treatedAreaHa == null)) notes.push({ code: 'HISTORY_INCOMPLETE', severity: 'info', text: 'Some crop dates or fertilizer treated areas are unknown; history interpretation is limited.', refs: ['input:history'] });
 
-  const sow = (cropId: string, year: number) => {
-    const r = risks[cropId];
-    const md = r?.medianSowing ?? `2001-${window.earliest === 'auto' ? '06-15' : window.earliest}`;
-    return `${year}-${md.slice(5)}`;
+  const typicalSow = (w: SowingWindow, cropId: string, year: number) => {
+    const r = risks[riskKey(pack, w, cropId)];
+    const md = r?.medianSowing?.slice(5) ?? (w.earliest === 'auto' ? '06-15' : w.earliest);
+    return `${year}-${md}`;
   };
-
+  const duration = (c: string) => cropFor(pack, c).stages.reduce((a, b) => a + b, 0);
   const fmt = (x: number) => `${Math.round(x).toLocaleString('en-US')} ${sc.currency}`;
+  const convert = (it: CostItemDef): CostItemDef => (fx.factor === 1 || it.unitPrice == null ? it : { ...it, unitPrice: Math.round(it.unitPrice * fx.factor * 100) / 100 });
+  const irrUnit = Math.round(IRRIGATION_USD_PER_MM_HA * (toLocalPerUsd ?? 1) * 100) / 100;
+
   const build = (crops: [string, string], isBaseline: boolean): PlanResult => {
-    const y1 = sc.firstSeasonYear, y2 = sc.firstSeasonYear + 1;
-    const anchor = crops.find((c) => c !== 'fallow') ?? crops[0];
+    const w1 = windowFor(pack, windows, 0, crops[0] === 'fallow' ? crops[1] : crops[0]);
+    const w2 = windowFor(pack, windows, 1, crops[1] === 'fallow' ? crops[0] : crops[1]);
+    const y1 = sc.firstSeasonYear;
+    const sow1 = typicalSow(w1, crops[0] === 'fallow' ? (crops[1] === 'fallow' ? pack.crops[0] : crops[1]) : crops[0], y1);
+    const mat1 = addDays(sow1, duration(crops[0] === 'fallow' ? 'fallow' : crops[0]) - 1);
+    // second season: the first sowing date after season 1 is harvested (same year for double-season systems)
+    const c2 = crops[1] === 'fallow' ? (crops[0] === 'fallow' ? pack.crops[0] : crops[0]) : crops[1];
+    let y2 = y1;
+    if (pack.mode === 'double') {
+      // both seasons belong to the same agricultural year; a second season earlier in the calendar falls in the next year
+      if (w2.earliest !== 'auto' && w1.earliest !== 'auto' && w2.earliest < w1.earliest) y2 = y1 + 1;
+    } else {
+      while (diffDays(mat1, typicalSow(w2, c2, y2)) < 7 && y2 < y1 + 3) y2++;
+      if (y2 === y1 && windows.length === 1) y2 = y1 + 1;
+    }
     const lastHist = history[history.length - 1];
     const seasons: [PlanSeason, PlanSeason] = [crops[0], crops[1]].map((c, k) => {
+      const w = k === 0 ? w1 : w2;
       const yr = k === 0 ? y1 : y2;
       const prevCrop = k === 0 ? lastHist : crops[0];
-      const risk = prevCrop === 'fallow' && risksAfterFallow[c] ? risksAfterFallow[c] : risks[c] ?? null;
-      const sowing = sow(c === 'fallow' ? anchor : c, yr);
-      const L = CROPS[c].stages.reduce((a, b) => a + b, 0);
-      return { season: (k + 1) as 1 | 2, year: yr, cropId: c, sowing, maturity: addDays(sowing, L - 1), risk };
+      const key = riskKey(pack, w, c);
+      const risk = prevCrop === 'fallow' && risksAfterFallow[key] ? risksAfterFallow[key] : risks[key] ?? null;
+      const sowing = k === 0 ? sow1 : typicalSow(w, c2, yr);
+      return { season: (k + 1) as 1 | 2, year: yr, cropId: c, sowing, maturity: addDays(sowing, duration(c) - 1), risk, seasonId: w.id, seasonLabel: w.label };
     }) as [PlanSeason, PlanSeason];
     const lines: CostLine[] = [];
     seasons.forEach((ps) => {
       const e = pack.economics[ps.cropId];
       if (!e) return;
-      for (const it of e.items) lines.push(costLine(it, ps.season, ps.cropId, areaHa, ps.sowing, sc.priceOverrides[`${ps.cropId}:${it.key}`]));
+      for (const it of e.items) lines.push(costLine(convert(it), ps.season, ps.cropId, areaHa, ps.sowing, sc.priceOverrides[`${ps.cropId}:${it.key}`]));
       const irr = ps.risk?.medianIrrigation ?? 0;
       if (irrigation.on && irr > 0) {
         const key = 'irrigation-water';
-        lines.push(costLine({ key, category: 'irrigation', label: `Irrigation water (modeled median ${irr.toFixed(0)} mm)`, qtyPerHa: irr, unit: 'mm·ha', unitPrice: IRRIGATION_COST_PER_MM_HA[pack.currency] ?? null, dueOffsetDays: 45, essential: true, cash: true }, ps.season, ps.cropId, areaHa, ps.sowing, sc.priceOverrides[`${ps.cropId}:${key}`]));
+        lines.push(costLine({ key, category: 'irrigation', label: `Irrigation water (modeled median ${irr.toFixed(0)} mm)`, qtyPerHa: irr, unit: 'mm·ha', unitPrice: irrUnit, dueOffsetDays: 45, essential: true, cash: true }, ps.season, ps.cropId, areaHa, ps.sowing, sc.priceOverrides[`${ps.cropId}:${key}`]));
       }
     });
     const budget = evaluateBudget(lines, sc.availableFunds, sc.reserve, sc.confirmedInflows, seasons[0].sowing);
     const reasons = ruleCheck([...history, ...crops], history.length, sc, pack, [seasons[0].risk, seasons[1].risk], soil);
+    if (crops[0] !== 'fallow' && crops[1] !== 'fallow' && diffDays(seasons[0].maturity, seasons[1].sowing) < 0) {
+      reasons.unshift({ code: 'SEASON_OVERLAP', severity: 'block', text: `${cropName(crops[0])} (${duration(crops[0])} days) is still in the field when ${cropName(crops[1])} should be sown (${seasons[1].seasonLabel}).`, refs: ['G-R5'] });
+    }
     if (budget.status === 'unaffordable') reasons.unshift({ code: 'BUDGET_EXCEEDED', severity: 'block', text: `Cash cost ${fmt(budget.totalCash)} exceeds spendable ${fmt(budget.cap + budget.inflowsTotal)} by ${fmt(-budget.headroom)}.`, refs: ['input:availableFunds', 'input:reserve'] });
     else if (budget.status === 'unverified') reasons.unshift({ code: 'PRICE_MISSING', severity: 'warn', text: `Budget not verified: missing price for ${budget.missingEssential.map((l) => l.label).join(', ')}.`, refs: budget.missingEssential.map((l) => `price:${l.cropId}:${l.key}`) });
     else if (budget.status === 'timing') reasons.unshift({ code: 'CASH_TIMING', severity: 'block', text: `Total fits, but by ${budget.timingViolation!.date} you would need ${fmt(budget.timingViolation!.needed)} with only ${fmt(budget.timingViolation!.available)} available.`, refs: ['input:confirmedInflows'] });
@@ -211,13 +288,16 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
     const newCrops = crops.filter((c) => c !== 'fallow' && !history.includes(c)).length;
     return {
       id: crops.join('→'), label: isBaseline ? 'Your usual plan' : '', isBaseline, crops, seasons, reasons, eligible, feasible, budget,
-      outcome: outcomeFor(crops, [seasons[0].risk, seasons[1].risk], pack, sc, areaHa, budget), newCrops,
+      outcome: outcomeFor(crops, [seasons[0].risk, seasons[1].risk], y2 - y1, pack, sc, areaHa, budget, prices), newCrops,
     };
   };
 
   const baseline = build(base, true);
   const all: PlanResult[] = [];
-  for (const a of pack.crops) for (const b of pack.crops) {
+  const slot1 = pack.mode === 'double' ? windows[0].crops : pack.crops;
+  const slot2 = pack.mode === 'double' ? (windows[1] ?? windows[0]).crops : pack.crops;
+  for (const a of slot1) for (const b of slot2) {
+    if (!CROPS[a] || !CROPS[b]) continue;
     if (a === 'fallow' && b === 'fallow') continue;
     if (!sc.allowFallow && (a === 'fallow' || b === 'fallow')) continue;
     if (a === base[0] && b === base[1]) continue;
@@ -236,7 +316,7 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
   }
   const alternatives = picked.map((p, i) => ({ ...p, rank: i + 1, label: i === 0 ? 'Option A' : 'Option B' }));
   const excluded = all.filter((p) => !p.feasible);
-  return { pack, window, areaHa, risks, risksAfterFallow, baseline, alternatives, allPlans: all, excluded, notes };
+  return { pack, window: windows[0], windows, areaHa, risks, risksAfterFallow, prices, fx, baseline, alternatives, allPlans: all, excluded, notes };
 }
 
 const n0 = (x: number) => (Number.isFinite(x) ? x : 0);

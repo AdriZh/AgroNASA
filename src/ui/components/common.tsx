@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AlertTriangle, Beaker, Calculator, Check, CheckCircle2, CloudSun, Info, Layers, BookMarked, Satellite, User, X, XCircle } from 'lucide-react';
+import { Satellite as SatelliteIcon, AlertTriangle, Beaker, Calculator, Check, CheckCircle2, CloudSun, Info, Layers, BookMarked, Satellite, User, X, XCircle } from 'lucide-react';
 import type { Reason, SourceTag } from '../../domain/types';
 import { sourceById } from '../../data/sources';
 
@@ -89,3 +89,17 @@ export function Loading({ text }: { text: string }) {
 
 export const pct = (x: number | null | undefined, d = 0) => (x == null || !Number.isFinite(x) ? '—' : `${(x * 100).toFixed(d)}%`);
 export const uid = () => Math.random().toString(36).slice(2, 9);
+
+/** Shown while 25 years of daily NASA POWER data download for a new location. */
+export function NasaLoading({ place }: { place?: string }) {
+  return (
+    <div className="loading-banner" role="status">
+      <span className="ic sky" style={{ width: 44, height: 44, flexBasis: 44, borderRadius: 14 }}><SatelliteIcon size={22} /></span>
+      <div style={{ flex: 1 }}>
+        <b>Downloading 25 years of daily NASA POWER data{place ? ` for ${place}` : ''}…</b>
+        <div className="mini">Rain, temperature, humidity, wind, solar radiation and soil wetness since 2001 (~1.3 MB). First time 10–40 s, then cached on this device. Soil data loads in parallel.</div>
+        <div className="bar"><i /></div>
+      </div>
+    </div>
+  );
+}

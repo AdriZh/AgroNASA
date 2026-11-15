@@ -1,28 +1,49 @@
 // Historical-replay climate risk: simulate each crop in every complete NASA POWER year,
 // sowing on that year's detected date. Output is a conditional historical scenario, not a forecast.
-import type { CropDef, DailySeries, RegionPack, SoilProfile } from '../domain/types';
+import type { CropDef, DailySeries, RegionPack, SeasonDef, SoilProfile } from '../domain/types';
 import { addDays, dayIndex, doy, fromDoy } from '../domain/dates';
 import { completeYears, frostDates, median, monthlyClimatology, quantile, rainOnset, temperatureSowing } from '../weather/indicators';
 import { seasonLength, simulateSeason, type SeasonSim } from '../weather/waterBalance';
 
-export interface SowingWindow { method: 'rain-onset' | 'temperature'; earliest: string; latest: string; auto: boolean; note: string; lastFrost?: string }
+export interface SowingWindow {
+  id: string; label: string; crops: string[];
+  method: 'rain-onset' | 'temperature' | 'fixed'; earliest: string; latest: string; auto: boolean; note: string; lastFrost?: string;
+}
 
 const mmdd = (iso: string) => iso.slice(5);
 
-/** Resolve the sowing window; the global pack derives it from the NASA climatology at the location. */
-export function resolveWindow(pack: RegionPack, s: DailySeries): SowingWindow {
-  const w = resolveWindowBase(pack, s);
-  if (w.method === 'temperature' && s.meta.lat > 0) {
-    // climatological (median) last spring frost: frost-sensitive crops are not sown before it + 7 days
-    const doys = completeYears(s).map((y) => frostDates(s, y).lastSpring).filter((d): d is string => !!d).map(doy);
-    if (doys.length) w.lastFrost = mmdd(fromDoy(2001, median(doys)));
+/** Climatological (median) last spring frost; southern hemisphere searches July–December. */
+function lastSpringFrost(s: DailySeries): string | undefined {
+  const south = s.meta.lat < 0;
+  const doys: number[] = [];
+  for (const y of completeYears(s)) {
+    if (!south) { const d = frostDates(s, y).lastSpring; if (d) doys.push(doy(d)); continue; }
+    let last: number | null = null;
+    for (let d = 182; d <= 365; d++) {
+      const i = dayIndex(s.meta.start, fromDoy(y, d));
+      if (i >= 0 && i < s.n && s.TN[i] != null && s.TN[i]! <= 0) last = d;
+    }
+    if (last) doys.push(last);
   }
-  return w;
+  return doys.length ? mmdd(fromDoy(2001, median(doys))) : undefined;
 }
 
-function resolveWindowBase(pack: RegionPack, s: DailySeries): SowingWindow {
-  if (pack.earliestSowing !== 'auto') {
-    return { method: pack.sowingMethod, earliest: pack.earliestSowing, latest: pack.latestSowing, auto: false, note: `${pack.short} pack window` };
+/** Resolve every season of the pack into concrete sowing windows (auto windows come from the NASA climatology). */
+export function resolveSeasons(pack: RegionPack, s: DailySeries): SowingWindow[] {
+  const frost = lastSpringFrost(s);
+  return pack.seasons.map((sd) => {
+    const w = resolveWindowBase(sd, pack, s);
+    if (w.method === 'temperature' && frost) w.lastFrost = frost;
+    return w;
+  });
+}
+/** First season (kept for single-season callers). */
+export const resolveWindow = (pack: RegionPack, s: DailySeries): SowingWindow => resolveSeasons(pack, s)[0];
+
+function resolveWindowBase(sd: SeasonDef, pack: RegionPack, s: DailySeries): SowingWindow {
+  const base = { id: sd.id, label: sd.label, crops: sd.crops };
+  if (sd.earliest !== 'auto') {
+    return { ...base, method: sd.method, earliest: sd.earliest, latest: sd.latest, auto: false, note: `${pack.short} · ${sd.label}` };
   }
   const clim = monthlyClimatology(s);
   const tMean = clim.map((m) => (m.tmax + m.tmin) / 2);
@@ -33,7 +54,7 @@ function resolveWindowBase(pack: RegionPack, s: DailySeries): SowingWindow {
     let m = c0;
     for (let k = 1; k <= 12; k++) { const mm = (c0 + k) % 12; if (tMean[mm] >= 8) { m = mm; break; } }
     const earliest = `${String(m + 1).padStart(2, '0')}-01`;
-    return { method: 'temperature', earliest, latest: mmdd(addDays(`2001-${earliest}`, 60)), auto: true, note: 'Auto: temperate climate — sowing when 5-day mean air temperature reaches the crop threshold' };
+    return { ...base, method: 'temperature', earliest, latest: mmdd(addDays(`2001-${earliest}`, 60)), auto: true, note: 'Auto: temperate climate — sowing when 5-day mean air temperature reaches the crop threshold' };
   }
   // tropical: wettest consecutive 4-month window; window opens one month before it starts
   let best = 0, bestM = 0;
@@ -43,7 +64,7 @@ function resolveWindowBase(pack: RegionPack, s: DailySeries): SowingWindow {
   }
   const startM = (bestM + 11) % 12;
   const earliest = `${String(startM + 1).padStart(2, '0')}-15`;
-  return { method: 'rain-onset', earliest, latest: mmdd(addDays(`2001-${earliest}`, 80)), auto: true, note: 'Auto: tropical climate — sowing at agronomic rain onset within the wettest 4-month period' };
+  return { ...base, method: 'rain-onset', earliest, latest: mmdd(addDays(`2001-${earliest}`, 80)), auto: true, note: 'Auto: tropical climate — sowing at agronomic rain onset within the wettest 4-month period' };
 }
 
 export interface SowingResult { date: string; detected: boolean; falseStarts: number }
@@ -55,6 +76,11 @@ export function sowingFor(s: DailySeries, w: SowingWindow, crop: CropDef, year: 
     const r = rainOnset(s, year, w.earliest, w.latest);
     if (r.date) return { date: r.date, detected: true, falseStarts: r.falseStarts };
     return { date: latestISO, detected: false, falseStarts: r.falseStarts };
+  }
+  if (w.method === 'fixed') {
+    // management-driven season (e.g. rabi, dry season, autumn-sown winter crops): sow a third into the window
+    const span = (doy(`2001-${w.latest}`) - doy(`2001-${w.earliest}`) + 365) % 365;
+    return { date: addDays(`${year}-${w.earliest}`, Math.round(span / 3)), detected: true, falseStarts: 0 };
   }
   let earliest = w.earliest, latest = w.latest;
   if (crop.frostSensitive && w.lastFrost) {
@@ -70,6 +96,7 @@ export interface YearSim extends SeasonSim { year: number; sowingDetected: boole
 
 export interface CropRisk {
   cropId: string;
+  seasonId?: string; seasonLabel?: string;
   years: YearSim[];
   medianRel: number; p20Rel: number; p80Rel: number;
   pSevere: number;            // share of years with Ya/Ym < 0.5

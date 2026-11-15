@@ -1,6 +1,6 @@
 // Past-season review: descriptive, reason-coded statements. Never a causal diagnosis (Spec 01 §4).
-import type { CropSeason, DailySeries, FarmScenario, SoilProfile } from '../domain/types';
-import { CROPS } from '../data/crops';
+import type { CropSeason, DailySeries, FarmScenario, RegionPack, SoilProfile } from '../domain/types';
+import { CROPS, cropFor } from '../data/crops';
 import { addDays, dayIndex, fmtDayMonth } from '../domain/dates';
 import { normalizeApplication } from '../domain/units';
 import { completeYears, median, percentileRank, windowStats } from '../weather/indicators';
@@ -25,8 +25,9 @@ function longestDryRun(s: DailySeries, start: string, end: string) {
   return best ? { start: addDays(s.meta.start, bestStart), days: best } : null;
 }
 
-export function reviewSeason(sc: FarmScenario, h: CropSeason, s: DailySeries, w: SowingWindow, soil: SoilProfile): SeasonReview | null {
-  const crop = CROPS[h.cropId];
+export function reviewSeason(sc: FarmScenario, h: CropSeason, s: DailySeries, w: SowingWindow, soil: SoilProfile, pack?: RegionPack): SeasonReview | null {
+  if (!CROPS[h.cropId]) return null;
+  const crop = cropFor(pack, h.cropId);
   if (!crop) return null;
   let start = h.plantedOn, end = h.harvestedOn, est = false;
   if (!start) {

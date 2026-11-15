@@ -87,8 +87,8 @@ function CashBar({ plan, cap, cur }: { plan: PlanResult; cap: number; cur: strin
 }
 
 function FusionDiagram() {
-  const left: [ReactNode, string, string][] = [[<CloudRain size={18} />, 'NASA POWER', 'rain, heat, wind, sun, 2001→now'], [<Droplets size={18} />, 'POWER GWETROOT · SMAP L4', 'soil wetness & moisture'], [<Leaf size={18} />, 'MODIS NDVI · LST', 'vegetation & surface heat'], [<Satellite size={18} />, 'GPM IMERG', 'satellite rainfall']];
-  const right: [ReactNode, string, string][] = [[<NotebookPen size={18} />, 'Crop & fertilizer history', 'farmer records'], [<Wallet size={18} />, 'Budget & local prices', 'cash, reserve, inflows'], [<Shovel size={18} />, 'SoilGrids + farmer texture', 'water-holding capacity'], [<BookMarked size={18} />, 'Regional rule pack', 'calendars, rotations, sources']];
+  const left: [ReactNode, string, string][] = [[<CloudRain size={18} />, 'NASA POWER', 'rain, heat, wind, sun, 2001→now, any point'], [<Droplets size={18} />, 'SMAP L4 · POWER GWETROOT', 'soil moisture now vs normal'], [<Leaf size={18} />, 'MODIS NDVI · land cover', 'your field’s greenness since 2000'], [<Satellite size={18} />, 'GRACE · EONET · IMERG', 'groundwater trend, hazards, rain']];
+  const right: [ReactNode, string, string][] = [[<NotebookPen size={18} />, 'Crop & fertilizer history', 'farmer records'], [<Wallet size={18} />, 'Budget + FAOSTAT prices', 'cash, reserve, real crop prices, FX'], [<Shovel size={18} />, 'SoilGrids + farmer texture', 'water-holding capacity'], [<BookMarked size={18} />, 'Regional rule pack', 'calendars, rotations, sources']];
   const out = ['Feasible plans', 'Cost & cash timing', 'Climate risk range', 'Reasons & sources'];
   const tile = (side: 'l' | 'r', [i, t, s]: [ReactNode, string, string], k: number) => (
     <motion.div key={t} initial={{ opacity: 0, x: side === 'l' ? -30 : 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + k * 0.12 + (side === 'r' ? 0.5 : 0), duration: 0.5, ease }}
@@ -375,7 +375,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
           <Glass d={0.3}><b style={{ color: '#93c5fd' }}><Satellite size={16} style={{ verticalAlign: -3 }} /> Observed</b><p style={{ margin: '8px 0 0' }}>NASA POWER rain, temperature, humidity, wind, radiation and soil wetness; GIBS satellite layers. Labeled as regional grid data.</p></Glass>
           <Glass d={0.45}><b style={{ color: '#c4b5fd' }}><Calculator size={16} style={{ verticalAlign: -3 }} /> Modeled</b><p style={{ margin: '8px 0 0' }}>ET₀, sowing dates, soil water, water-limited yield, revenue range — conditional historical scenarios, never forecasts.</p></Glass>
           <Glass d={0.6}><b style={{ color: '#fcd34d' }}><FlaskConical size={16} style={{ verticalAlign: -3 }} /> Farmer or synthetic</b><p style={{ margin: '8px 0 0' }}>History, budget and prices from the farmer; demo prices & farms are labeled synthetic until replaced.</p></Glass>
-          <Glass d={0.75} style={{ gridColumn: 'span 2' }}><b><Check size={16} color="#6ee7b7" style={{ verticalAlign: -3 }} /> 25 automated acceptance tests</b><p style={{ margin: '8px 0 0' }}>Reproduce the archived NASA query exactly (9,131 records; Jun–Oct 2002 = 308.92 mm; 2009 = 975.63 mm), the FAO-56 textbook ET₀ example, budget boundaries (900 ✓ / 900.01 ✕) and “no affordable plan ever breaks cash timing”.</p></Glass>
+          <Glass d={0.75} style={{ gridColumn: 'span 2' }}><b><Check size={16} color="#6ee7b7" style={{ verticalAlign: -3 }} /> 37 automated tests + a live satellite cross-check</b><p style={{ margin: '8px 0 0' }}>Reproduce the archived NASA query exactly (9,131 records; Jun–Oct 2002 = 308.92 mm; 2009 = 975.63 mm), the FAO-56 textbook ET₀ example, budget boundaries (900 ✓ / 900.01 ✕) and “no affordable plan ever breaks cash timing”. In the app, the POWER-driven water model is compared with MODIS greenness at the field (Bambey: r = 0.55 over 10 seasons).</p></Glass>
           <Glass d={0.9}><b><Ban size={16} color="#fca5a5" style={{ verticalAlign: -3 }} /> Never claimed</b><p style={{ margin: '8px 0 0' }}>Guaranteed yields or profit · why a crop failed · fertilizer doses · soil N–P–K from purchases.</p></Glass>
         </div>
       </>
@@ -384,13 +384,13 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
       <>
         <motion.h2 {...up(0.1)}>From one field to a cooperative — anywhere on Earth.</motion.h2>
         <div className="grid g3" style={{ marginTop: 8 }}>
-          {([[<Globe2 size={20} />, 'Global', 'Works wherever NASA POWER exists; reviewed packs for Senegal & N. Kazakhstan, generic screening elsewhere.'], [<WifiOff size={20} />, '≈ $0 to run', 'Static web app, offline after first load, free hosting. Data stays on the device.'], [<FileDown size={20} />, 'Shareable', 'Printable plan with sources for farmers, extension workers and lenders.']] as const).map(([ic, t, d], k) => (
+          {([[<Globe2 size={20} />, 'Global', '14 regional farming systems (one- and two-season) on 6 continents + a global fallback; local currency & FAOSTAT prices for 240 countries.'], [<WifiOff size={20} />, '≈ $0 to run', 'Static web app, offline after first load, free hosting. Data stays on the device.'], [<FileDown size={20} />, 'Shareable', 'Printable plan with sources for farmers, extension workers and lenders.']] as const).map(([ic, t, d], k) => (
             <Glass key={t} d={0.3 + k * 0.15}><div style={{ color: '#6ee7b7' }}>{ic}</div><div className="big" style={{ fontSize: '2rem', marginTop: 6 }}>{t}</div><p style={{ margin: '6px 0 0' }}>{d}</p></Glass>
           ))}
         </div>
         <motion.div {...up(0.9)} style={{ marginTop: 22, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, position: 'relative' }}>
           <div style={{ position: 'absolute', left: '6%', right: '6%', top: 9, height: 2, background: 'linear-gradient(90deg,#10b981,#3b82f6)' }} />
-          {[['Now', 'Working prototype, 2 demo regions, 25 tests'], ['Next 90 days', 'Pilot: 3–5 farmer interviews, agronomist review of every rule, dated local price pack'], ['v2', 'French · Wolof · Kazakh · Russian, SMS summary, NDVI time series per field'], ['Scale', 'Co-op dashboards & input-credit programmes; more regional packs']].map(([t, d], k) => (
+          {[['Now', 'Working prototype, 14 regional packs, 37 tests'], ['Next 90 days', 'Pilot: 3–5 farmer interviews, agronomist review of every rule, dated local price pack'], ['v2', 'French · Wolof · Kazakh · Russian, SMS summary, NDVI time series per field'], ['Scale', 'Co-op dashboards & input-credit programmes; more regional packs']].map(([t, d], k) => (
             <div key={t} style={{ position: 'relative', padding: '0 10px', textAlign: 'center' }}>
               <div style={{ width: 20, height: 20, borderRadius: '50%', background: k === 0 ? '#10b981' : '#0b1d36', border: '3px solid #34d399', margin: '0 auto 10px' }} />
               <b>{t}</b><p style={{ fontSize: '.85rem', margin: '4px 0 0' }}>{d}</p>

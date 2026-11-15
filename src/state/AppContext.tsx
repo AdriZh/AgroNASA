@@ -6,8 +6,10 @@ import { fetchPower, powerGridCell } from '../weather/power';
 import { effectiveSoil, fetchSoil } from '../soil/soil';
 import { runEngine, type EngineOutput } from '../engine/plan';
 import { reviewSeason, type SeasonReview } from '../engine/review';
-import { fetchForecast, type Forecast } from '../weather/forecast';
+import { fetchForecast, reverseCountry, type Forecast } from '../weather/forecast';
+import { countryInfo, fxFactor } from '../data/countries';
 import { idbClear } from './idb';
+import { loadSpace, type SpaceData } from './space';
 
 const LS_KEY = 'fieldshift:v1:scenarios';
 const LS_ACTIVE = 'fieldshift:v1:active';
@@ -22,12 +24,13 @@ export interface DataState {
 interface Ctx {
   scenario: FarmScenario; scenarios: FarmScenario[];
   update: (fn: (s: FarmScenario) => FarmScenario) => void;
-  select: (id: string) => void; createNew: () => void; resetDemo: (id: string) => void; importScenario: (s: FarmScenario) => void;
+  select: (id: string) => void; createNew: (at?: { lat: number; lon: number; label?: string; iso2?: string }) => void; resetDemo: (id: string) => void; importScenario: (s: FarmScenario) => void;
   deleteAll: () => Promise<void>;
   data: DataState; refreshLive: () => void;
   engine: EngineOutput | null; engineError: string | null; reviews: SeasonReview[];
   soil: SoilProfile | null;
   forecast: { data: Forecast | null; status: Status; error?: string; load: () => void };
+  space: { data: SpaceData | null; status: Status; error?: string; progress: { label: string; done: number; total: number } | null; load: () => void };
 }
 
 const AppCtx = createContext<Ctx | null>(null);
@@ -49,12 +52,22 @@ const BUNDLED: { key: string; lat: number; lon: number; load: () => Promise<any>
   { key: 'kostanay', lat: 53.0, lon: 64.0, load: () => import('../data/demo/kostanay.json') },
 ];
 
-export function blankScenario(): FarmScenario {
-  return {
-    ...structuredClone(DEMO_SENEGAL), id: `farm-${Date.now()}`, name: 'My farm', synthetic: false,
+/** Starting budget for a new farm (USD-equivalent per ha), converted to local currency once the country is known. */
+export const defaultBudgetUsd = (s: Pick<FarmScenario, 'area'>) => Math.max(1, s.area) * 900;
+
+export function blankScenario(at?: { lat: number; lon: number; label?: string; iso2?: string }): FarmScenario {
+  const c = countryInfo(at?.iso2);
+  const fx = c?.lcuPerUsd ?? 1;
+  const base: FarmScenario = {
+    ...structuredClone(DEMO_SENEGAL), id: `farm-${Date.now()}`, name: at?.label ? `My farm · ${at.label.split(',')[0]}` : 'My farm', synthetic: false,
+    location: at ? { lat: at.lat, lon: at.lon, label: at.label } : structuredClone(DEMO_SENEGAL.location),
+    countryIso2: at ? at.iso2 : 'SN', currency: c?.currency ?? (at ? 'USD' : 'XOF'), area: 1, areaUnit: 'ha',
     history: [], fertilizer: [], confirmedInflows: [], priceOverrides: {}, unavailableCrops: [], marketCrops: [],
-    availableFunds: 0, reserve: 0, baselineOverride: null, soil: { texture: 'unknown' },
+    availableFunds: 0, reserve: 0, baselineOverride: null, soil: { texture: 'unknown' }, laborAvailable: 'medium', allowFallow: false,
   };
+  base.availableFunds = Math.round(defaultBudgetUsd(base) * (at ? fx : (countryInfo('SN')?.lcuPerUsd ?? 580)));
+  base.reserve = Math.round(base.availableFunds * 0.1);
+  return base;
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -64,6 +77,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<DataState>({ series: null, soilGrid: null, weatherStatus: 'idle', soilStatus: 'idle', weatherOrigin: null });
   const [forecast, setForecast] = useState<{ data: Forecast | null; status: Status; error?: string; key?: string }>({ data: null, status: 'idle' });
   const loadSeq = useRef(0);
+  const [space, setSpace] = useState<{ data: SpaceData | null; status: Status; error?: string; key?: string; progress: { label: string; done: number; total: number } | null }>({ data: null, status: 'idle', progress: null });
 
   useEffect(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(scenarios)); localStorage.setItem(LS_ACTIVE, activeId); } catch { /* quota */ } }, [scenarios, activeId]);
 
@@ -74,38 +88,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { lat, lon } = scenario.location;
   const cellKey = (() => { const c = powerGridCell(lat, lon); return `${c.cLat}:${c.cLon}`; })();
 
+  // Weather and soil load independently: the plan appears as soon as NASA POWER arrives,
+  // and slow SoilGrids responses (5–30 s) only refine the soil water capacity afterwards.
   const load = useCallback(async (forceLive: boolean) => {
     const seq = ++loadSeq.current;
-    setData((d) => ({ ...d, weatherStatus: 'loading', soilStatus: 'loading', weatherError: undefined, soilError: undefined }));
+    setData((d) => ({ ...d, series: null, soilGrid: null, weatherStatus: 'loading', soilStatus: 'loading', weatherError: undefined, soilError: undefined, weatherOrigin: null }));
     const cell = powerGridCell(lat, lon);
     const bundled = BUNDLED.find((b) => { const c = powerGridCell(b.lat, b.lon); return c.cLat === cell.cLat && c.cLon === cell.cLon; });
-    let series: DailySeries | null = null, origin: DataState['weatherOrigin'] = null, werr: string | undefined;
-    let soilGrid: SoilProfile | null = null, serr: string | undefined;
-    if (bundled && !forceLive) {
-      const mod = await bundled.load();
-      const d = mod.default ?? mod;
-      series = d.series; soilGrid = d.soil; origin = 'bundled';
-    } else {
-      try {
-        const r = await fetchPower(lat, lon, { force: forceLive });
-        series = r.series; origin = r.fromCache ? 'cache' : 'live'; werr = r.error;
-      } catch (e: any) {
-        werr = e?.message ?? String(e);
-        if (bundled) { const mod = await bundled.load(); series = (mod.default ?? mod).series; origin = 'bundled'; }
+    const bundledData = async () => { const mod = await bundled!.load(); return mod.default ?? mod; };
+
+    const weather = (async () => {
+      let series: DailySeries | null = null, origin: DataState['weatherOrigin'] = null, werr: string | undefined;
+      if (bundled && !forceLive) { series = (await bundledData()).series; origin = 'bundled'; }
+      else {
+        try { const r = await fetchPower(lat, lon, { force: forceLive }); series = r.series; origin = r.fromCache ? 'cache' : 'live'; werr = r.error; }
+        catch (e: any) { werr = e?.message ?? String(e); if (bundled) { series = (await bundledData()).series; origin = 'bundled'; } }
       }
-      try { soilGrid = await fetchSoil(lat, lon); if (!soilGrid) serr = 'SoilGrids has no data here (water, urban or masked area).'; }
-      catch (e: any) {
-        serr = e?.message ?? String(e);
-        if (bundled) soilGrid = (await bundled.load()).default?.soil ?? null;
+      if (seq !== loadSeq.current) return;
+      setData((d) => ({ ...d, series, weatherOrigin: origin, weatherStatus: series ? 'ready' : 'error', weatherError: werr }));
+    })();
+    const soilTask = (async () => {
+      let soilGrid: SoilProfile | null = null, serr: string | undefined;
+      if (bundled && !forceLive) soilGrid = (await bundledData()).soil;
+      else {
+        try { soilGrid = await fetchSoil(lat, lon); if (!soilGrid) serr = 'SoilGrids has no data here (water, urban or masked area).'; }
+        catch (e: any) { serr = e?.message ?? String(e); if (bundled) soilGrid = (await bundledData()).soil ?? null; }
       }
-    }
-    if (seq !== loadSeq.current) return;
-    setData({ series, soilGrid, weatherOrigin: origin, weatherStatus: series ? 'ready' : 'error', soilStatus: soilGrid ? 'ready' : 'error', weatherError: werr, soilError: serr });
+      if (seq !== loadSeq.current) return;
+      setData((d) => ({ ...d, soilGrid, soilStatus: soilGrid ? 'ready' : 'error', soilError: serr }));
+    })();
+    await Promise.all([weather, soilTask]);
   }, [lat, lon]);
 
   useEffect(() => { const t = setTimeout(() => load(false), 250); return () => clearTimeout(t); }, [cellKey, load]);
 
-  const pack = useMemo(() => packById(scenario.regionPackId) ?? detectPack(lat, lon), [scenario.regionPackId, lat, lon]);
+  // Country from reverse geocoding (OpenStreetMap Nominatim) → regional pack, currency and FAOSTAT prices.
+  useEffect(() => {
+    if (scenario.countryIso2) return;
+    let alive = true;
+    const t = setTimeout(async () => {
+      const iso2 = await reverseCountry(lat, lon).catch(() => null);
+      if (!alive || !iso2) return;
+      const c = countryInfo(iso2);
+      setScenarios((list) => list.map((s) => {
+        if (s.id !== scenario.id || s.countryIso2) return s;
+        if (!c?.currency || s.currency === c.currency) return { ...s, countryIso2: iso2 };
+        const k = fxFactor(s.currency, c.currency); // keep the same real budget in the new currency
+        return { ...s, countryIso2: iso2, currency: c.currency, priceOverrides: {}, availableFunds: Math.round(s.availableFunds * k), reserve: Math.round(s.reserve * k) };
+      }));
+    }, 400);
+    return () => { alive = false; clearTimeout(t); };
+  }, [scenario.id, scenario.countryIso2, lat, lon]);
+
+  const pack = useMemo(() => packById(scenario.regionPackId) ?? detectPack(lat, lon, scenario.countryIso2), [scenario.regionPackId, scenario.countryIso2, lat, lon]);
   const soil = useMemo(() => {
     if (!data.series) return null;
     const s = effectiveSoil(scenario.soil.texture, data.soilGrid);
@@ -120,7 +155,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const reviews = useMemo(() => {
     if (!engine || !data.series || !soil) return [];
-    return [...scenario.history].sort((a, b) => b.year - a.year).map((h) => reviewSeason(scenario, h, data.series!, engine.window, soil)).filter((x): x is SeasonReview => !!x);
+    const winFor = (h: FarmScenario['history'][number]) => engine.windows.find((w) => w.id === h.seasonId) ?? engine.windows.find((w) => w.crops.includes(h.cropId)) ?? engine.window;
+    return [...scenario.history].sort((a, b) => b.year - a.year).map((h) => reviewSeason(scenario, h, data.series!, winFor(h), soil, engine.pack)).filter((x): x is SeasonReview => !!x);
   }, [engine, scenario, data.series, soil]);
 
   const loadForecast = useCallback(async () => {
@@ -131,16 +167,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     catch (e: any) { setForecast({ data: null, status: 'error', error: e?.message ?? String(e), key }); }
   }, [lat, lon, forecast.key, forecast.status]);
 
+  const spaceKey = `${lat.toFixed(3)}:${lon.toFixed(3)}:${engine?.pack.id}:${engine?.baseline.crops.join()}`;
+  const loadSpaceData = useCallback(async () => {
+    if (!engine) return;
+    if (space.key === spaceKey && (space.status === 'ready' || space.status === 'loading')) return;
+    setSpace({ data: null, status: 'loading', key: spaceKey, progress: null });
+    try {
+      const d = await loadSpace(lat, lon, engine, (label, done, total) => setSpace((s) => (s.key === spaceKey ? { ...s, progress: { label, done, total } } : s)));
+      setSpace((s) => (s.key === spaceKey ? { data: d, status: 'ready', key: spaceKey, progress: null } : s));
+    } catch (e: any) { setSpace((s) => (s.key === spaceKey ? { data: null, status: 'error', error: e?.message ?? String(e), key: spaceKey, progress: null } : s)); }
+  }, [engine, lat, lon, spaceKey, space.key, space.status]);
+
   const ctx: Ctx = {
     scenario, scenarios, update,
     select: (id) => setActiveId(id),
-    createNew: () => { const s = blankScenario(); setScenarios((l) => [...l, s]); setActiveId(s.id); },
+    createNew: (at) => { const s = blankScenario(at); setScenarios((l) => [...l, s]); setActiveId(s.id); },
     resetDemo: (id) => { const d = DEMOS.find((x) => x.id === id); if (!d) return; setScenarios((l) => (l.some((s) => s.id === id) ? l.map((s) => (s.id === id ? structuredClone(d) : s)) : [...l, structuredClone(d)])); setActiveId(id); },
     importScenario: (s) => { const copy = { ...s, id: `import-${Date.now()}` }; setScenarios((l) => [...l, copy]); setActiveId(copy.id); },
     deleteAll: async () => { try { localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_ACTIVE); } catch { /* */ } await idbClear(); setScenarios(DEMOS.map((d) => structuredClone(d))); setActiveId(DEMOS[0].id); },
     data, refreshLive: () => load(true),
     engine, engineError, reviews, soil,
     forecast: { data: forecast.data, status: forecast.status, error: forecast.error, load: loadForecast },
+    space: { data: space.key === spaceKey ? space.data : null, status: space.key === spaceKey ? space.status : 'idle', error: space.error, progress: space.progress, load: loadSpaceData },
   };
   return <AppCtx.Provider value={ctx}>{children}</AppCtx.Provider>;
 }

@@ -121,7 +121,12 @@ describe('science helpers', () => {
   it('region detection', () => {
     expect(detectPack(14.7, -16.5).id).toBe(SENEGAL.id);
     expect(detectPack(53, 64).id).toBe(KAZAKHSTAN.id);
-    expect(detectPack(40, -95).id).toBe(GLOBAL.id);
+    expect(detectPack(40, -95).id).toBe('na-temperate');
+    expect(detectPack(-0.5, 37, 'KE').id).toBe('ea-bimodal');
+    expect(detectPack(28.6, 77.2, 'IN').id).toBe('sas-kharif-rabi');
+    expect(detectPack(43, 76, 'KZ').id).toBe('cas-irrigated');
+    expect(detectPack(6.5, 3.4, 'NG').id).toBe(GLOBAL.id); // humid south Nigeria: outside the Sahel band
+    expect(detectPack(72, -40).id).toBe(GLOBAL.id);
   });
 });
 

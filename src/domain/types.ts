@@ -21,6 +21,7 @@ export interface CropSeason {
   id: string;
   cropId: string;
   year: number;               // calendar year of sowing
+  seasonId?: string;          // which of the region's seasons (e.g. 'long', 'short', 'kharif', 'rabi')
   plantedOn?: string;         // ISO date
   harvestedOn?: string;       // ISO date
   approximateDate: boolean;
@@ -69,6 +70,7 @@ export interface FarmScenario {
   name: string;
   regionPackId?: string;      // auto-detected from location if absent
   location: LatLon & { label?: string };
+  countryIso2?: string;       // ISO 3166 alpha-2, from reverse geocoding or the farmer
   area: number;
   areaUnit: AreaUnit;
   currency: string;
@@ -145,23 +147,35 @@ export interface CropEconomics {
   items: CostItemDef[];
 }
 
+export interface SeasonDef {
+  id: string;                 // e.g. 'main', 'long', 'short', 'kharif', 'rabi', 'winter', 'spring'
+  label: string;
+  method: 'rain-onset' | 'temperature' | 'fixed';
+  earliest: string;           // MM-DD, or 'auto' (derived from the NASA climatology)
+  latest: string;             // MM-DD, or 'auto'
+  crops: string[];            // crops that can be sown in this season (may include 'fallow')
+  note?: string;
+}
+
 export interface RegionPack {
   id: string;
   version: string;
   name: string;
   short: string;
   description: string;
-  bbox: [number, number, number, number]; // minLat, minLon, maxLat, maxLon
-  currency: string;
-  sowingMethod: 'rain-onset' | 'temperature';
-  seasonLabel: string;
-  earliestSowing: string;     // MM-DD
-  latestSowing: string;       // MM-DD
+  countries: string[];        // ISO2 codes that select this pack (empty = by bbox only)
+  bbox: [number, number, number, number][]; // fallback boxes: minLat, minLon, maxLat, maxLon
+  latRange?: [number, number]; // optional restriction inside a country (e.g. Sahel part of Nigeria)
+  currency: string;           // currency of the economics below
+  mode: 'annual' | 'double';  // annual: one crop per year (each crop in its own season); double: two seasons in the same year
+  seasons: SeasonDef[];
   crops: string[];
+  cropOverrides?: Record<string, Partial<CropDef>>; // regional variety durations, thresholds
   rules: RotationRule[];
   economics: Record<string, CropEconomics>;
   reviewStatus: 'demo-unreviewed' | 'reviewed';
   demoDataset?: string;       // bundled NASA dataset key
+  irrigationTypical?: boolean; // most farms here irrigate; rainfed results will look poor
   sources: string[];
 }
 
@@ -203,7 +217,7 @@ export type ReasonCode =
   | 'PRIOR_CROP_RULE' | 'RETURN_INTERVAL' | 'DISEASE_GROUP' | 'LEGUME_BENEFIT' | 'FALLOW_BENEFIT'
   | 'IRRIGATION_REQUIRED' | 'SEED_UNAVAILABLE' | 'MARKET_CONSTRAINT' | 'LABOR_LIMIT' | 'RESIDUE_NEED'
   | 'CLIMATE_UNSUITABLE' | 'CLIMATE_RISK_HIGH' | 'HEAT_EXPOSURE' | 'FROST_RISK' | 'SOIL_PH'
-  | 'HISTORY_INCOMPLETE' | 'CLIMATE_CONTEXT_ONLY' | 'UNREVIEWED_RULES' | 'SYNTHETIC_PRICES';
+  | 'SEASON_OVERLAP' | 'HISTORY_INCOMPLETE' | 'CLIMATE_CONTEXT_ONLY' | 'UNREVIEWED_RULES' | 'SYNTHETIC_PRICES';
 
 export interface Reason {
   code: ReasonCode;

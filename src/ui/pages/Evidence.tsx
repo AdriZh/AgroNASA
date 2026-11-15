@@ -79,7 +79,7 @@ function ClimateTab() {
       <div className="card"><div className="card-head"><h3>Dry runs and heat days by year</h3><Tag t="nasa" /></div><DryHeatChart rows={rows} /><p className="mini">Longest run with &lt;1 mm/day, reset at the window edge (exploratory threshold, not drought injury). Hot days: Tmax ≥ 35 °C (exploratory).</p></div>
       <CountryContext />
       <div className="card"><h3>Data provenance</h3>
-        <div className="mini" style={{ wordBreak: 'break-all' }}><b>Query:</b> <a href={s.meta.query} target="_blank" rel="noreferrer">{s.meta.query}</a></div>
+        <div className="mini" style={{ wordBreak: 'break-all' }}><b>Query:</b> <a href={s.meta.query} target="_blank" rel="noopener noreferrer">{s.meta.query}</a></div>
         <div className="mini"><b>Retrieved:</b> {fmtDate(s.meta.retrievedAt.slice(0, 10))} · <b>Sources:</b> {s.meta.sources.join(', ')} · <b>Time standard:</b> LST · <b>Records:</b> {s.n} days · <b>Status:</b> {data.weatherOrigin === 'bundled' ? 'archived snapshot bundled with the app (works offline)' : data.weatherOrigin === 'cache' ? 'cached on this device' : 'live'}</div>
         <div className="row" style={{ marginTop: 6 }}><Ref id="R5" /><Ref id="R6" /><Ref id="R17" /><Ref id="R8" /></div>
       </div>

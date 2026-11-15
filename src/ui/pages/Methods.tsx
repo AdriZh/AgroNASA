@@ -88,7 +88,7 @@ export function MethodsPage() {
       <div className="card section">
         <h3>Evidence register</h3>
         <div className="table-wrap"><table><thead><tr><th>ID</th><th>Source</th><th>Limits</th></tr></thead>
-          <tbody>{SOURCES.map((s) => <tr key={s.id}><td><code>{s.id}</code></td><td className="mini"><a href={s.url} target="_blank" rel="noreferrer">{s.title}</a></td><td className="mini">{s.limits}</td></tr>)}</tbody></table></div>
+          <tbody>{SOURCES.map((s) => <tr key={s.id}><td><code>{s.id}</code></td><td className="mini"><a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a></td><td className="mini">{s.limits}</td></tr>)}</tbody></table></div>
       </div>
 
       <div className="grid g2 section">

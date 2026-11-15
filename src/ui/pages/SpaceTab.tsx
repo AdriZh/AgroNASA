@@ -129,7 +129,7 @@ export function SpaceTab() {
               <table>
                 <thead><tr><th>Event</th><th>Date</th><th className="num">Distance</th></tr></thead>
                 <tbody>{d.events.slice(0, 25).map((e) => (
-                  <tr key={e.id}><td style={{ whiteSpace: 'normal' }}><span className="row" style={{ gap: 6, flexWrap: 'nowrap' }}>{CAT_ICON[e.category] ?? <AlertTriangle size={15} />}<a href={e.link} target="_blank" rel="noreferrer">{e.title}</a></span></td><td>{fmtDate(e.date)}</td><td className="num">{e.km} km</td></tr>
+                  <tr key={e.id}><td style={{ whiteSpace: 'normal' }}><span className="row" style={{ gap: 6, flexWrap: 'nowrap' }}>{CAT_ICON[e.category] ?? <AlertTriangle size={15} />}<a href={e.link} target="_blank" rel="noopener noreferrer">{e.title}</a></span></td><td>{fmtDate(e.date)}</td><td className="num">{e.km} km</td></tr>
                 ))}</tbody>
               </table>
             </div>

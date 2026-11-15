@@ -16,7 +16,7 @@ export function Ref({ id }: { id: string }) {
   if (id.startsWith('input:')) return <span className="chip ref" title="Comes from your inputs">input · {id.slice(6)}</span>;
   if (id.startsWith('price')) return <span className="chip ref" title="Price pack entry">price</span>;
   const s = sourceById(id);
-  if (s) return <a className="chip ref" href={s.url} target="_blank" rel="noreferrer" title={`${s.title}\nLimits: ${s.limits}`}>{id}</a>;
+  if (s) return <a className="chip ref" href={s.url} target="_blank" rel="noopener noreferrer" title={`${s.title}\nLimits: ${s.limits}`}>{id}</a>;
   return <span className="chip ref" title="Rule pack entry — see Methods">{id}</span>;
 }
 

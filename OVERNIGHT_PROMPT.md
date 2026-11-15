@@ -11,6 +11,17 @@ You are working alone overnight on our hackathon project. The owner is asleep an
 - **It is not deployed.** `.github/workflows/deploy.yml` deploys to GitHub Pages only on push to `main`, and `main` is empty. Judges need a live URL, so this is the most important gap.
 - Read `README.md`, `docs/PITCH.md` (judging-criteria map, demo script, 7-slide/30-s rules) and `docs/review-log.md` first. They are short and hold the team's existing strategy.
 
+## Bugs the owner saw on the Compare page (screenshot of `f47c0e5`, a custom "My farm", Global screening pack)
+
+Fix these early, because they hurt credibility on the screen judges care about most:
+- **The status bar says "SoilGrids: unavailable."** SoilGrids is often down or slow. Add a fallback (archived or default soil by texture class, labeled clearly) so the app never looks broken.
+- **The top recommendation was "Pearl millet → Pearl millet",** a monoculture, in a *rotation* planner. That kills creativity and validity points. Add a rotation rule: penalize, or exclude by default, the same crop or family twice, and favor legume–cereal sequences. Explain the reason in the card.
+- **The budget is unrealistic.** "Spendable 42,222 USD" for 1.5 ha meant every plan was affordable with about 41k of headroom, so the affordability story (the core idea) disappeared. Check the default budget and the currency conversion for new or custom farms. The defaults should create a meaningful trade-off, like the Senegal demo does.
+- **Prices look odd.** A cash cost of about 573–848 USD for two seasons is fine, but check that FAOSTAT/USD defaults are sensible across countries.
+- **The layout breaks.** "mature ≈ 3 Oct" and "mature ≈ 23 Oct" wrap onto a second line. The "CASH COST (2 SEASONS)" label wraps, and the cards are too dense. Tighten the typography and layout so each card reads in 3 seconds.
+- **The four-bullet disclaimer box** dominates the top of the page. Collapse it into a single honest line with an expandable "details" link. Keep the honesty, lose the wall of text.
+- **Before the presentation:** open several world locations (Kenya, India, Iowa, Brazil, Ukraine) and check that the plans make agronomic sense, with no nonsense crops for the climate and no monocultures at the top.
+
 ## Judging criteria (Space Apps)
 
 Influence/Impact, Creativity, Validity (scientific soundness), Relevance (to the challenge and to NASA data), and Presentation. Judges spend **under 2 minutes** per project: a 30-second video or up to 7 slides, a project page and a live link. **Polish of the first 30 seconds matters more than depth on page 6.**

@@ -1,3 +1,19 @@
+/** Flat app mark for the shell and slides: a sprout under an orbit, drawn in currentColor on a --brand square (see .brand-mark).
+ *  LogoMark below stays as-is because the pre-rendered video (src/ui/video) draws it. */
+export function BrandMark({ size = 32 }: { size?: number }) {
+  return (
+    <span className="brand-mark" style={{ width: size, height: size, flexBasis: size }} aria-hidden>
+      <svg width={size * 0.72} height={size * 0.72} viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="24" cy="25" rx="18" ry="7.5" strokeWidth="2" opacity=".6" transform="rotate(-24 24 25)" />
+        <path d="M24 38 V24" strokeWidth="3" />
+        <path d="M24 26 C 17 26, 14 21, 14.5 15.5 C 20 15.5, 24 19, 24 26 Z" fill="currentColor" strokeWidth="1.5" />
+        <path d="M24 23 C 30 23, 33.5 18.5, 33.5 13 C 28 13, 24 16.5, 24 23 Z" fill="currentColor" strokeWidth="1.5" />
+        <circle cx="40" cy="17" r="2.6" fill="currentColor" stroke="none" />
+      </svg>
+    </span>
+  );
+}
+
 /** Field Shift mark: a satellite orbit circling a two-leaf sprout (rotation + Earth observation). */
 export function LogoMark({ size = 38, glow = true }: { size?: number; glow?: boolean }) {
   return (

@@ -72,8 +72,8 @@ const TABS = ['overview', 'farm', 'resources', 'compare', 'evidence', 'report', 
         await page.waitForTimeout(1500);
         await page.screenshot({ path: `${OUT}/${w}-custom-${t}.png`, fullPage: true });
       }
-      for (const tab of ['Field from space', 'Next 16 days']) {
-        const b = page.locator(`button:has-text("${tab}")`);
+      for (const tab of ['Field', 'Forecast']) {
+        const b = page.locator(`[role="tab"]:has-text("${tab}")`);
         if (!(await b.count())) continue;
         await b.first().click();
         await page.waitForTimeout(OFFLINE ? 1500 : 12000);

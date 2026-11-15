@@ -21,7 +21,7 @@ function Scaled({ t }: { t: number }) {
     ro.observe(el); return () => ro.disconnect();
   }, []);
   return (
-    <div ref={ref} style={{ width: '100%', aspectRatio: '16 / 9', position: 'relative', overflow: 'hidden', borderRadius: 18, background: '#050a14' }}>
+    <div ref={ref} style={{ width: '100%', aspectRatio: '16 / 9', position: 'relative', overflow: 'hidden', borderRadius: 'var(--r)', background: 'var(--surface-2)' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, transform: `scale(${scale})`, transformOrigin: '0 0' }}><VideoFrame t={t} /></div>
     </div>
   );
@@ -58,7 +58,7 @@ function LivePlayer() {
       <div className="row" style={{ marginTop: 10 }}>
         <button className="btn primary sm" onClick={toggle}>{playing ? <><Pause size={14} /> Pause</> : <><Play size={14} /> Play</>}</button>
         <button className="btn sm" onClick={() => { audio.current?.pause(); setPlaying(false); setT(0); }}><RotateCcw size={14} /> Restart</button>
-        <input type="range" min={0} max={VIDEO_DURATION} step={0.05} value={t} style={{ flex: 1, minWidth: 160, accentColor: '#10b981' }} onChange={(e) => { const v = Number(e.target.value); setT(v); if (audio.current) audio.current.currentTime = v; }} aria-label="Scrub" />
+        <input type="range" min={0} max={VIDEO_DURATION} step={0.05} value={t} style={{ flex: 1, minWidth: 160, accentColor: 'var(--brand)' }} onChange={(e) => { const v = Number(e.target.value); setT(v); if (audio.current) audio.current.currentTime = v; }} aria-label="Scrub" />
         <span className="mini mono">{t.toFixed(1)}s / {VIDEO_DURATION}s</span>
       </div>
     </div>
@@ -88,7 +88,7 @@ export function VideoPage({ go }: { go: (r: Route) => void }) {
             <span className="chip modeled"><Sparkles /> 30.0 s · 1920×1080 · 30 fps</span>
           </div>
           {mode === 'mp4' && mp4Ok ? (
-            <video src={MP4} poster={POSTER} controls playsInline style={{ width: '100%', borderRadius: 18, background: '#050a14', aspectRatio: '16 / 9' }} onError={() => setMp4Ok(false)} />
+            <video src={MP4} poster={POSTER} controls playsInline style={{ width: '100%', borderRadius: 'var(--r)', background: 'var(--surface-2)', aspectRatio: '16 / 9' }} onError={() => setMp4Ok(false)} />
           ) : <LivePlayer />}
           {!mp4Ok && mode === 'mp4' && <p className="mini" style={{ marginTop: 8 }}>MP4 not found — showing the live version. Render it with <code>npm run video</code>.</p>}
         </div>

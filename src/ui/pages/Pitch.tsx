@@ -15,13 +15,12 @@ import { rainOnset, temperatureSowing, yearlyWindow } from '../../weather/indica
 import { BrandMark } from '../components/Logo';
 import { OrbitVisual } from '../components/OrbitVisual';
 import { CAT_TOKEN, SeasonRainChart, useChartTheme } from '../components/charts';
-import { BEST_FIT, CASH_CAPTION, PlanCard, tradeOffText } from './Compare';
+import { BEST_FIT, CASH_CAPTION, PlanCard, PlanListPreview, tradeOffText } from './Compare';
 import { weightsSummary } from '../components/PrioritySliders';
 import { HindcastChart } from '../components/Hindcast';
 import { allHindcasts } from '../../data/hindcast/hindcast';
 import { TEAM, TEAM_NAME, TEAM_PROFILES } from '../../data/team';
 import type { PlanResult } from '../../engine/plan';
-import type { PlanStress } from '../../engine/whatif';
 import { useDrierHotter } from '../components/stress';
 
 const ease = [0.2, 0.7, 0.2, 1] as const;
@@ -205,28 +204,6 @@ function Funnel({ steps }: { steps: [string, number, string][] }) {
   );
 }
 
-/** Slide 3: the live Compare result in miniature, with three callouts on the rows that matter. */
-function MiniCompare({ plans, cur, stress }: { plans: PlanResult[]; cur: string; stress: Map<string, PlanStress> | null }) {
-  const pairs = plans[0]?.outcome.pairs ?? 0;
-  const call = (k: number, title: string, d: string, delay: number) => (
-    <motion.div className="mc-call" {...quick(delay)}>
-      <span className="mc-n">{k}</span>
-      <div><b>{title}</b><span>{d}</span></div>
-      <ArrowRight size={18} className="mc-arrow" aria-hidden />
-    </motion.div>
-  );
-  return (
-    <motion.div {...quick(0)} className="mini-compare">
-      <div className="mc-calls mc-r3">{call(1, 'Your budget', 'cost vs cash you can spend', 0.1)}</div>
-      <div className="mc-calls mc-r4">
-        {call(2, 'NASA weather replay', `${pairs} real season pairs`, 0.15)}
-        {call(3, 'Drier & hotter test', '−15% rain, +2 °C', 0.2)}
-      </div>
-      {plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Usual plan' : k === 1 ? BEST_FIT : p.label} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} />)}
-    </motion.div>
-  );
-}
-
 /** Slide 4: a simple schema of the product, inputs → engine → outputs. */
 function ProductSchema() {
   const t = useChartTheme();
@@ -399,7 +376,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     ) },
     { id: 'solution', kicker: '02 / Our solution', icon: <Sprout size={14} />, body: (
       <>
-        <motion.h2 {...up(0.1)} style={{ marginBottom: 8, fontSize: 'clamp(20px, 2.3vw, 30px)' }}>Which next plans can I <G>afford</G>, and how do they hold up in a <G>bad year</G>?</motion.h2>
+        <motion.h2 {...up(0.1)} style={{ marginBottom: 8 }}>Which next plans can I <G>afford</G>, and how do they hold up in a <G>bad year</G>?</motion.h2>
         <motion.div {...up(0.15)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           {['Pin your field', 'Enter crops & budget', 'Compare plans you can afford', 'Print or share'].map((s, k, a) => (
             <span key={s} style={{ display: 'contents' }}>
@@ -409,7 +386,8 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
           ))}
         </motion.div>
         <motion.div {...up(0.2)} className="ink" style={{ fontSize: 15, fontWeight: 600 }}>Live for {place}: your usual plan against the two best plans that fit the budget</motion.div>
-        {engine && plans.length > 0 ? <MiniCompare plans={plans} cur={cur} stress={stress} /> : null}
+        {engine && plans.length > 0 ? <motion.div {...quick(0.25)} className="slide-plan-list" style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}><PlanListPreview engine={engine} cur={cur} weights={scenario.weights} /></motion.div> : null}
+        <motion.p {...up(0.4)} className="muted" style={{ fontSize: 13, margin: '8px 0 20px' }}>Score: best fit = 100. It weighs discounted profit, climate resilience over {plans[0]?.outcome.pairs ?? 24} NASA season pairs, cash in hand, familiar crops and soil, by the farmer’s own sliders.</motion.p>
       </>
     ) },
     { id: 'how', kicker: '03 / How it works', icon: <Cpu size={14} />, body: (

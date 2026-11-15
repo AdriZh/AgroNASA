@@ -241,6 +241,27 @@ function Cells({ p, cur, score }: { p: PlanResult; cur: string; score?: PlanScor
   </>;
 }
 
+/** The Compare page's plan list (usual plan + alternatives, no own plans), for the pitch deck. */
+export function PlanListPreview({ engine, cur, weights }: { engine: EngineOutput; cur: string; weights: Parameters<typeof planScores>[2] }) {
+  const plans = [engine.baseline, ...engine.alternatives];
+  const byId = new Map([engine.baseline, ...engine.allPlans.filter((p) => p.feasible)].map((p) => [p.id, p]));
+  const scores = planScores([...byId.values()], engine.alternatives[0] ?? null, weights);
+  const labelOf = (p: PlanResult, i: number) => (p.isBaseline ? 'Your usual plan' : i === 1 ? BEST_FIT : p.label || 'Option B');
+  return (
+    <div className="plan-list" role="table" aria-label="Plans">
+      <div className="pl-row pl-head" role="row">
+        <div>Rotation</div><div>Budget</div><div>Expected profit</div><div>Soil impact</div><div>Total harvest</div><div className="pl-score">Score</div>
+      </div>
+      {plans.map((p, i) => (
+        <div key={p.id} className={`pl-row ${i === 1 ? 'best' : ''}`} role="row">
+          <div className="pl-rot"><span className={`caption ${i === 1 ? 'brand' : ''}`}>{labelOf(p, i)}</span><CropPair crops={p.crops} /></div>
+          <Cells p={p} cur={cur} score={scores.get(p.id)} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 type Own = { id: number; crops: [string, string] };
 
 export function ComparePage({ go }: { go: (r: Route) => void }) {

@@ -36,3 +36,21 @@ https://adrizh.github.io/AgroNASA/  (work in progress — final status below)
 - ~08:30–12:30 UTC — **account usage limit hit**; the UI-rebuild, security and rules-check agents stopped mid-task. Their work was saved (UI rebuild had committed phases 1–4 in its worktree). All three were resumed after the reset rather than restarted. `main` stayed at the last verified state (`560bb7e`) throughout.
 4. `fdb47ba` design system v3 (tokens, light/dark + toggle, hero-number plan cards, one-line caveat + Details, new landing hero with live best-plan card, restyled Farm/Resources/Evidence/Report/Methods/Pitch) — 93 tests, build OK, smoke online/offline 0 errors at 1440, 1280, 390.
 - 12:45 UTC — **process slip:** I piped the smoke test through `tail`, so its non-zero exit did not stop the push of `fdb47ba` to `main`. It had reported a blank page. Diagnosis: the local `vite preview` server had died with the earlier worker restart (port 4173 refused connections), so the page was blank because nothing served it, not an app bug. Restarted the server, re-ran (exit 0, 0 errors). No revert needed. Smoke runs now gate on the exit code.
+5. `3017b21` security review (see `docs/SECURITY.md`): vite 6.4 / vitest 4.1 (npm audit 0), validated imports/stored scenarios/share links/API shapes, EONET `javascript:` links dropped, CSP meta (no inline scripts), `noopener` everywhere, workflow least-privilege + SHA-pinned — 131 tests, build OK, smoke online/offline exit 0, no CSP violations. Conflicts in 4 UI files (design rewrite vs `rel` edits) resolved by keeping the redesign and applying `noopener noreferrer` globally.
+
+## Judge review #1 (fresh-eyes agent, ~13:00 UTC, judged the local copy of the live build)
+
+| Criterion | Score | Why |
+|---|---|---|
+| Impact | 6 | real problem, but no farmer/agronomist evidence yet |
+| Creativity | 6 | affordability-first replay is fresh; output still reads like a cost table |
+| Validity | 5 | Kazakhstan wheat severe-stress 88 % of years (implausible); Senegal millet 0 of 24 despite a 309 mm year; NDVI r = 0.55 is weak validation |
+| Relevance | 7 | on-brief, but NASA data barely changes the Senegal answer |
+| Presentation | 8 | clean, fast, honest |
+
+Estimated rank: strong local winner / global nominee, not yet a global finalist.
+
+**Pivot decisions (all < 8):**
+- Validity → science agent: diagnose the replay's root causes (failed/no-onset seasons, winter soil-water recharge, drought sensitivity) with literature-backed fixes, and **hindcast against real FAOSTAT national yields** (Senegal millet/groundnut, Kazakhstan wheat) with drought-year hits — replaces the NDVI slide.
+- Relevance/Creativity/Presentation → pitch agent: put NASA risk + the drier/hotter stress test on the landing card and slides; fix the "SMAP/MODIS/IMERG replayed" overclaim; modeled net on cards (fallow trade-off visible); "placeholder budget" chip so over-budget usual plans don't look staged; live URL + QR on the closing slide.
+- Rejected: inventing a team list, farmer quote or pilot evidence (honesty rule). Impact stays capped until the owner adds real interviews — listed as a manual to-do.

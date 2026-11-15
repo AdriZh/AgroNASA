@@ -105,12 +105,11 @@ Estimated rank: roughly top 15–20 % globally — strong for a local prize, bor
 
 ## Demo script (90 s, live URL)
 
-1. **Overview (0–10 s).** "Which crop next, and can you afford it?" The best-fit card already shows cost vs budget, NASA-replay risk and the drier & hotter result. Click **Open Senegal demo**.
-2. **Compare (10–35 s).** Usual Groundnut → Pearl millet: **454,500 XOF, 74,500 over** the 380,000 budget (two-season cash, no harvest income or credit assumed). Best fit Sesame → Pearl millet fits with 53,000 left, 0 of 24 season pairs severe. Point at the trade-off line: Option B earns ≈ 31,000 more but carries more stress.
-3. **What-if (35–50 s).** Click **Drier & hotter** (−15 % rain, +2 °C): the replay of 24 NASA season pairs re-runs live; the usual plan goes 2 → 5 of 24 severe.
-4. **Kazakhstan (50–65 s).** Switch farm → Kazakhstan demo → Compare: wheat → wheat monoculture is flagged and over budget; **Drier & hotter** pushes it 9 → 16 of 24; the fallow-break options hold.
-5. **Evidence (65–80 s).** Hindcast: modeled water-limited yield vs **real FAOSTAT national yields**, Kazakhstan wheat r = 0.59, the 2010 and 2012 droughts caught. "One grid cell vs a whole country — we say so."
-6. **Close (80–90 s).** **Share** button → link copied (opens the exact scenario). "Works anywhere NASA POWER exists; the demo farms work offline; free to run."
+1. **Overview (0–8 s).** "Which crop next, and can you afford it?" The best-fit card shows cost vs budget, NASA-replay risk and the drier & hotter result. Click **Open Senegal demo**.
+2. **Compare, Senegal (8–25 s).** Usual Groundnut → Pearl millet: **454,500 XOF, 74,500 over** the 380,000 budget (two-season cash, no harvest income or credit assumed). Best fit Sesame → Pearl millet: 53,000 left, 0 of 24 NASA season pairs severe. Click **Drier & hotter** (−15 % rain, +2 °C): usual plan 2 → 5 of 24.
+3. **Kazakhstan — the "never a dead end" moment (25–60 s).** Switch to the Kazakhstan demo. Usual Spring wheat → Spring wheat: **3,000,000 KZT over**, flagged as a monoculture, 9 of 24 severe (16 under drier & hotter). Best fit Fallow → Spring rapeseed fits with 11.3 M left. Scroll to **Near misses**: "Spring rapeseed → Oilseed flax — smallest change **+280,000 KZT budget**". Click **Try it** → it loads into **Try my own plan**, evaluated live by the same engine. Change season 2 to Field pea → the card shows its NASA risk honestly. Switch the **ranked by** goal to **soil benefit** → the plans re-rank.
+4. **Evidence (60–78 s).** Hindcast: modeled water-limited yield vs **real FAOSTAT national yields** — Kazakhstan wheat r = 0.59, the 2010 and 2012 droughts caught. "One grid cell vs a whole country — we say so."
+5. **Close (78–90 s).** **Share** → link copied (opens this exact scenario). "Any place NASA POWER covers; demo farms work offline; free to run."
 
 ## Known issues
 

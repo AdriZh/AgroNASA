@@ -40,12 +40,11 @@ The table above follows the 7-slide submission cut (Title, Problem, Solution, Da
 
 ## Live demo script (90 s)
 
-1. **Overview** hero: one line on rain swinging 309 to 976 mm → click **Senegal demo**.
-2. **Compare** (one hero number per card): usual Groundnut→Millet 454,500 XOF, **74,500 over** the 380,000 budget; Best fit 327,000 (53,000 left, 0 of 24 severe); Option B 337,200 (42,800 left, 1 of 24).
-3. **What-if → “Drier & hotter”** (−15 % rain, +2 °C): the usual plan goes from 2 to 5 of 24 severe; Best fit goes to 2. The replay re-runs live in ~30–50 ms.
-4. Switch to the **Kazakhstan demo** (Kostanay, 200 ha), **Drier & hotter**: the wheat monoculture (over budget, flagged as a monoculture) jumps **9 → 16 of 24** severe; the fallow break holds (Fallow→Rapeseed 2 → 6, Fallow→Wheat 5 → 7). The fallow trades income for lower cost and risk; modeled net is on the cards.
-5. **Evidence → hindcast vs FAOSTAT harvests**: Kazakhstan wheat r = 0.59, Senegal weak (r ≈ 0.2) and why; all four known drought years in the driest third.
-6. **Share** button: the scenario is in the URL, so anyone opens the same view.
+1. **Overview (0–8 s).** "Which crop next, and can you afford it?" The best-fit card shows cost vs budget, NASA-replay risk and the drier & hotter result. Click **Open Senegal demo**.
+2. **Compare, Senegal (8–25 s).** Usual Groundnut → Pearl millet: **454,500 XOF, 74,500 over** the 380,000 budget (two-season cash, no harvest income or credit assumed). Best fit Sesame → Pearl millet: 53,000 left, 0 of 24 NASA season pairs severe. Click **Drier & hotter** (−15 % rain, +2 °C): usual plan 2 → 5 of 24.
+3. **Kazakhstan — the "never a dead end" moment (25–60 s).** Switch to the Kazakhstan demo. Usual Spring wheat → Spring wheat: **3,000,000 KZT over**, flagged as a monoculture, 9 of 24 severe (16 under drier & hotter). Best fit Fallow → Spring rapeseed fits with 11.3 M left. Scroll to **Near misses**: "Spring rapeseed → Oilseed flax — smallest change **+280,000 KZT budget**". Click **Try it** → it loads into **Try my own plan**, evaluated live by the same engine. Change season 2 to Field pea → the card shows its NASA risk honestly. Switch the **ranked by** goal to **soil benefit** → the plans re-rank.
+4. **Evidence (60–78 s).** Hindcast: modeled water-limited yield vs **real FAOSTAT national yields** — Kazakhstan wheat r = 0.59, the 2010 and 2012 droughts caught. "One grid cell vs a whole country — we say so."
+5. **Close (78–90 s).** **Share** → link copied (opens this exact scenario). "Any place NASA POWER covers; demo farms work offline; free to run."
 
 ## Prepared links
 

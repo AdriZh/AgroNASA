@@ -33,13 +33,31 @@ export function fxFactor(from: string, to: string): number {
   return a && b ? b / a : 1;
 }
 
-export interface PriceRef { usdPerT: number; year?: number; source: 'faostat-country' | 'faostat-median'; label: string }
-/** Farm-gate price: country FAOSTAT producer price if available, else the global median (2018+). */
+/**
+ * Plausibility band for FAOSTAT country producer prices, as a factor around the 2018+ global median.
+ * FAOSTAT's USD/t series converts local prices at official exchange rates, so a few entries are off by an
+ * order of magnitude (e.g. hyperinflation years, unit or LCU/USD mix-ups: beans at 71 USD/t, millet at 40 USD/t).
+ * Outside the band the country price is not used; the global median is, and the label says so.
+ */
+export const PRICE_PLAUSIBLE_FACTOR = 3;
+
+/** Crops priced with another FAOSTAT item (winter and spring types share one producer-price series). */
+const PRICE_ALIAS: Record<string, string> = { winterrapeseed: 'rapeseed' };
+
+export interface PriceRef { usdPerT: number; year?: number; source: 'faostat-country' | 'faostat-median'; label: string; replaced?: { usdPerT: number; year: number } }
+/** Farm-gate price: country FAOSTAT producer price if available and plausible, else the global median (2018+). */
 export function cropPriceUsd(iso2: string | undefined, cropId: string): PriceRef | null {
+  cropId = PRICE_ALIAS[cropId] ?? cropId;
   const c = countryInfo(iso2);
   const p = c?.prices[cropId];
-  if (p) return { usdPerT: p.usdPerT, year: p.year, source: 'faostat-country', label: `FAOSTAT producer price, ${c!.name} ${p.year}` };
   const g = DATA.globalMedianUsdPerT[cropId];
-  if (g) return { usdPerT: g.usdPerT, source: 'faostat-median', label: `FAOSTAT global median producer price (${g.n} countries, 2018+)` };
+  const implausible = !!(p && g && (p.usdPerT > g.usdPerT * PRICE_PLAUSIBLE_FACTOR || p.usdPerT < g.usdPerT / PRICE_PLAUSIBLE_FACTOR));
+  if (p && !implausible) return { usdPerT: p.usdPerT, year: p.year, source: 'faostat-country', label: `FAOSTAT producer price, ${c!.name} ${p.year}` };
+  if (g) {
+    const label = implausible
+      ? `FAOSTAT global median producer price (${g.n} countries, 2018+) — ${c!.name}'s ${p!.year} value (${Math.round(p!.usdPerT)} USD/t) is >${PRICE_PLAUSIBLE_FACTOR}× off and not used`
+      : `FAOSTAT global median producer price (${g.n} countries, 2018+)`;
+    return { usdPerT: g.usdPerT, source: 'faostat-median', label, ...(implausible ? { replaced: { usdPerT: p!.usdPerT, year: p!.year } } : {}) };
+  }
   return null;
 }

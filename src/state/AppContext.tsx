@@ -4,7 +4,8 @@ import { DEMOS, DEMO_SENEGAL } from './demo';
 import { detectPack, packById } from '../data/regionPacks';
 import { fetchPower, powerGridCell } from '../weather/power';
 import { effectiveSoil, fetchSoil } from '../soil/soil';
-import { runEngine, type EngineOutput } from '../engine/plan';
+import { baselineCrops, initialPlaceholder, refreshPlaceholder, runEngine, type EngineOutput } from '../engine/plan';
+import { cropFor } from '../data/crops';
 import { reviewSeason, type SeasonReview } from '../engine/review';
 import { fetchForecast, reverseCountry, type Forecast } from '../weather/forecast';
 import { countryInfo, fxFactor } from '../data/countries';
@@ -52,22 +53,28 @@ const BUNDLED: { key: string; lat: number; lon: number; load: () => Promise<any>
   { key: 'kostanay', lat: 53.0, lon: 64.0, load: () => import('../data/demo/kostanay.json') },
 ];
 
-/** Starting budget for a new farm (USD-equivalent per ha), converted to local currency once the country is known. */
-export const defaultBudgetUsd = (s: Pick<FarmScenario, 'area'>) => Math.max(1, s.area) * 900;
-
+/**
+ * A new / custom farm. Its funds and reserve are a flagged placeholder sized from the usual plan's cash cost
+ * (≈90% of it is spendable, see placeholderBudget in engine/budget.ts), not a flat amount per hectare — the old
+ * 900 USD/ha default made every plan affordable in low-cost regions and none in high-cost ones. The placeholder is
+ * re-derived while the farmer has not edited it, whenever the pack, currency, area or usual plan changes.
+ */
 export function blankScenario(at?: { lat: number; lon: number; label?: string; iso2?: string }): FarmScenario {
   const c = countryInfo(at?.iso2);
-  const fx = c?.lcuPerUsd ?? 1;
   const base: FarmScenario = {
     ...structuredClone(DEMO_SENEGAL), id: `farm-${Date.now()}`, name: at?.label ? `My farm · ${at.label.split(',')[0]}` : 'My farm', synthetic: false,
     location: at ? { lat: at.lat, lon: at.lon, label: at.label } : structuredClone(DEMO_SENEGAL.location),
     countryIso2: at ? at.iso2 : 'SN', currency: c?.currency ?? (at ? 'USD' : 'XOF'), area: 1, areaUnit: 'ha',
     history: [], fertilizer: [], confirmedInflows: [], priceOverrides: {}, unavailableCrops: [], marketCrops: [],
     availableFunds: 0, reserve: 0, baselineOverride: null, soil: { texture: 'unknown' }, laborAvailable: 'medium', allowFallow: false,
+    needsResidue: false, // unknown for a new farm: no livestock constraint until the farmer says so
   };
-  base.availableFunds = Math.round(defaultBudgetUsd(base) * (at ? fx : (countryInfo('SN')?.lcuPerUsd ?? 580)));
-  base.reserve = Math.round(base.availableFunds * 0.1);
-  return base;
+  const pack = detectPack(base.location.lat, base.location.lon, base.countryIso2);
+  // The farmer already manages the labor of their usual plan, so the default must not block it (at least 'medium').
+  const LABOR = ['low', 'medium', 'high'] as const;
+  const need = Math.max(1, ...baselineCrops(base, pack).map((c) => LABOR.indexOf(cropFor(pack, c).labor)));
+  base.laborAvailable = LABOR[need];
+  return { ...base, ...initialPlaceholder(base, pack) };
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -152,6 +159,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try { return { engine: runEngine(scenario, data.series, soil, pack), engineError: null }; }
     catch (e: any) { return { engine: null, engineError: e?.message ?? String(e) }; }
   }, [scenario, data.series, soil, pack]);
+
+  // Scenario defaults: keep an unedited placeholder budget in step with the plan costs at this location.
+  useEffect(() => {
+    if (!engine || !scenario.budgetPlaceholder) return;
+    const patch = refreshPlaceholder(scenario, engine);
+    if (patch) setScenarios((list) => list.map((s) => (s.id === scenario.id ? { ...s, ...patch } : s)));
+  }, [engine, scenario]);
 
   const reviews = useMemo(() => {
     if (!engine || !data.series || !soil) return [];

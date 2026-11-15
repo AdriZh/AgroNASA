@@ -2,7 +2,7 @@
 // Prices are computed from data (FAOSTAT + regional templates) and stay hidden unless the farmer opens them.
 import { useEffect, useState } from 'react';
 import type { Route } from '../../App';
-import { ArrowLeft, ArrowRight, Droplets, RotateCcw, Sprout, Tags, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Droplets, RotateCcw, Sprout, Tags, X } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
 import { cropName } from '../../data/crops';
 import { fmtMoney } from '../../domain/units';
@@ -37,7 +37,7 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
               <NumInput value={sc.reserve} min={0} onChange={(v) => update((s) => ({ ...s, reserve: Math.max(0, v ?? 0) }))} />
             </label>
           </div>
-          <p className="spendable mini">= {fmtMoney(Math.max(0, sc.availableFunds - sc.reserve), cur)} to spend</p>
+          <MoneySplit funds={sc.availableFunds} reserve={sc.reserve} cur={cur} />
 
           <div className="divider" />
           <div>
@@ -50,6 +50,7 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
               </label>
             )}
           </div>
+          <FieldScene irrigated={sc.irrigation === 'yes'} crops={crops.filter(allowed)} />
         </section>
 
         <section className="onboard-panel">
@@ -60,7 +61,7 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
           <div className="crop-chips" role="group" aria-label="Allowed crops">
             {crops.map((c) => (
               <button key={c} type="button" className={`crop-chip ${allowed(c) ? 'on' : ''}`} aria-pressed={allowed(c)} onClick={() => toggle(c)}>
-                <CropIcon id={c} size={20} />{cropName(c)}
+                <CropIcon id={c} size={64} /><span>{cropName(c)}</span><Check className="tick" size={16} aria-hidden />
               </button>
             ))}
           </div>
@@ -146,6 +147,36 @@ function PricesDialog({ onClose }: { onClose: () => void }) {
           <button className="btn primary sm" onClick={onClose}><Sprout size={14} /> Done</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Money as a picture: what you can spend next to what you keep. */
+function MoneySplit({ funds, reserve, cur }: { funds: number; reserve: number; cur: string }) {
+  const spend = Math.max(0, funds - reserve);
+  const share = funds > 0 ? Math.min(100, (100 * spend) / funds) : 0;
+  return (
+    <div className="money-split" aria-label={`${fmtMoney(spend, cur)} to spend`}>
+      <div className="ms-bar">
+        <i className="ms-spend" style={{ width: `${share}%` }} />
+        <i className="ms-keep" style={{ width: `${100 - share}%` }} />
+      </div>
+      <div className="ms-legend"><span><b>{fmtMoney(spend, cur)}</b> to spend</span><span className="muted">{fmtMoney(Math.min(reserve, funds), cur)} kept</span></div>
+    </div>
+  );
+}
+
+/** Decorative field: rows planted with the allowed crops, with falling drops when you can irrigate. */
+function FieldScene({ irrigated, crops }: { irrigated: boolean; crops: string[] }) {
+  const list = crops.length ? crops : ['fallow'];
+  return (
+    <div className={`field-scene ${irrigated ? 'wet' : ''}`} aria-hidden>
+      {irrigated && <div className="fs-rain">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ left: `${(i * 7.3 + 3) % 100}%`, animationDelay: `${(i * 0.37) % 1.6}s` }} />)}</div>}
+      {Array.from({ length: 4 }, (_, r) => (
+        <div key={r} className="fs-row">
+          {Array.from({ length: 9 }, (_, k) => <CropIcon key={k} id={list[(r + Math.floor(k / 3)) % list.length]} size={22} />)}
+        </div>
+      ))}
     </div>
   );
 }

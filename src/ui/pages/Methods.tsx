@@ -1,4 +1,5 @@
 import { PACKS } from '../../data/regionPacks';
+import { TEAM } from '../../data/team';
 import { CROPS } from '../../data/crops';
 import { SOURCES } from '../../data/sources';
 import { Ref, Tag } from '../components/common';
@@ -68,7 +69,10 @@ export function MethodsPage() {
           <h2>8. Privacy</h2>
           <p>Crop history, fertilizer records, prices and budget are stored in this browser (localStorage); public datasets are cached in IndexedDB. Requests to NASA POWER, SoilGrids, Open-Meteo and the map and geocoder contain only coordinates or a place name; providers still see network information. Export, import and delete-all are on the Report page. No account, no tracking.</p>
 
-          <h2>9. AI disclosure and limits</h2>
+          <h2>9. Team</h2>
+          <p>{TEAM.join(' · ')}. Developed alongside the team's Fieldwise prototype, which inspired some ideas.</p>
+
+          <h2>10. AI disclosure and limits</h2>
           <p>AI assistance was used for research synthesis, documents and code. Recommendations are produced by fixed rules and published formulas, not by a language model. Not validated agronomic advice: rule packs await local review; no user tests or field validation are claimed. NASA data is credited; NASA does not endorse this project.</p>
         </div>
       </article>

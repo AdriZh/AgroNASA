@@ -65,7 +65,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
             <div className="hero-art" aria-hidden><OrbitVisual /></div>
             {best ? (
               <>
-                <PlanCard p={best} cur={cur} label="Best fit" tone="brand" best compact risk={stress?.get(best.id) ?? null} />
+                <PlanCard p={best} cur={cur} label="Best fit" tone="brand" best compact risk={stress?.get(best.id) ?? null} showNet />
                 <div className="spread"><span className="mini">Best fit for the {place} {scenario.synthetic ? 'demo farm' : 'farm'}</span><button className="btn ghost sm" onClick={() => go('compare')}>All plans <ArrowRight /></button></div>
               </>
             ) : engine ? (

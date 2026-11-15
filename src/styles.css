@@ -339,6 +339,7 @@ td.wrap, .table-wrap td.wrap { white-space: normal; }
 .plan-risk b { font-weight: var(--w-strong); white-space: nowrap; color: var(--text); }
 .plan-risk-wi { display: flex; align-items: center; gap: var(--s-1); flex-wrap: wrap; color: var(--text-muted); }
 .plan-risk-wi svg { flex: none; }
+.plan-risk-net { border-top: 1px dashed var(--border); padding-top: var(--s-1); margin-top: var(--s-1); }
 .budget-chip { border: 0; cursor: pointer; font: inherit; font-size: 12px; line-height: 16px; font-weight: var(--w-strong); vertical-align: 1px; margin-left: var(--s-1); }
 .budget-chip:hover { text-decoration: underline; }
 .budget-chip:focus-visible { box-shadow: var(--focus); outline: none; }
@@ -461,7 +462,7 @@ details.disclose > .body { margin-top: var(--s-3); }
 /* ---------- presentation ---------- */
 .pitch { position: fixed; inset: 0; z-index: 2000; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
 .pitch-stage { flex: 1; display: grid; place-items: center; padding: var(--s-4); overflow: auto; }
-.slide { width: min(1280px, 100%); aspect-ratio: 16 / 9; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: var(--s-7); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.slide { width: min(1280px, 100%, calc((100dvh - 120px) * 16 / 9)); aspect-ratio: 16 / 9; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: var(--s-7); display: flex; flex-direction: column; position: relative; overflow: hidden; }
 .slide.title-slide { background-image: linear-gradient(to right, color-mix(in srgb, var(--border) 40%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--border) 40%, transparent) 1px, transparent 1px); background-size: 24px 24px; }
 .slide h1 { font-size: clamp(28px, 4vw, 56px); line-height: 1.1; letter-spacing: -.02em; }
 .slide h2 { font-size: clamp(24px, 3vw, 40px); line-height: 1.15; letter-spacing: -.02em; margin-bottom: var(--s-3); }
@@ -494,6 +495,41 @@ details.disclose > .body { margin-top: var(--s-3); }
 .timeline i { display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); border: 2px solid var(--brand); margin: 0 auto 10px; }
 .timeline i.on { background: var(--brand); }
 .slide-plans .plan { padding: var(--s-4); }
+/* slide 3: live Compare in miniature, callouts aligned to the card rows via subgrid */
+.mini-compare { flex: 1; display: grid; grid-template-columns: clamp(184px, 19%, 236px) repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto auto auto; column-gap: var(--s-3); row-gap: var(--s-3); align-content: center; margin-top: var(--s-2); }
+.mini-compare > .plan { grid-row: 1 / span 4; display: grid; grid-template-rows: subgrid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s-3); padding: var(--s-3); min-width: 0; }
+.mini-compare > .plan.best { padding: calc(var(--s-3) - 1px); }
+.mini-compare .plan-top .badge { flex: none; }
+.mini-compare .plan .seq { font-size: 18px; }
+.mc-calls { grid-column: 1; display: flex; flex-direction: column; justify-content: space-between; gap: var(--s-2); }
+.mc-r3 { grid-row: 3; justify-content: center; }
+.mc-r4 { grid-row: 4; }
+.mc-call { display: grid; grid-template-columns: 24px 1fr 18px; gap: var(--s-2); align-items: center; }
+.mc-call b { display: block; color: var(--brand); font-size: 15px; line-height: 20px; }
+.mc-call span:not(.mc-n) { display: block; font-size: 13px; line-height: 18px; color: var(--text-muted); }
+.mc-n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--brand); color: var(--on-brand); font-size: 12px; font-weight: var(--w-strong); }
+.mc-arrow { color: var(--brand); }
+.slide .ink { color: var(--text); }
+/* slide 7: live URL and QR */
+.impact-grid { display: grid; grid-template-columns: minmax(0, 1fr) 232px; gap: var(--s-4); align-items: start; margin-top: var(--s-1); }
+.impact-t { font-size: 20px; color: var(--text); }
+.qr-box { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); background: var(--surface-2); border-radius: var(--r); padding: var(--s-3); font-size: 13px; }
+.qr-box img { display: block; width: 200px; height: 200px; border-radius: var(--r-sm); }
+.live-url { margin-top: auto; padding-bottom: var(--s-3); display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; }
+.live-url a { font-size: clamp(28px, 3.4vw, 48px); line-height: 1.1; font-weight: var(--w-strong); letter-spacing: -.02em; color: var(--brand); text-decoration: none; overflow-wrap: anywhere; }
+.live-url a:hover { text-decoration: underline; }
+@media (max-width: 760px) {
+  .mini-compare { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .mini-compare > .plan { grid-row: auto; display: flex; }
+  .mc-calls { display: none; }
+  .impact-grid { grid-template-columns: minmax(0, 1fr); }
+}
+/* short screens (1280 × 720 projectors): the whole 16:9 slide fits without scrolling */
+@media (max-height: 820px) and (min-width: 761px) {
+  .pitch-stage { padding: var(--s-2); }
+  .pitch .slide { width: min(1280px, 100%, calc((100dvh - 72px) * 16 / 9)); padding: 40px 48px; }
+  .pitch .slide .foot { left: 48px; right: 48px; bottom: 12px; }
+}
 .pitch-bar { display: flex; justify-content: space-between; align-items: center; padding: var(--s-2) var(--s-4); background: var(--surface); border-top: 1px solid var(--border); color: var(--text-muted); font-size: 13px; gap: var(--s-2); flex-wrap: wrap; }
 .progress { display: flex; gap: 6px; align-items: center; }
 .progress i { width: 8px; height: 8px; border-radius: 50%; background: var(--border); cursor: pointer; }

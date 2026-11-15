@@ -45,7 +45,7 @@ function harvestText(p: PlanResult) {
 }
 
 /** The plan card: one hero number (cash cost), budget bar, three stat rows, sowing lines. Used by Compare, Overview and Report. */
-export function PlanCard({ p, cur, label, tone, best, onWhy, selected, compact, risk }: { p: PlanResult; cur: string; label: string; tone?: 'brand'; best?: boolean; onWhy?: () => void; selected?: boolean; compact?: boolean; risk?: PlanStress | null }) {
+export function PlanCard({ p, cur, label, tone, best, onWhy, selected, compact, risk, showNet }: { p: PlanResult; cur: string; label: string; tone?: 'brand'; best?: boolean; onWhy?: () => void; selected?: boolean; compact?: boolean; risk?: PlanStress | null; showNet?: boolean }) {
   const severe = Math.round(p.outcome.pSevereAny * p.outcome.pairs);
   return (
     <article className={`card plan ${best ? 'best' : ''} ${compact ? 'preview' : ''}`} aria-label={`${label}: ${cropName(p.crops[0])} then ${cropName(p.crops[1])}`}>
@@ -59,7 +59,7 @@ export function PlanCard({ p, cur, label, tone, best, onWhy, selected, compact, 
         <BudgetBar cost={p.budget.totalCash} cap={p.budget.cap + p.budget.inflowsTotal} status={p.budget.status} />
         <BudgetLine p={p} cur={cur} />
       </div>
-      {compact && risk !== undefined && <RiskRow p={p} s={risk} />}
+      {compact && risk !== undefined && <RiskRow p={p} s={risk} net={showNet ? (p.outcome.net ? fmtMoney(p.outcome.net.median, cur) : '—') : undefined} />}
       {!compact && <>
         <div className="group" style={{ marginTop: 0 }}>
           <StatRows rows={[

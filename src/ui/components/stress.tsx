@@ -31,7 +31,7 @@ export function useDrierHotter(): Map<string, PlanStress> | null {
 const count = (share: number, pairs: number) => (Number.isFinite(share) ? Math.round(share * pairs) : null);
 
 /** "Severe water stress: X of 24 season pairs · drier & hotter (−15% rain, +2 °C) → Y". */
-export function RiskRow({ p, s }: { p: PlanResult; s?: PlanStress | null }) {
+export function RiskRow({ p, s, net }: { p: PlanResult; s?: PlanStress | null; net?: string }) {
   const pairs = p.outcome.pairs;
   const now = count(p.outcome.pSevereAny, pairs);
   const thenPairs = s?.pairs[1] ?? pairs;
@@ -44,6 +44,7 @@ export function RiskRow({ p, s }: { p: PlanResult; s?: PlanStress | null }) {
         <ArrowRight size={13} aria-hidden />
         <b>{then != null ? `${then} of ${thenPairs}` : '…'}</b>
       </div>
+      {net !== undefined && <div className="spread plan-risk-net"><span className="caption">Modeled net, typical year</span><b>{net}</b></div>}
     </div>
   );
 }

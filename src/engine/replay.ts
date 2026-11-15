@@ -4,6 +4,7 @@ import type { CropDef, DailySeries, RegionPack, SeasonDef, SoilProfile } from '.
 import { addDays, dayIndex, doy, fromDoy } from '../domain/dates';
 import { completeYears, frostDates, median, monthlyClimatology, quantile, rainOnset, temperatureSowing } from '../weather/indicators';
 import { seasonLength, simulateSeason, type SeasonSim } from '../weather/waterBalance';
+import { seasonLengthCheck, type SeasonLengthCheck } from './season';
 
 export interface SowingWindow {
   id: string; label: string; crops: string[];
@@ -114,6 +115,8 @@ export interface CropRisk {
   medianRain: number; medianDry: number;
   tempOutOfRange: number;     // share of years with season-mean T outside the crop range
   meanSeasonT: number | null;
+  /** Growing-season length versus the crop cycle, on this replay's sowing dates (src/engine/season.ts). */
+  season?: SeasonLengthCheck;
 }
 
 function seasonMeanT(s: DailySeries, sowing: string, days: number): number | null {
@@ -160,5 +163,6 @@ export function replayCrop(s: DailySeries, w: SowingWindow, crop: CropDef, soil:
     medianRain: median(sims.map((x) => x.rainMm)), medianDry: median(sims.map((x) => x.longestDry)),
     tempOutOfRange: sims.filter((x) => x.meanT != null && (x.meanT < crop.tMeanRange[0] || x.meanT > crop.tMeanRange[1])).length / n,
     meanSeasonT: sims.length ? sims.reduce((a, x) => a + (x.meanT ?? 0), 0) / sims.length : null,
+    season: seasonLengthCheck(s, crop, Object.fromEntries(sims.map((x) => [x.year, x.sowing]))),
   };
 }

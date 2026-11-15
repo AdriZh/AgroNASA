@@ -123,6 +123,8 @@ export interface CropDef {
   frostSensitive: boolean;
   sowTempC: number;           // 5-day mean T2M needed to sow (temperature-driven sowing)
   tMeanRange: [number, number]; // season mean air temperature range for screening (°C)
+  /** Optional GDD base temperature and thermal time to maturity (°C·d); see src/engine/season.ts. None calibrated yet. */
+  tbaseC?: number; gddToMaturity?: number;
   phRange: [number, number];
   minReturnSeasons: number;   // seasons that must pass before the same crop again
   diseaseGroups: string[];    // shared pathogen groups (e.g. sclerotinia)
@@ -236,7 +238,7 @@ export type ReasonCode =
   | 'IRRIGATION_REQUIRED' | 'SEED_UNAVAILABLE' | 'MARKET_CONSTRAINT' | 'LABOR_LIMIT' | 'RESIDUE_NEED'
   | 'CLIMATE_UNSUITABLE' | 'CLIMATE_RISK_HIGH' | 'HEAT_EXPOSURE' | 'FROST_RISK' | 'SOIL_PH'
   | 'SEASON_OVERLAP' | 'HISTORY_INCOMPLETE' | 'CLIMATE_CONTEXT_ONLY' | 'UNREVIEWED_RULES' | 'SYNTHETIC_PRICES'
-  | 'OUT_OF_CALENDAR';
+  | 'OUT_OF_CALENDAR' | 'SEASON_TOO_SHORT';
 
 export interface Reason {
   code: ReasonCode;

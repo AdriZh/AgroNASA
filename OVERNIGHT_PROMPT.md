@@ -22,6 +22,18 @@ Fix these early, because they hurt credibility on the screen judges care about m
 - **The four-bullet disclaimer box** dominates the top of the page. Collapse it into a single honest line with an expandable "details" link. Keep the honesty, lose the wall of text.
 - **Before the presentation:** open several world locations (Kenya, India, Iowa, Brazil, Ukraine) and check that the plans make agronomic sense, with no nonsense crops for the climate and no monocultures at the top.
 
+## Design overhaul (a top priority, which the owner says currently "looks terrible")
+
+The owner judges the current visual design as poor. Presentation is a scoring criterion, and the look is the first thing judges notice, so treat this as **co-equal with priority 2**:
+- **One designer agent leads it.** Use `fable` and pass it the `artifact-design` skill guidance if available. It audits screenshots of every tab at 1440×900 and phone width, then writes a short design direction in `docs/DESIGN.md`:
+  - a palette of 1 brand color, 1 accent and neutrals, plus semantic good/warn/bad colors;
+  - one type scale with 2 weights, an 8-px spacing grid and a card style;
+  - chart styling that matches the UI, and the tone of the experience (calm, trustworthy, "NASA meets field notebook").
+- **Then rebuild the UI on that system.** Use CSS variables in `src/styles.css`, consistent components in `src/ui/components/common.tsx` and fewer borders and boxes. Use strong visual hierarchy: one hero number per card (cost vs budget), with everything else secondary or behind "See why." Use real whitespace, align to the grid and give text a sensible maximum width.
+- **Make it feel premium:** a striking landing/overview hero (satellite imagery or an animated globe already exist in `OrbitVisual`), smooth but subtle transitions, polished empty and loading states, and a dark mode that works. Check that each page reads in 3 seconds.
+- **Keep it consistent.** The pitch slides and the printable report must use the same design system.
+- **Verify before and after.** Take before and after Playwright screenshots of each tab and have the judge agent compare them. Iterate until it would honestly rate presentation 9/10.
+
 ## Judging criteria (Space Apps)
 
 Influence/Impact, Creativity, Validity (scientific soundness), Relevance (to the challenge and to NASA data), and Presentation. Judges spend **under 2 minutes** per project: a 30-second video or up to 7 slides, a project page and a live link. **Polish of the first 30 seconds matters more than depth on page 6.**

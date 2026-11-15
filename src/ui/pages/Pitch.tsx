@@ -309,7 +309,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     ) },
     { id: 'bucket', kicker: 'Science 2 · Will the crop get enough water?', icon: <Droplets size={14} />, body: (
       <>
-        <motion.h2 {...up(0.1)}>A daily soil-water bucket, replayed season by season since 2001.</motion.h2>
+        <motion.h2 {...up(0.1)}>A daily soil-water bucket, every season since 2001.</motion.h2>
         <div style={{ display: 'grid', gridTemplateColumns: '.9fr 1.1fr', gap: 32, flex: 1, alignItems: 'center' }}>
           <motion.div {...fade(0.2)}><Bucket /></motion.div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

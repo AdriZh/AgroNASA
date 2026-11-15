@@ -1,6 +1,10 @@
 import type { DailySeries } from '../domain/types';
 import { addDays, diffDays, toISO } from '../domain/dates';
 import { idbGet, idbSet } from '../state/idb';
+import { errorText, fetchJson, NetError } from './net';
+
+/** 25 years × 9 parameters is ~1.3 MB and POWER can take 30+ s to assemble it. */
+export const POWER_TIMEOUT_MS = 40_000;
 
 export const POWER_PARAMS = ['PRECTOTCORR', 'T2M_MAX', 'T2M_MIN', 'T2M', 'RH2M', 'WS2M', 'ALLSKY_SFC_SW_DWN', 'GWETROOT', 'GWETTOP'] as const;
 const KEY: Record<(typeof POWER_PARAMS)[number], keyof DailySeries> = {
@@ -95,15 +99,18 @@ export async function fetchPower(lat: number, lon: number, opts: { force?: boole
   let lastErr = '';
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(query, { signal: opts.signal });
-      if (!res.ok) throw new Error(`NASA POWER HTTP ${res.status}`);
-      const json = await res.json();
+      const json = await fetchJson(query, { signal: opts.signal, timeoutMs: POWER_TIMEOUT_MS, service: 'NASA POWER' });
       const { series, quality } = parsePower(json, query, new Date().toISOString(), `NASA POWER grid cell ${cell.cLat.toFixed(2)}°, ${cell.cLon.toFixed(3)}°`);
       await idbSet(cacheKey, compact(series));
       return { series, quality, fromCache: false };
     } catch (e: any) {
-      if (e?.name === 'AbortError') throw e;
-      lastErr = e?.message ?? String(e);
+      lastErr = errorText(e);
+      if (e instanceof NetError) {
+        if (e.kind === 'aborted') throw e;
+        // A 40 s timeout or a client error will not get better by asking again right away.
+        if (e.kind === 'timeout' || (e.kind === 'http' && e.status != null && e.status < 500 && e.status !== 429)) break;
+        if (e.kind === 'offline' && attempt >= 1) break;
+      }
       await new Promise((r) => setTimeout(r, 800 * 2 ** attempt));
     }
   }

@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import type { Route } from '../../App';
 import { useApp } from '../../state/AppContext';
-import { seasonEndOf } from './Evidence';
+import { seasonEndOf } from './season';
 import { DEMOS } from '../../state/demo';
 import { cropEmoji, cropName } from '../../data/crops';
 import { fmtMoney } from '../../domain/units';
@@ -12,6 +12,7 @@ import { yearlyWindow } from '../../weather/indicators';
 import { SeasonRainChart } from '../components/charts';
 import { CardTitle, Loading, NasaLoading, pct } from '../components/common';
 import { LocationSearch, PresetGrid } from '../components/LocationPicker';
+import { WeatherError } from '../components/NetStatus';
 import { OrbitVisual } from '../components/OrbitVisual';
 
 export function Overview({ go }: { go: (r: Route) => void }) {
@@ -67,7 +68,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
             </div>
             <button className="btn primary" onClick={() => go('compare')}>Open comparison <ArrowRight size={16} /></button>
           </div>
-          {!engine ? (data.weatherStatus === 'error' ? <p className="mini">NASA POWER could not be loaded: {data.weatherError}</p> : <NasaLoading place={scenario.location.label} />) : (
+          {!engine ? (data.weatherStatus === 'error' ? <WeatherError /> : <NasaLoading place={scenario.location.label} />) : (
             <>
               <div className="grid g3" style={{ gap: 12 }}>
                 <div className="card flat" style={{ padding: 16 }}>
@@ -102,7 +103,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
               <SeasonRainChart rows={rows} highlight={[min!.year, max!.year]} />
               <p className="mini" style={{ margin: 0 }}>Season rainfall here ranged from <b>{Math.round(min!.windowRain)} mm ({min!.year})</b> to <b>{Math.round(max!.windowRain)} mm ({max!.year})</b> — {(max!.windowRain / min!.windowRain).toFixed(1)}×. A single “average year” hides that risk.</p>
             </>
-          ) : <Loading text="Loading…" />}
+          ) : data.weatherStatus === 'error' ? <p className="mini">No NASA POWER record for this location yet: NASA POWER could not be reached. The two demo farms work offline.</p> : <Loading text="Loading…" />}
         </div>
       </section>
 

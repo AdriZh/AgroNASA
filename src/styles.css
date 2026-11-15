@@ -372,3 +372,6 @@ details[open] > summary::after { transform: rotate(-135deg); }
 .loading-banner .bar { height: 6px; border-radius: 6px; background: #dbeafe; overflow: hidden; margin-top: 8px; }
 .loading-banner .bar i { display: block; height: 100%; width: 40%; border-radius: 6px; background: linear-gradient(90deg, #3b82f6, #10b981); animation: slide 1.4s ease-in-out infinite; }
 @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
+
+/* Suspense placeholder for code-split routes and the map */
+.route-fallback { border-radius: 16px; background: var(--surface-3); animation: pulse 1.2s ease-in-out infinite; }

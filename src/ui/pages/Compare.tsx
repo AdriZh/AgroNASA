@@ -8,6 +8,7 @@ import { fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDayMonth, fmtDate } from '../../domain/dates';
 import { CashTimeline, CostChart, RangeBar, ReplayChart } from '../components/charts';
 import { CardTitle, Callout, Meter, NasaLoading, pct, ReasonList, Tag } from '../components/common';
+import { WeatherError } from '../components/NetStatus';
 
 const STATUS: Record<string, { cls: string; t: string; i: ReactNode }> = {
   affordable: { cls: 'ok', t: 'Affordable', i: <CheckCircle2 /> }, unaffordable: { cls: 'bad', t: 'Over budget', i: <XCircle /> }, unverified: { cls: 'warn', t: 'Budget not verified', i: <HelpCircle /> }, timing: { cls: 'bad', t: 'Cash-timing gap', i: <Clock /> },
@@ -65,7 +66,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
   const { engine, engineError, scenario: sc, data } = useApp();
   const [sel, setSel] = useState<string | null>(null);
   if (engineError) return <Callout tone="bad">Engine error: {engineError}</Callout>;
-  if (!engine) return data.weatherStatus === 'error' ? <Callout tone="bad">NASA POWER data could not be loaded for this location ({data.weatherError}). Try “Refresh live NASA data” or another location.</Callout> : <NasaLoading place={sc.location.label} />;
+  if (!engine) return data.weatherStatus === 'error' ? <WeatherError /> : <NasaLoading place={sc.location.label} />;
   const plans = [engine.baseline, ...engine.alternatives];
   const chosen = plans.find((p) => p.id === sel) ?? engine.allPlans.find((p) => p.id === sel) ?? (engine.alternatives[0] ?? engine.baseline);
   const cur = sc.currency;

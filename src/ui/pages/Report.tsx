@@ -6,6 +6,7 @@ import { fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDate, fmtDayMonth, todayISO } from '../../domain/dates';
 import { SOURCES } from '../../data/sources';
 import { Callout, pct } from '../components/common';
+import { WeatherError } from '../components/NetStatus';
 import type { FarmScenario } from '../../domain/types';
 
 export function ReportPage() {
@@ -26,7 +27,7 @@ export function ReportPage() {
       importScenario(s); setMsg(`Imported “${s.name}”.`);
     } catch (e: any) { setMsg(`Import failed: ${e.message}`); }
   };
-  if (!engine) return <Callout tone="info">Loading…</Callout>;
+  if (!engine) return data.weatherStatus === 'error' ? <WeatherError /> : <Callout tone="info">Loading…</Callout>;
   const plans = [engine.baseline, ...engine.alternatives];
   const cur = sc.currency;
   const cited = new Set<string>(['D1', 'R5', 'R6', 'R8', 'R17', 'R18', 'R19', 'R20', 'R21', ...engine.pack.sources]);
@@ -100,7 +101,7 @@ export function ReportPage() {
         </ul>
 
         <h3 style={{ marginTop: 18 }}>Data & sources</h3>
-        <div className="mini">NASA POWER {data.series?.meta.start}–{data.series?.meta.end} ({data.weatherOrigin}, retrieved {data.series?.meta.retrievedAt.slice(0, 10)}). Soil: {data.soilGrid ? `SoilGrids ${data.soilGrid.texture}, AWC ${fmtNum(data.soilGrid.awcMmPerM, 0)} mm/m` : 'unavailable'}.</div>
+        <div className="mini">NASA POWER {data.series?.meta.start}–{data.series?.meta.end} ({data.weatherOrigin === 'bundled' ? 'archived snapshot' : data.weatherOrigin === 'cache' ? 'cached' : 'live'}, retrieved {data.series?.meta.retrievedAt.slice(0, 10)}). Soil: {data.soilGrid ? `SoilGrids ${data.soilGrid.texture}, AWC ${fmtNum(data.soilGrid.awcMmPerM, 0)} mm/m` : 'SoilGrids offline, typical values for the texture class used'}.</div>
         <ol className="mini" style={{ paddingLeft: 18 }}>
           {SOURCES.filter((s) => cited.has(s.id)).map((s) => <li key={s.id}><b>[{s.id}]</b> {s.title} <span className="muted">— {s.url}</span></li>)}
         </ol>

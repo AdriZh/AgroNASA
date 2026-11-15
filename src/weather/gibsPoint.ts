@@ -4,6 +4,9 @@
 //   SMAP L4 root-zone soil moisture (~9 km), GRACE/GRACE-FO mascon water-storage anomaly.
 // Values are quantized to the colormap bins (e.g. NDVI 0.005, SMAP 0.003 m³/m³, GRACE 0.25 cm).
 import { idbGet, idbSet } from '../state/idb';
+import { fetchJson, fetchWithTimeout } from './net';
+
+const TILE_TIMEOUT_MS = 10_000;
 
 const GIBS = 'https://gibs.earthdata.nasa.gov';
 
@@ -80,13 +83,18 @@ export function ndviDates(year: number): string[] {
 }
 
 const cmCache = new Map<string, Promise<CmEntry[]>>();
-function colormap(name: string): Promise<CmEntry[]> {
-  if (!cmCache.has(name)) cmCache.set(name, fetch(`${GIBS}/colormaps/v1.3/${name}.xml`).then((r) => { if (!r.ok) throw new Error(`colormap ${r.status}`); return r.text(); }).then(parseColormap));
+/** GIBS colormap for a layer (cached per session; a failed download is forgotten so it can be retried). */
+export function colormap(name: string): Promise<CmEntry[]> {
+  if (!cmCache.has(name)) {
+    const p = fetchWithTimeout(`${GIBS}/colormaps/v1.3/${name}.xml`, { timeoutMs: TILE_TIMEOUT_MS, service: 'NASA GIBS' }).then((r) => r.text()).then(parseColormap);
+    p.catch(() => cmCache.delete(name));
+    cmCache.set(name, p);
+  }
   return cmCache.get(name)!;
 }
 
 async function readPixels(url: string, px: number, py: number, radius: number): Promise<[number, number, number, number][] | null> {
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url, { timeoutMs: TILE_TIMEOUT_MS, service: 'NASA GIBS', requireOk: false });
   if (!res.ok) return null;
   const blob = await res.blob();
   if (!blob.type.startsWith('image/')) return null;
@@ -155,9 +163,7 @@ function haversineKm(a: number, b: number, c: number, d: number) {
 
 export async function fetchEonet(lat: number, lon: number, radiusDeg = 3, days = 730): Promise<EonetEvent[]> {
   const bbox = [lon - radiusDeg, lat + radiusDeg, lon + radiusDeg, lat - radiusDeg].map((v) => v.toFixed(2)).join(',');
-  const res = await fetch(`https://eonet.gsfc.nasa.gov/api/v3/events?bbox=${bbox}&days=${days}&status=all&limit=200`);
-  if (!res.ok) throw new Error(`EONET HTTP ${res.status}`);
-  const j = await res.json();
+  const j = await fetchJson(`https://eonet.gsfc.nasa.gov/api/v3/events?bbox=${bbox}&days=${days}&status=all&limit=200`, { timeoutMs: 12_000, service: 'NASA EONET' });
   const out: EonetEvent[] = [];
   for (const e of j.events ?? []) {
     const g = (e.geometry ?? []).slice(-1)[0];

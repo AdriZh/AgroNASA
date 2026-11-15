@@ -1,20 +1,50 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import {
   BookOpen, ChevronRight, Clapperboard, FileText, LayoutDashboard, Menu, Presentation, RefreshCw,
 } from 'lucide-react';
 import { useApp } from './state/AppContext';
 import { Overview } from './ui/pages/Overview';
-import { FarmPage } from './ui/pages/Farm';
-import { ResourcesPage } from './ui/pages/Resources';
-import { ComparePage } from './ui/pages/Compare';
-import { EvidencePage } from './ui/pages/Evidence';
-import { ReportPage } from './ui/pages/Report';
-import { MethodsPage } from './ui/pages/Methods';
-import { PitchPage } from './ui/pages/Pitch';
-import { VideoPage, VideoRender } from './ui/pages/Video';
 import { BrandMark } from './ui/components/Logo';
 import { ThemeToggle } from './ui/components/common';
+import { ShareButton } from './ui/components/ShareButton';
 import { fmtDate } from './domain/dates';
+import { TEXTURE_LABEL } from './soil/soil';
+
+// Only the landing route (Overview) is in the main bundle; every other route is its own chunk.
+const pages = {
+  farm: () => import('./ui/pages/Farm'),
+  resources: () => import('./ui/pages/Resources'),
+  compare: () => import('./ui/pages/Compare'),
+  evidence: () => import('./ui/pages/Evidence'),
+  report: () => import('./ui/pages/Report'),
+  methods: () => import('./ui/pages/Methods'),
+  pitch: () => import('./ui/pages/Pitch'),
+  video: () => import('./ui/pages/Video'),
+};
+const FarmPage = lazy(() => pages.farm().then((m) => ({ default: m.FarmPage })));
+const ResourcesPage = lazy(() => pages.resources().then((m) => ({ default: m.ResourcesPage })));
+const ComparePage = lazy(() => pages.compare().then((m) => ({ default: m.ComparePage })));
+const EvidencePage = lazy(() => pages.evidence().then((m) => ({ default: m.EvidencePage })));
+const ReportPage = lazy(() => pages.report().then((m) => ({ default: m.ReportPage })));
+const MethodsPage = lazy(() => pages.methods().then((m) => ({ default: m.MethodsPage })));
+const PitchPage = lazy(() => pages.pitch().then((m) => ({ default: m.PitchPage })));
+const VideoPage = lazy(() => pages.video().then((m) => ({ default: m.VideoPage })));
+const VideoRender = lazy(() => pages.video().then((m) => ({ default: m.VideoRender })));
+
+/** Once the landing page is idle, fetch the routes a visitor is likely to open next so clicks feel instant. */
+function usePrefetchRoutes() {
+  useEffect(() => {
+    const run = () => { for (const k of ['compare', 'farm', 'resources', 'evidence', 'pitch'] as const) pages[k]().catch(() => { /* loaded on demand */ }); };
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    const t = setTimeout(() => (w.requestIdleCallback ? w.requestIdleCallback(run, { timeout: 3000 }) : run()), 1200);
+    return () => clearTimeout(t);
+  }, []);
+}
+
+/** Skeleton placeholder while a route chunk downloads (usually well under a second). */
+function RouteFallback({ full }: { full?: boolean }) {
+  return <div className={`route-fallback ${full ? 'full' : ''}`} role="status" aria-label="Loading" />;
+}
 
 export type Route = 'overview' | 'farm' | 'resources' | 'compare' | 'evidence' | 'report' | 'methods' | 'pitch' | 'video' | 'video-render';
 type NavItem = { id: Route; label: string; step?: number; icon: ReactNode };
@@ -46,14 +76,26 @@ export default function App() {
   const [open, setOpen] = useState(false);
   const { scenario, scenarios, select, createNew, data, refreshLive, engine } = useApp();
   useEffect(() => setOpen(false), [route]);
-  if (route === 'pitch') return <PitchPage go={go} />;
-  if (route === 'video-render') return <VideoRender />;
+  usePrefetchRoutes();
+  if (route === 'pitch') return <Suspense fallback={<RouteFallback full />}><PitchPage go={go} /></Suspense>;
+  if (route === 'video-render') return <Suspense fallback={<RouteFallback full />}><VideoRender /></Suspense>;
 
+  // Status labels say honestly where each dataset came from: live, cached on this device, or archived in the app.
+  const ORIGIN = { bundled: 'Archived', cache: 'Cached', live: 'Live', typical: 'Typical values' } as const;
+  const refreshing = data.weatherStatus === 'loading' && !!data.series;
   const wDot = data.weatherStatus === 'loading' ? 'load' : data.weatherStatus === 'ready' ? (data.weatherError ? 'warn' : 'ok') : data.weatherStatus === 'error' ? 'err' : '';
-  const sDot = data.soilStatus === 'loading' ? 'load' : data.soilStatus === 'ready' ? 'ok' : data.soilStatus === 'error' ? 'warn' : '';
-  const origin = data.weatherOrigin === 'live' ? 'live' : 'cached';
-  const nasaLine = data.weatherStatus === 'loading' ? 'NASA POWER · loading…' : data.series ? `NASA POWER ${data.series.meta.start.slice(0, 4)}–${data.series.meta.end.slice(0, 4)}` : data.weatherError ? 'NASA POWER unavailable' : 'NASA POWER';
-  const nasaText = data.weatherStatus === 'loading' ? 'Loading NASA POWER…' : data.series ? `${data.weatherOrigin === 'bundled' ? 'Archived snapshot' : data.weatherOrigin === 'cache' ? 'Cached' : 'Live'} · ${data.series.meta.start.slice(0, 4)}–${fmtDate(data.series.meta.end)}` : data.weatherError ?? '—';
+  const origin = (ORIGIN[data.weatherOrigin ?? 'live'] ?? 'Live').toLowerCase();
+  const nasaLine = data.weatherStatus === 'loading' && !refreshing ? 'NASA POWER · loading…' : data.series ? `NASA POWER ${data.series.meta.start.slice(0, 4)}–${data.series.meta.end.slice(0, 4)}` : data.weatherError ? 'NASA POWER offline · retry' : 'NASA POWER';
+  const nasaText = data.weatherStatus === 'loading' && !refreshing ? 'Loading NASA POWER…'
+    : data.series ? `${refreshing ? 'Refreshing… · ' : ''}${ORIGIN[data.weatherOrigin ?? 'live']} · ${data.series.meta.start.slice(0, 4)}–${fmtDate(data.series.meta.end)}${data.weatherError && !refreshing ? ' · live update failed (offline?)' : ''}`
+    : data.weatherError ? 'Offline · could not download this location (retry with the refresh button)' : '—';
+  const farmerTexture = scenario.soil.texture !== 'unknown';
+  const typicalSoil = data.soilStatus === 'ready' && !data.soilGrid;
+  const sDot = data.soilStatus === 'loading' ? 'load' : typicalSoil ? 'warn' : data.soilStatus === 'ready' ? (data.soilError ? 'warn' : 'ok') : '';
+  const soilText = data.soilStatus === 'loading' ? 'Loading…'
+    : data.soilGrid ? `${TEXTURE_LABEL[data.soilGrid.texture]} · ${ORIGIN[data.soilOrigin ?? 'live']}`
+    : typicalSoil ? `${data.soilError && !/no data/i.test(data.soilError) ? 'SoilGrids offline' : 'No SoilGrids data here'} · ${farmerTexture ? `using your ${TEXTURE_LABEL[scenario.soil.texture].toLowerCase()} texture` : 'using typical loam values (editable)'}`
+    : '—';
   const item = (n: NavItem) => (
     <button key={n.id} className={`nav-item ${route === n.id ? 'active' : ''}`} aria-current={route === n.id ? 'page' : undefined} onClick={() => go(n.id)}>
       {n.step ? <span className="step">{n.step}</span> : n.icon}
@@ -85,7 +127,7 @@ export default function App() {
             <div className="popover">
               <dl className="dl">
                 <div><dt><span className={`dot ${wDot}`} /> NASA POWER</dt><dd className="wrap">{nasaText}</dd></div>
-                <div><dt><span className={`dot ${sDot}`} /> SoilGrids</dt><dd className="wrap">{data.soilStatus === 'loading' ? 'Loading…' : data.soilGrid ? `${data.soilGrid.texture} · ${data.soilGrid.cached || data.weatherOrigin === 'bundled' ? 'cached' : 'live'}` : data.soilError ? 'Unavailable' : '—'}</dd></div>
+                <div><dt><span className={`dot ${sDot}`} /> SoilGrids</dt><dd className="wrap">{soilText}</dd></div>
                 {engine && <div><dt>Rule pack</dt><dd className="wrap">{engine.pack.short} · v{engine.pack.version}</dd></div>}
               </dl>
             </div>
@@ -101,11 +143,12 @@ export default function App() {
           <span className="spacer" />
           <div className="appbar-actions">
             <ThemeToggle />
-            {/* Share button slot: ShareButton mounts here, next to Present. */}
+            <ShareButton />
             <button className="btn sm" onClick={() => go('pitch')} aria-label="Present"><Presentation size={16} /><span className="hide-sm">Present</span></button>
           </div>
         </header>
         <main key={route} className="page-enter">
+          <Suspense fallback={<RouteFallback />}>
           {route === 'overview' && <Overview go={go} />}
           {route === 'farm' && <FarmPage go={go} />}
           {route === 'resources' && <ResourcesPage go={go} />}
@@ -114,6 +157,7 @@ export default function App() {
           {route === 'report' && <ReportPage />}
           {route === 'methods' && <MethodsPage />}
           {route === 'video' && <VideoPage go={go} />}
+          </Suspense>
           <p className="disclaimer">
             Field Shift is a decision-support prototype for NASA Space Apps 2026 (Field Shift challenge); it informs rather than decides, and NASA does not endorse it. Default prices, yields and demo farms are synthetic; rule packs await local agronomist review. Data: NASA POWER, NASA GIBS, ISRIC SoilGrids, Open-Meteo, maps © OpenStreetMap contributors. AI assistance was used in research, documents, code and media. <a href="#/methods">Methods & sources</a>
           </p>

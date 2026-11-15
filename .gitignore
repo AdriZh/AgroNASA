@@ -5,3 +5,5 @@ dist
 .video
 *.tsbuildinfo
 .smoke/
+.claude/worktrees/
+.cache/

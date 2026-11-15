@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { ArrowRight, Clapperboard, CloudRain, Globe2, Presentation } from 'lucide-react';
 import type { Route } from '../../App';
 import { useApp } from '../../state/AppContext';
-import { seasonEndOf } from './Evidence';
+import { seasonEndOf } from './season';
 import { DEMOS } from '../../state/demo';
 import { fmtMoney } from '../../domain/units';
 import { yearlyWindow } from '../../weather/indicators';
@@ -10,6 +10,7 @@ import { SeasonRainChart } from '../components/charts';
 import { CardTitle, Loading, NasaLoading, PlanSkeleton, Tag } from '../components/common';
 import { LocationSearch, PresetGrid } from '../components/LocationPicker';
 import { OrbitVisual } from '../components/OrbitVisual';
+import { WeatherError } from '../components/NetStatus';
 import { PlanCard } from './Compare';
 
 const NASA_SOURCES: [string, string][] = [
@@ -67,7 +68,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
               </>
             ) : engine ? (
               <div className="card preview"><p className="mini">No plan fits the stated constraints here. Compare shows the smallest change that would help.</p><button className="btn ghost sm" onClick={() => go('compare')}>Open Compare <ArrowRight /></button></div>
-            ) : data.weatherStatus === 'error' ? <p className="mini">NASA POWER could not be loaded: {data.weatherError}</p> : <PlanSkeleton />}
+            ) : data.weatherStatus === 'error' ? <WeatherError /> : <PlanSkeleton />}
           </div>
         </div>
       </section>
@@ -110,7 +111,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
             <SeasonRainChart rows={rows} highlight={[min.year, max.year]} />
             <p className="chart-cap">Rain in the sowing-to-harvest window per year, mm, NASA POWER {rows[0].year}–{rows[rows.length - 1].year}. Driest {min.year} and wettest {max.year} highlighted: {(max.windowRain / min.windowRain).toFixed(1)}× apart.</p>
           </>
-        ) : engine || data.weatherStatus === 'loading' ? <Loading text="Loading NASA POWER…" /> : !engine && data.weatherStatus !== 'error' ? <NasaLoading place={scenario.location.label} variant="block" /> : <p className="mini">No climate record loaded.</p>}
+        ) : engine || data.weatherStatus === 'loading' ? <Loading text="Loading NASA POWER…" /> : !engine && data.weatherStatus !== 'error' ? <NasaLoading place={scenario.location.label} variant="block" /> : <p className="mini">No NASA POWER record for this location yet: NASA POWER could not be reached. The two demo farms work offline.</p>}
       </section>
 
       <section className="card section" aria-labelledby="how">

@@ -19,6 +19,9 @@ const GENERIC_RULES: RotationRule[] = [
   { id: 'G-R2', kind: 'exclude', text: 'Two consecutive crops sharing a major soil-borne pathogen group (e.g. Sclerotinia hosts) are not allowed.', sources: ['R29', 'R31'], reviewed: false },
   { id: 'G-R3', kind: 'benefit', text: 'A grain legume before a cereal can supply residual N and break cereal pest cycles.', sources: ['R32', 'R3'], reviewed: false },
   { id: 'G-R4', kind: 'warn', text: 'Three or more consecutive cereal seasons (including history) increase pest, weed and fertility pressure.', sources: ['R31', 'R32'], reviewed: false },
+  { id: 'G-R6', kind: 'exclude', text: 'Same crop in two consecutive seasons (monoculture) is excluded from rotation options. Where a pack lists the crop as an accepted continuous practice (e.g. irrigated rice–rice), it is only warned and ranked below true rotations. The usual plan is always shown, flagged.', sources: ['R31'], reviewed: false },
+  { id: 'G-R7', kind: 'warn', text: 'Consecutive crops of the same botanical family or sharing a pest/disease group (e.g. millet → sorghum, both Striga hosts) give a weak break; ranked below rotations that change family.', sources: ['R31', 'R32'], reviewed: false },
+  { id: 'G-R8', kind: 'benefit', text: 'A grain legume after a cereal breaks cereal pest and disease cycles and fixes its own nitrogen; legume ↔ cereal alternation is favored in the ranking.', sources: ['R32', 'R31'], reviewed: false },
 ];
 
 export const SENEGAL: RegionPack = {
@@ -28,6 +31,8 @@ export const SENEGAL: RegionPack = {
   bbox: [[10.3, -17.6, 17.8, 24]], currency: 'XOF', mode: 'annual',
   seasons: [{ id: 'rainy', label: 'Rainy season', method: 'rain-onset', earliest: '06-01', latest: '08-20', crops: ['millet', 'groundnut', 'cowpea', 'sorghum', 'maize', 'sesame', 'fallow'] }],
   crops: ['millet', 'groundnut', 'cowpea', 'sorghum', 'maize', 'sesame', 'fallow'],
+  // Groundnut → millet is the classic groundnut-basin sequence (the Bambey demo farm's own history).
+  usualRotation: ['groundnut', 'millet'],
   rules: [
     ...GENERIC_RULES,
     { id: 'SN-R1', kind: 'benefit', text: 'Cowpea–millet rotation studied at Bambey (2020–2022): prior legume, variety and residue management affected millet.', sources: ['R3'], reviewed: false },
@@ -145,6 +150,7 @@ const USD_TEMPLATES: Record<string, T[]> = {
   teff: [['seed', 'Teff seed', 25, 'kg', 1.2, -5], ['fertilizer', 'DAP / NPS', 100, 'kg', 0.8, 0], ['fertilizer', 'Urea', 50, 'kg', 0.6, 30], ['land-prep', 'Oxen ploughing (several passes)', 1, 'ha', 60, -15], ['labor', 'Hand weeding', 1, 'ha', 90, 25], ['labor', 'Harvest & threshing', 1, 'ha', 80, 'harvest']],
   fababean: [['seed', 'Faba bean seed', 150, 'kg', 0.8, -5], ['fertilizer', 'P fertilizer', 50, 'kg', 0.8, 0], ['protection', 'Disease control', 1, 'ha', 20, 40], ['land-prep', 'Land preparation', 1, 'ha', 50, -10], ['labor', 'Harvest', 1, 'ha', 50, 'harvest']],
   flax: [['seed', 'Flax seed', 45, 'kg', 1, -5], ['fertilizer', 'NPK compound', 40, 'kg', 0.8, 0], ['protection', 'Herbicide', 1, 'ha', 30, 25], ['land-prep', 'Machinery & fuel', 1, 'ha', 60, 0], ['labor', 'Harvest', 1, 'ha', 50, 'harvest']],
+  winterrapeseed: [['seed', 'Winter rapeseed hybrid seed', 5, 'kg', 10, -5], ['fertilizer', 'NPK compound (autumn)', 100, 'kg', 0.7, 0], ['fertilizer', 'Ammonium nitrate (spring)', 150, 'kg', 0.6, 160], ['protection', 'Insecticide', 1, 'ha', 25, 180], ['protection', 'Herbicide & fungicide', 1, 'ha', 45, 20], ['land-prep', 'Machinery & fuel', 1, 'ha', 75, 0], ['labor', 'Harvest', 1, 'ha', 55, 'harvest']],
   rapeseed: [['seed', 'Rapeseed hybrid seed', 6, 'kg', 9, -5], ['fertilizer', 'Ammonium nitrate', 80, 'kg', 0.6, 0], ['protection', 'Insecticide', 1, 'ha', 20, 10], ['protection', 'Herbicide', 1, 'ha', 25, 25], ['land-prep', 'Machinery & fuel', 1, 'ha', 70, 0], ['labor', 'Harvest', 1, 'ha', 50, 'harvest']],
   fallow: [['other', 'Weed / cover management', 1, 'ha', 15, 30]],
 };
@@ -227,6 +233,8 @@ export const SE_ASIA = pack({
     S('wet', 'Wet season', 'rain-onset', '04-15', '06-30', ['rice', 'maize', 'soybean', 'groundnut', 'fallow']),
     S('dry', 'Dry season', 'fixed', '11-10', '12-31', ['rice', 'maize', 'soybean', 'groundnut', 'fallow'], 'Dry season usually needs irrigation'),
   ],
+  // Irrigated rice–rice double cropping is the dominant lowland practice (e.g. Mekong Delta): penalized, not excluded.
+  continuousCrops: ['rice'],
   rules: BIMODAL_RULES, costFactor: 0.8, yields: { rice: 5.0, maize: 4.5, soybean: 1.6, groundnut: 2.0 },
   sources: ['R8', 'R18', 'R19'],
 });
@@ -275,11 +283,27 @@ export const EUROPE = pack({
   bbox: [[35, -10, 60, 50]], mode: 'annual',
   seasons: [
     S('spring', 'Spring–summer', 'temperature', '03-25', '05-31', ['maize', 'sunflower', 'soybean', 'barley', 'potato', 'fallow']),
-    S('winter', 'Winter (autumn-sown)', 'fixed', '09-20', '10-20', ['winterwheat', 'rapeseed']),
+    S('winter', 'Winter (autumn-sown)', 'fixed', '09-20', '10-20', ['winterwheat', 'winterrapeseed']),
   ],
-  cropOverrides: { rapeseed: { stages: [40, 150, 45, 25], frostSensitive: false, tMeanRange: [3, 20], minReturnSeasons: 3 }, barley: { stages: [15, 30, 40, 15] } },
-  rules: GENERIC_RULES, costFactor: 1.2, yields: { maize: 7.0, sunflower: 2.6, soybean: 2.6, barley: 4.5, potato: 30, winterwheat: 5.5, rapeseed: 3.0 },
+  cropOverrides: { barley: { stages: [15, 30, 40, 15] } },
+  // Winter wheat → sunflower is the dominant sequence of the Ukrainian / Black Sea steppe.
+  usualRotation: ['winterwheat', 'sunflower'],
+  rules: GENERIC_RULES, costFactor: 1.2, yields: { maize: 7.0, sunflower: 2.6, soybean: 2.6, barley: 4.5, potato: 30, winterwheat: 5.5, winterrapeseed: 3.0 },
   sources: ['R8', 'R18', 'R29'],
+});
+
+export const CORN_BELT = pack({
+  id: 'na-corn-belt', name: 'US Corn Belt — rainfed maize–soybean (Iowa, Illinois, Indiana, Ohio, Missouri, east Nebraska, south Minnesota)', short: 'US Corn Belt',
+  description: 'Humid continental summer-crop belt: maize and soybean sown when the soil warms in spring, grain sorghum on drier western and southern fringes, winter wheat as the occasional third crop. Dryland pulses, canola and flax of the Plains and Prairies are not screened here (humid-season disease, no local market).',
+  countries: ['US'], latRange: [36.5, 46.5], lonRange: [-98, -80], bbox: [[36.5, -98, 46.5, -80]], mode: 'annual',
+  seasons: [
+    S('spring', 'Spring–summer', 'temperature', '04-15', '06-05', ['maize', 'soybean', 'sorghum', 'fallow']),
+    S('winter', 'Winter (autumn-sown)', 'fixed', '09-25', '10-25', ['winterwheat']),
+  ],
+  // Maize → soybean is the dominant Corn Belt rotation (≈ two-thirds of Iowa cropland alternates the two).
+  usualRotation: ['maize', 'soybean'],
+  rules: GENERIC_RULES, costFactor: 1.6, yields: { maize: 11, soybean: 3.4, sorghum: 5.5, winterwheat: 4.5 },
+  sources: ['R8', 'R18', 'R31'],
 });
 
 export const NORTH_AMERICA = pack({
@@ -294,8 +318,22 @@ export const NORTH_AMERICA = pack({
   sources: ['R8', 'R18'],
 });
 
+export const SOUTH_AMERICA_TROPICAL = pack({
+  id: 'sam-cerrado-safrinha', name: 'Tropical South America — soybean + safrinha (Brazilian Cerrado & centre-west, Paraguay north, Bolivia lowlands)', short: 'Brazil · Cerrado safrinha',
+  description: 'Hot humid summer: soybean (or maize, bean, cotton, upland rice) sown at the spring rain onset, then a second (safrinha) crop of maize, sorghum, bean or sunflower on the tail of the rains. Sunflower is only grown as a second crop here.',
+  countries: ['BR', 'PY', 'BO'], latRange: [-24, 5], bbox: [[-24, -75, 5, -34]], mode: 'double',
+  seasons: [
+    S('summer', 'Summer crop', 'rain-onset', '09-15', '12-15', ['soybean', 'maize', 'bean', 'cotton', 'rice', 'fallow']),
+    S('second', 'Second crop (safrinha)', 'fixed', '01-25', '03-10', ['maize', 'sorghum', 'bean', 'sunflower', 'fallow'], 'Second crop relies on the tail of the rainy season'),
+  ],
+  cropOverrides: { soybean: { stages: [15, 25, 45, 20] } },
+  usualRotation: ['soybean', 'maize'],
+  rules: BIMODAL_RULES, costFactor: 1.1, yields: { soybean: 3.4, maize: 6.0, bean: 1.6, cotton: 1.8, rice: 6.0, sunflower: 2.0, sorghum: 3.5 },
+  sources: ['R8', 'R18', 'R19'],
+});
+
 export const SOUTH_AMERICA = pack({
-  id: 'sam-summer-safrinha', name: 'South America — summer crop + second crop (Brazil, Argentina, Paraguay, Uruguay, Bolivia)', short: 'South America',
+  id: 'sam-summer-safrinha', name: 'South America — Southern Cone summer crop + second crop (Argentina, Uruguay, southern Brazil & Paraguay)', short: 'South America',
   description: 'Main summer crop sown at the spring rain onset (September–December), followed by a second (safrinha) crop sown in January–March.',
   countries: ['BR', 'AR', 'PY', 'UY', 'BO'], bbox: [[-45, -75, 5, -34]], mode: 'double',
   seasons: [
@@ -326,21 +364,21 @@ export const GLOBAL = pack({
   sources: ['R8', 'R18', 'R19', 'R31', 'R32'],
 });
 
-export const PACKS: RegionPack[] = [SENEGAL, EAST_AFRICA, ETHIOPIA, SOUTHERN_AFRICA, SOUTH_ASIA, SE_ASIA, EAST_ASIA, MENA, CENTRAL_ASIA, KAZAKHSTAN, EUROPE, NORTH_AMERICA, SOUTH_AMERICA, AUSTRALIA, GLOBAL];
+export const PACKS: RegionPack[] = [SENEGAL, EAST_AFRICA, ETHIOPIA, SOUTHERN_AFRICA, SOUTH_ASIA, SE_ASIA, EAST_ASIA, MENA, CENTRAL_ASIA, KAZAKHSTAN, EUROPE, CORN_BELT, NORTH_AMERICA, SOUTH_AMERICA_TROPICAL, SOUTH_AMERICA, AUSTRALIA, GLOBAL];
 
 const inBox = (lat: number, lon: number, [a, b, c, d]: [number, number, number, number]) => lat >= a && lat <= c && lon >= b && lon <= d;
-const inLat = (p: RegionPack, lat: number) => !p.latRange || (lat >= p.latRange[0] && lat <= p.latRange[1]);
+const inLat = (p: RegionPack, lat: number, lon?: number) => (!p.latRange || (lat >= p.latRange[0] && lat <= p.latRange[1])) && (!p.lonRange || lon == null || (lon >= p.lonRange[0] && lon <= p.lonRange[1]));
 
 /** Pick the regional pack: by country (if known) and latitude band, else by bounding box, else global screening. */
 export function detectPack(lat: number, lon: number, iso2?: string): RegionPack {
   if (iso2) {
-    const byCountry = PACKS.find((p) => p.countries.includes(iso2) && inLat(p, lat));
+    const byCountry = PACKS.find((p) => p.countries.includes(iso2) && inLat(p, lat, lon));
     if (byCountry) return byCountry;
   }
   for (const p of PACKS) {
     if (p.id === GLOBAL.id) continue;
     if (iso2 && p.countries.length && !p.countries.includes(iso2) && !(iso2 === 'RU' && (p.id === EUROPE.id || p.id === KAZAKHSTAN.id))) continue;
-    if (p.bbox.some((b) => inBox(lat, lon, b)) && inLat(p, lat)) return p;
+    if (p.bbox.some((b) => inBox(lat, lon, b)) && inLat(p, lat, lon)) return p;
   }
   return GLOBAL;
 }

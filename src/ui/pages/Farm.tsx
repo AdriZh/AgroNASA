@@ -9,7 +9,7 @@ import { countryInfo, countryList, fxFactor } from '../../data/countries';
 import { LocationSearch, PresetGrid } from '../components/LocationPicker';
 import { normalizeApplication, fmtNum } from '../../domain/units';
 import { TEXTURE_LABEL } from '../../soil/soil';
-import { MapView } from '../components/MapView';
+import { MapView } from '../components/LazyMapView';
 import { CardTitle, Callout, Empty, Field, NumInput, StatRows, Tag, uid } from '../components/common';
 import { powerGridCell } from '../../weather/power';
 
@@ -203,7 +203,7 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
               ['CEC', `${fmtNum(data.soilGrid.cec, 1)} cmol(c)/kg`],
               ['Water-balance AWC used', <>{fmtNum(soil?.awcMmPerM, 0)} mm/m <span className="muted" style={{ fontWeight: 400 }}>({soil?.source === 'farmer' ? 'from your texture' : 'Modeled, Saxton & Rawls'})</span></>],
             ]} />
-          ) : <p className="mini">{data.soilStatus === 'loading' ? 'Loading SoilGrids…' : `SoilGrids unavailable${data.soilError ? ` (${data.soilError})` : ''}. Using ${soil?.source === 'farmer' ? 'your texture' : 'a default loam (140 mm/m)'}.`}</p>}
+          ) : <p className="mini">{data.soilStatus === 'loading' ? 'Loading SoilGrids…' : `${data.soilError && !/no data/i.test(data.soilError) ? 'SoilGrids is offline right now' : 'SoilGrids has no data at this point (water, urban or masked area)'}, so ${soil?.source === 'farmer' ? `the model uses your texture (${fmtNum(soil?.awcMmPerM, 0)} mm/m available water)` : `the model uses typical loam values (sand ${soil?.sandPct ?? '—'}%, clay ${soil?.clayPct ?? '—'}%, ${fmtNum(soil?.awcMmPerM, 0)} mm/m available water, Saxton & Rawls). Set the soil texture above if you know it`}.`}</p>}
           <p className="chart-cap">A 250 m modeled map, not a soil test. Present nutrient status remains unknown unless measured.</p>
         </div>
       </div>

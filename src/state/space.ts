@@ -2,7 +2,7 @@
 import type { EngineOutput } from '../engine/plan';
 import { addDays, doy, todayISO } from '../domain/dates';
 import { percentileRank } from '../weather/indicators';
-import { fetchEonet, GRACE_DATES, ndviDates, pointValue, pool, POINT_LAYERS, type EonetEvent, type PointValue } from '../weather/gibsPoint';
+import { colormap, fetchEonet, GRACE_DATES, ndviDates, pointValue, pool, POINT_LAYERS, type EonetEvent, type PointValue } from '../weather/gibsPoint';
 
 export interface NdviYear { year: number; points: { date: string; doy: number; value: number | null }[]; peak: number | null; peakDate: string | null }
 export interface SpaceData {
@@ -43,6 +43,14 @@ export async function loadSpace(lat: number, lon: number, engine: EngineOutput, 
     ...GRACE_DATES.map((d) => ({ kind: 'grace', date: d, year: Number(d.slice(0, 4)) })),
   ];
   const eventsP = fetchEonet(lat, lon).then((e) => ({ e }), (err) => ({ e: null, err: String(err?.message ?? err) }));
+  // Probe GIBS with the four small colormaps first: when the network is down this fails in one round trip
+  // (or one timeout) instead of ~150 tile requests each failing on their own.
+  onProgress('Connecting to NASA GIBS', 0, 1);
+  const cms = await Promise.allSettled(Object.values(L).map((d) => colormap(d.colormap)));
+  if (cms.every((c) => c.status === 'rejected')) {
+    await eventsP;
+    throw new Error('NASA GIBS unreachable (offline or blocked network)');
+  }
   const qv = await pool(quick, 8, (q) => pointValue(q.kind === 'smapN' ? L.smap : (L as any)[q.kind], lat, lon, q.date), (d, t) => onProgress('NASA SMAP, GRACE & MODIS land cover', d, t));
   const landcover = qv[0] ?? null;
   const smapNow = qv[1] ?? null;

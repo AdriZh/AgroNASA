@@ -7,18 +7,16 @@ import { addDays, diffDays, fmtDate, fmtDayMonth, todayISO } from '../../domain/
 import { fmtNum, normalizeApplication } from '../../domain/units';
 import { completeYears, cumulativeRain, monthlyClimatology, quantile, rainOnset, windowStats, yearlyWindow, median } from '../../weather/indicators';
 import { axisProps, CumulativeChart, DryHeatChart, FertChart, ForecastChart, gridProps, MonthlyClimChart, SeasonRainChart, tipProps, useChartHeight, useChartTheme, xAxisProps } from '../components/charts';
-import { MapView } from '../components/MapView';
+import { MapView } from '../components/LazyMapView';
+import { WeatherError } from '../components/NetStatus';
 import { Callout, Kpi, KpiStrip, Loading, Ref, Seg, StatRows, Tag } from '../components/common';
 import { TEXTURE_LABEL } from '../../soil/soil';
 import { SpaceTab, ndviStatement } from './SpaceTab';
 import { countryInfo } from '../../data/countries';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
-import type { EngineOutput } from '../../engine/plan';
-export function seasonEndOf(e: EngineOutput): string {
-  if (!e.window.auto) return e.window.method === 'rain-onset' ? '10-31' : '09-15';
-  return addDays(`2001-${e.window.earliest}`, 150).slice(5);
-}
+import { seasonEndOf } from './season';
+export { seasonEndOf };
 
 type Tab = 'climate' | 'space' | 'season' | 'forecast' | 'satellite' | 'past' | 'fertilizer';
 const TABS: { v: Tab; label: string }[] = [
@@ -40,7 +38,7 @@ export function EvidencePage({ go }: { go: (r: Route) => void }) {
         <div className="page-actions"><button className="btn" onClick={() => go('compare')}><ArrowLeft /> Plans</button><button className="btn primary" onClick={() => go('report')}>Export report <ArrowRight /></button></div>
       </div>
       <div style={{ marginBottom: 24 }}><Seg label="Evidence" role="tablist" value={tab} options={TABS} onChange={setTab} /></div>
-      {!engine || !data.series ? <Loading text="Loading NASA POWER…" /> : (
+      {!engine || !data.series ? (data.weatherStatus === 'error' ? <WeatherError /> : <Loading text="Loading NASA POWER…" />) : (
         <>
           {tab === 'climate' && <ClimateTab />}
           {tab === 'space' && <SpaceTab />}

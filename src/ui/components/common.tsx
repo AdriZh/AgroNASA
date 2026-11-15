@@ -217,7 +217,7 @@ export function PlanSkeleton() {
 /** Shown while 25 years of daily NASA POWER data download for a new location. */
 export function NasaLoading({ place, variant = 'plans' }: { place?: string; variant?: 'plans' | 'block' }) {
   return (
-    <div role="status">
+    <div role="status" className="loading-banner">
       <div className="loading-line"><Loader2 className="spin" aria-hidden />Reading 25 years of NASA POWER{place ? ` for ${place.split(',')[0]}` : ''}…</div>
       {variant === 'plans' ? <div className="plan-row"><PlanSkeleton /><PlanSkeleton /><PlanSkeleton /></div> : <div className="skel" style={{ height: 160 }} />}
     </div>

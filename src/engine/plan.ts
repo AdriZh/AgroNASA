@@ -1,13 +1,13 @@
 // Orchestrator: normalize → indicators → candidates → rules → costs → feasibility → rank → explain.
 // Pure and deterministic: identical inputs always give identical results (no LLM in this path).
-import type { CostItemDef, DailySeries, FarmScenario, Reason, RegionPack, SoilProfile } from '../domain/types';
+import type { BudgetPlaceholder, CostItemDef, DailySeries, FarmScenario, Reason, RegionPack, SoilProfile } from '../domain/types';
 import { CROPS, cropFor, cropName } from '../data/crops';
 import { IRRIGATION_USD_PER_MM_HA } from '../data/regionPacks';
-import { countryInfo, cropPriceUsd, fxFactor, fxPerUsd } from '../data/countries';
+import { countryInfo, cropPriceUsd, fxFactor, fxPerUsd, PRICE_PLAUSIBLE_FACTOR } from '../data/countries';
 import { toHectares } from '../domain/units';
 import { addDays, diffDays } from '../domain/dates';
 import { median, quantile } from '../weather/indicators';
-import { evaluateBudget, costLine, type BudgetResult, type CostLine } from './budget';
+import { evaluateBudget, costLine, placeholderBudget, PLACEHOLDER_SPEND_SHARE, type BudgetResult, type CostLine } from './budget';
 import { replayCrop, resolveSeasons, type CropRisk, type SowingWindow } from './replay';
 
 export interface PlanSeason { season: 1 | 2; year: number; cropId: string; sowing: string; maturity: string; risk: CropRisk | null; seasonId: string; seasonLabel: string }
@@ -33,7 +33,10 @@ export interface PlanResult {
   rank?: number;
 }
 
-export interface PriceInfo { perT: number | null; label: string; source: 'farmer' | 'faostat-country' | 'faostat-median' | 'pack' }
+export interface PriceInfo {
+  perT: number | null; label: string; source: 'farmer' | 'faostat-country' | 'faostat-median' | 'pack';
+  replaced?: { usdPerT: number; year: number }; // implausible FAOSTAT country price that was not used
+}
 
 export interface EngineOutput {
   pack: RegionPack; window: SowingWindow; windows: SowingWindow[]; areaHa: number;
@@ -71,6 +74,8 @@ function historyOrder(sc: FarmScenario, pack: RegionPack) {
 export function baselineCrops(sc: FarmScenario, pack: RegionPack): [string, string] {
   if (sc.baselineOverride) return sc.baselineOverride;
   const hist = historyOrder(sc, pack);
+  // No history entered: assume the region's typical sequence when the pack documents one.
+  if (!hist.length && pack.usualRotation && pack.usualRotation.every((c) => pack.crops.includes(c))) return pack.usualRotation;
   if (pack.mode === 'double') {
     const pick = (slot: number) => {
       const allowed = pack.seasons[slot]?.crops ?? pack.crops;
@@ -103,23 +108,40 @@ function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: R
         }
       }
     }
-    if (prev && prev.id !== 'fallow') {
+    if (prev && prev.id !== 'fallow' && c.id !== 'fallow') {
       const shared = c.diseaseGroups.filter((g) => prev.diseaseGroups.includes(g));
+      let hardBlocked = false;
       for (const g of shared) {
-        if (prev.id === c.id && c.minReturnSeasons > 0) continue; // already covered by return interval
+        if (prev.id === c.id) continue; // same crop: covered by the return interval / monoculture rules below
         if (HARD_DISEASE.has(g)) {
+          hardBlocked = true;
           R.push({ code: 'DISEASE_GROUP', severity: 'block', text: `${tag}: follows ${prev.name}; both host ${g.replace('-', ' ')}.`, refs: [has('KZ-R3') && g === 'sclerotinia' ? 'KZ-R3' : 'G-R2'] });
         }
+      }
+      const after = k === plannedFrom ? `your last season's ${prev.name}` : prev.name;
+      if (prev.id === c.id) {
+        // G-R6 monoculture. Crops with a return interval are already blocked by RETURN_INTERVAL above.
+        if (c.minReturnSeasons === 0) {
+          if (pack.continuousCrops?.includes(c.id)) {
+            R.push({ code: 'MONOCULTURE', severity: 'warn', text: `${tag}: ${c.name} again after ${after}. Continuous ${c.name.toLowerCase()} is an accepted practice in this system, but pests, diseases and nutrient drawdown build up; ranked below true rotations.`, refs: ['G-R6', 'R31'] });
+          } else {
+            R.push({ code: 'MONOCULTURE', severity: 'block', text: `${tag}: ${c.name} again after ${after} — the same crop twice is not a rotation (pest, disease and weed carry-over; no rotation benefit), so it is excluded from the options.`, refs: ['G-R6', 'R31'] });
+          }
+        }
+      } else if (!hardBlocked && (prev.family === c.family || shared.length)) {
+        const why = prev.family === c.family ? `same family (${c.family})` : '';
+        const dis = shared.length ? `shared ${shared.map((g) => g.replace('-', ' ')).join(', ')}` : '';
+        R.push({ code: 'SAME_FAMILY', severity: 'warn', text: `${tag}: follows ${after} — ${[why, dis].filter(Boolean).join(' and ')}, so it is a weak break for pests, diseases and weeds.`, refs: ['G-R7', 'R31'] });
       }
       if (prev.group === 'legume' && c.group === 'cereal') {
         R.push({ code: 'LEGUME_BENEFIT', severity: 'good', text: `${tag}: follows a grain legume (${prev.name}) — possible residual-N and pest-break benefit.`, refs: [has('SN-R1') ? 'SN-R1' : has('KZ-R1') ? 'KZ-R1' : 'G-R3'] });
       }
+      if (prev.group === 'cereal' && c.group === 'legume') {
+        R.push({ code: 'BREAK_CROP', severity: 'good', text: `${tag}: a grain legume after ${after} (a cereal) — breaks cereal pest and disease cycles and fixes its own nitrogen.`, refs: ['G-R8', 'R32'] });
+      }
     }
     if (prev?.id === 'fallow' && c.group === 'cereal' && has('KZ-R1')) {
       R.push({ code: 'FALLOW_BENEFIT', severity: 'good', text: `${tag}: follows fallow — stored soil moisture and disease break.`, refs: ['KZ-R1'] });
-    }
-    if (prev && prev.id === c.id && c.id !== 'fallow' && c.minReturnSeasons === 0) {
-      R.push({ code: 'PRIOR_CROP_RULE', severity: 'warn', text: `${tag}: same crop as the previous season — rotation benefits lost; pest and disease carry-over.`, refs: ['G-R1', 'R31'] });
     }
     if (k >= 2 && [seq[k - 2], seq[k - 1], seq[k]].every((x) => CROPS[x]?.group === 'cereal')) {
       R.push({ code: 'PRIOR_CROP_RULE', severity: 'warn', text: `${tag}: third consecutive cereal season — pest, weed and fertility pressure rises.`, refs: ['G-R4'] });
@@ -183,6 +205,77 @@ function outcomeFor(crops: [string, string], seasonRisks: [CropRisk | null, Crop
   return { pairs: rels.length, medianRel: median(rels), pSevereAny: severe.length ? severe.filter(Boolean).length / severe.length : NaN, revenue, net, yields: [yStats(r1, y1Att, isF1), yStats(r2, y2Att, isF2)] };
 }
 
+/** Pack input costs (pack currency) → the scenario currency at the FAOSTAT exchange rate. */
+function costConverter(pack: RegionPack, sc: FarmScenario) {
+  const factor = fxFactor(pack.currency, sc.currency);
+  return (it: CostItemDef): CostItemDef => (factor === 1 || it.unitPrice == null ? it : { ...it, unitPrice: Math.round(it.unitPrice * factor * 100) / 100 });
+}
+
+/** True when the scenario currency has no FAOSTAT exchange rate, so pack costs cannot be converted into it. */
+const fxUnknown = (pack: RegionPack, sc: FarmScenario) => pack.currency !== sc.currency && (!fxPerUsd(sc.currency) || !fxPerUsd(pack.currency));
+
+/**
+ * Weather-independent cash cost of a two-season plan (scenario currency): the pack's input items, converted,
+ * with the farmer's price overrides. Modeled irrigation water is excluded (it needs the NASA replay).
+ * Used to size placeholder budgets before the weather has loaded.
+ */
+export function estimateCashCost(sc: FarmScenario, pack: RegionPack, crops: [string, string]): number {
+  const areaHa = toHectares(sc.area, sc.areaUnit);
+  const convert = costConverter(pack, sc);
+  let total = 0;
+  crops.forEach((c, k) => {
+    for (const it of pack.economics[c]?.items ?? []) {
+      if (!it.cash) continue;
+      const l = costLine(convert(it), (k + 1) as 1 | 2, c, areaHa, '2000-01-01', sc.priceOverrides[`${c}:${it.key}`]);
+      total += l.total ?? 0;
+    }
+  });
+  return Math.round(total * 100) / 100;
+}
+
+/** Key of everything a placeholder budget depends on; when it changes, an unedited placeholder is recomputed. */
+export function placeholderKey(sc: FarmScenario, pack: RegionPack, baseline: [string, string]): string {
+  return [pack.id, sc.currency, toHectares(sc.area, sc.areaUnit).toFixed(4), baseline.join('>'), sc.irrigation].join('|');
+}
+
+/** Has the farmer edited the funds or reserve since the placeholder was generated (allowing for FX conversion)? */
+export function placeholderEdited(sc: FarmScenario, ph: BudgetPlaceholder): boolean {
+  const same = ph.currency === sc.currency;
+  const k = same ? 1 : fxFactor(ph.currency, sc.currency);
+  // exact in the same currency; after an FX conversion allow for the rounding of the converted amounts
+  const near = (a: number, b: number) => (same ? a === b : Math.abs(a - b) <= Math.max(1, Math.abs(b) * 0.005));
+  return !near(sc.availableFunds, Math.round(ph.funds * k)) || !near(sc.reserve, Math.round(ph.reserve * k));
+}
+
+/**
+ * Starting budget for a new or custom farm before weather is known: sized from the usual plan's cash cost
+ * (see placeholderBudget in budget.ts for the rule). Returns the fields to merge into the scenario.
+ */
+export function initialPlaceholder(sc: FarmScenario, pack: RegionPack): Pick<FarmScenario, 'availableFunds' | 'reserve' | 'budgetPlaceholder'> {
+  const base = baselineCrops(sc, pack);
+  const usualCost = estimateCashCost(sc, pack, base);
+  const b = placeholderBudget(usualCost);
+  // 'estimate:' prefix → the app refines it once the engine has screened the alternatives
+  return { availableFunds: b.funds, reserve: b.reserve, budgetPlaceholder: { funds: b.funds, reserve: b.reserve, currency: sc.currency, key: `estimate:${placeholderKey(sc, pack, base)}`, usualCost } };
+}
+
+/**
+ * After an engine run: refresh an unedited placeholder budget when the location, currency, area or usual plan changed,
+ * using the real usual-plan cost and the cash costs of the rule-passing alternatives. Returns null when nothing changes,
+ * and `{ budgetPlaceholder: null }` once the farmer has entered their own figures.
+ */
+export function refreshPlaceholder(sc: FarmScenario, out: EngineOutput): Partial<FarmScenario> | null {
+  const ph = sc.budgetPlaceholder;
+  if (!ph) return null;
+  if (placeholderEdited(sc, ph)) return { budgetPlaceholder: null };
+  const key = placeholderKey(sc, out.pack, out.baseline.crops);
+  if (ph.key === key) return null;
+  const usualCost = out.baseline.budget.totalCash;
+  const alts = out.allPlans.filter((p) => p.eligible && !p.isBaseline && p.budget.status !== 'unverified').map((p) => p.budget.totalCash);
+  const b = placeholderBudget(usualCost, alts);
+  return { availableFunds: b.funds, reserve: b.reserve, budgetPlaceholder: { funds: b.funds, reserve: b.reserve, currency: sc.currency, key, usualCost } };
+}
+
 export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, pack: RegionPack): EngineOutput {
   const areaHa = toHectares(sc.area, sc.areaUnit);
   const windows = resolveSeasons(pack, s);
@@ -210,10 +303,11 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
     const o = sc.priceOverrides[`${c}:price`];
     if (o !== undefined) { prices[c] = { perT: o, label: 'Your price', source: 'farmer' }; continue; }
     const ref = toLocalPerUsd ? cropPriceUsd(sc.countryIso2, c) : null;
-    if (ref && toLocalPerUsd) prices[c] = { perT: Math.round(ref.usdPerT * toLocalPerUsd), label: ref.label, source: ref.source };
+    if (ref && toLocalPerUsd) prices[c] = { perT: Math.round(ref.usdPerT * toLocalPerUsd), label: ref.label, source: ref.source, ...(ref.replaced ? { replaced: ref.replaced } : {}) };
     else prices[c] = { perT: pack.economics[c]?.pricePerT != null ? Math.round(pack.economics[c].pricePerT! * (pack.currency === 'USD' ? (toLocalPerUsd ?? 1) : fx.factor)) : null, label: 'Placeholder price (synthetic; FAOSTAT has none)', source: 'pack' };
   }
 
+  const fmt = (x: number) => `${Math.round(x).toLocaleString('en-US')} ${sc.currency}`;
   const hist = historyOrder(sc, pack);
   const history = hist.map((h) => h.cropId);
   const base = baselineCrops(sc, pack);
@@ -225,6 +319,14 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
   notes.push({ code: 'SYNTHETIC_PRICES', severity: 'info', text: `${priceNote}. Input costs are a synthetic regional template${fx.factor !== 1 ? ` converted ${fx.from}→${fx.to} at the FAOSTAT ${fx.year ?? ''} exchange rate` : ''} — edit them in Resources with dated local quotes.`, refs: ['R33', 'price-pack'] });
   notes.push({ code: 'CLIMATE_CONTEXT_ONLY', severity: 'info', text: `Risk comes from replaying ${nSeasons} historical NASA POWER seasons for this grid cell${windows.length > 1 ? ` in each of ${windows.length} seasons (${windows.map((w) => w.label).join(', ')})` : ''} — a conditional historical scenario, not a forecast.`, refs: ['D1', 'R17', 'R8'] });
   if (pack.irrigationTypical && sc.irrigation !== 'yes') notes.push({ code: 'IRRIGATION_REQUIRED', severity: 'info', text: `Most farms in "${pack.short}" are irrigated. Rainfed results here will look poor — set irrigation to “Yes” in Resources if your field is irrigated.`, refs: ['input:irrigation'] });
+  const odd = Object.entries(prices).filter(([, p]) => p.replaced);
+  if (odd.length) notes.push({ code: 'PRICE_IMPLAUSIBLE', severity: 'info', text: `FAOSTAT country price${odd.length > 1 ? 's' : ''} for ${odd.map(([c, p]) => `${cropName(c)} (${Math.round(p.replaced!.usdPerT)} USD/t, ${p.replaced!.year})`).join(', ')} differ${odd.length > 1 ? '' : 's'} more than ${PRICE_PLAUSIBLE_FACTOR}× from the global median — likely a unit or exchange-rate artefact — so the global median is used instead. Enter your own price if you have one.`, refs: ['R33'] });
+  if (fxUnknown(pack, sc)) notes.push({ code: 'SYNTHETIC_PRICES', severity: 'warn', text: `No FAOSTAT exchange rate for "${sc.currency}": input costs are shown unconverted in ${pack.currency} amounts. Use a 3-letter ISO currency code (e.g. ${countryInfo(sc.countryIso2)?.currency ?? 'USD'}) or enter local prices.`, refs: ['R33', 'input:currency'] });
+  if (!hist.length && !sc.baselineOverride) notes.push({ code: 'HISTORY_INCOMPLETE', severity: 'info', text: `No crop history entered: “your usual plan” is assumed to be ${cropName(base[0])} → ${cropName(base[1])} (${pack.usualRotation && base.join() === pack.usualRotation.join() ? `a typical sequence in ${pack.short}` : base[0] === base[1] ? 'the first crop of this rule pack, grown continuously' : 'the first crop listed for each season'}). Add your last seasons in Farm to compare against what you really grow.`, refs: ['input:history'] });
+  if (sc.budgetPlaceholder && !placeholderEdited(sc, sc.budgetPlaceholder)) {
+    const ph = sc.budgetPlaceholder;
+    notes.unshift({ code: 'BUDGET_PLACEHOLDER', severity: 'warn', text: `Placeholder budget — not your money. Funds ${fmt(sc.availableFunds)} with a ${fmt(sc.reserve)} reserve were set so the cash you can spend is about ${Math.round(PLACEHOLDER_SPEND_SHARE * 100)}% of the usual plan's cash cost (${fmt(ph.usualCost * (ph.currency === sc.currency ? 1 : fxFactor(ph.currency, sc.currency)))}), a typical pre-season squeeze. Enter the cash you really have in Resources.`, refs: ['input:availableFunds', 'input:reserve'] });
+  }
   if (sc.history.some((h) => !h.plantedOn) || sc.fertilizer.some((f) => f.treatedAreaHa == null)) notes.push({ code: 'HISTORY_INCOMPLETE', severity: 'info', text: 'Some crop dates or fertilizer treated areas are unknown; history interpretation is limited.', refs: ['input:history'] });
 
   const typicalSow = (w: SowingWindow, cropId: string, year: number) => {
@@ -233,8 +335,7 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
     return `${year}-${md}`;
   };
   const duration = (c: string) => cropFor(pack, c).stages.reduce((a, b) => a + b, 0);
-  const fmt = (x: number) => `${Math.round(x).toLocaleString('en-US')} ${sc.currency}`;
-  const convert = (it: CostItemDef): CostItemDef => (fx.factor === 1 || it.unitPrice == null ? it : { ...it, unitPrice: Math.round(it.unitPrice * fx.factor * 100) / 100 });
+  const convert = costConverter(pack, sc);
   const irrUnit = Math.round(IRRIGATION_USD_PER_MM_HA * (toLocalPerUsd ?? 1) * 100) / 100;
 
   const build = (crops: [string, string], isBaseline: boolean): PlanResult => {
@@ -320,6 +421,20 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
 }
 
 const n0 = (x: number) => (Number.isFinite(x) ? x : 0);
+
+/**
+ * Rotation quality used in ranking (lower = better): +2 per accepted-but-continuous crop (MONOCULTURE warn, G-R6),
+ * +1 per same-family / shared-disease succession (SAME_FAMILY, G-R7) or third consecutive cereal (G-R4).
+ * Plans with a lower penalty always rank first; the farmer's priority then orders plans of equal rotation quality.
+ */
+export function rotationPenalty(p: PlanResult): number {
+  return p.reasons.reduce((a, r) => a + (r.code === 'MONOCULTURE' && r.severity === 'warn' ? 2 : r.code === 'SAME_FAMILY' || (r.code === 'PRIOR_CROP_RULE' && r.severity === 'warn') ? 1 : 0), 0);
+}
+/** Count of rotation benefits: legume → cereal (G-R3), cereal → legume (G-R8), fallow → cereal (KZ-R1). */
+export function rotationBenefit(p: PlanResult): number {
+  return p.reasons.filter((r) => r.code === 'LEGUME_BENEFIT' || r.code === 'BREAK_CROP' || r.code === 'FALLOW_BENEFIT').length;
+}
+
 export function rankComparator(priority: FarmScenario['priority']) {
   const byCost = (a: PlanResult, b: PlanResult) => a.budget.totalCash - b.budget.totalCash;
   // climate score: share of replayed season pairs with severe water stress + 0.05 per climate warning
@@ -330,14 +445,16 @@ export function rankComparator(priority: FarmScenario['priority']) {
   const byGood = (a: PlanResult, b: PlanResult) => b.reasons.filter((r) => r.severity === 'good').length - a.reasons.filter((r) => r.severity === 'good').length;
   const byWarn = (a: PlanResult, b: PlanResult) => a.reasons.filter((r) => r.severity === 'warn').length - b.reasons.filter((r) => r.severity === 'warn').length;
   const tie = (a: PlanResult, b: PlanResult) => a.id.localeCompare(b.id);
+  const byPenalty = (a: PlanResult, b: PlanResult) => rotationPenalty(a) - rotationPenalty(b);
+  const byBenefit = (a: PlanResult, b: PlanResult) => rotationBenefit(b) - rotationBenefit(a);
   const chain: Record<string, ((a: PlanResult, b: PlanResult) => number)[]> = {
-    cost: [byCost, byWarn, byClimate],
-    climate: [byClimate, byWarn, byCost],
-    continuity: [(a, b) => a.newCrops - b.newCrops, byWarn, byGood, byCost],
-    return: [byReturn, byClimate, byCost],
+    cost: [byCost, byBenefit, byWarn, byClimate],
+    climate: [byClimate, byBenefit, byWarn, byCost],
+    continuity: [(a, b) => a.newCrops - b.newCrops, byBenefit, byWarn, byGood, byCost],
+    return: [byReturn, byBenefit, byClimate, byCost],
   };
   return (a: PlanResult, b: PlanResult) => {
-    for (const f of chain[priority]) { const d = f(a, b); if (Math.abs(d) > 1e-9) return d; }
+    for (const f of [byPenalty, ...chain[priority]]) { const d = f(a, b); if (Math.abs(d) > 1e-9) return d; }
     return tie(a, b);
   };
 }

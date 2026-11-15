@@ -541,3 +541,71 @@ details.disclose > .body { margin-top: var(--s-3); }
   .doc a[href^="http"]::after { content: " (" attr(href) ")"; font-family: var(--mono); font-size: 9pt; color: var(--text-muted); overflow-wrap: anywhere; }
   .print-only { display: block !important; }
 }
+
+/* ===================================================================
+   BEGIN what-if climate stress test + share link (WhatIf.tsx, ShareButton.tsx)
+   Restyled onto the v3 tokens: no tinted boxes, status color reserved for budget verdicts.
+   ========================================================================== */
+.wi-grid { display: grid; grid-template-columns: minmax(250px, 320px) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+.wi-controls { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-3); background: var(--surface-2); border-radius: var(--r); }
+.wi-slider { display: flex; flex-direction: column; gap: var(--s-1); font-size: 13px; color: var(--text-muted); }
+.wi-label { display: flex; align-items: center; gap: 6px; font-weight: var(--w-strong); color: var(--text); }
+.wi-label svg { color: var(--text-muted); }
+.wi-label b { margin-left: auto; font-family: var(--mono); font-size: 12px; font-weight: var(--w-regular); padding: 1px 6px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+.wi-slider input[type=range] { width: 100%; accent-color: var(--brand); cursor: pointer; margin: 2px 0; }
+.wi-ticks { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+.wi-presets { display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.wi-presets .btn.on { background: var(--brand-soft); border-color: var(--brand); color: var(--text); }
+.wi-honest { margin: 0; font-size: 13px; line-height: 20px; color: var(--text); padding-left: var(--s-2); border-left: 2px solid var(--border); }
+.wi-method { margin: 0; }
+.wi-results { display: flex; flex-direction: column; min-width: 0; transition: opacity var(--t-fast) var(--ease); }
+.wi-results.pending .wi-row { opacity: .6; }
+.wi-headline { font-size: 16px; line-height: 24px; font-weight: var(--w-strong); color: var(--text); padding-bottom: var(--s-3); max-width: var(--measure); text-wrap: pretty; }
+.wi-headline.idle { font-weight: var(--w-regular); color: var(--text-muted); font-size: 15px; }
+.wi-head-row, .wi-row { display: grid; grid-template-columns: minmax(170px, 1.25fr) minmax(190px, 1.75fr) 78px 74px; gap: 12px; align-items: center; }
+.wi-head-row { font-size: 12px; line-height: 16px; text-transform: uppercase; letter-spacing: .06em; font-weight: var(--w-strong); color: var(--text-muted); padding-bottom: var(--s-2); border-bottom: 1px solid var(--border); }
+.wi-head-row span { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.wi-key { display: inline-block; width: 12px; height: 6px; border-radius: 2px; background: var(--c-other); }
+.wi-key.new { background: var(--c1); }
+.wi-row { padding: 12px 0; border-bottom: 1px dashed var(--border); }
+.wi-plan { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wi-tag { font-size: 12px; line-height: 16px; font-weight: var(--w-strong); text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+.wi-crops { font-size: 13px; font-weight: var(--w-strong); color: var(--text); line-height: 20px; }
+.wi-risk { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.wi-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 60px; }
+.wi-bar { height: 6px; border-radius: var(--r-sm); background: var(--surface-2); overflow: hidden; }
+.wi-bar > i { display: block; height: 100%; border-radius: var(--r-sm); transition: width var(--t) var(--ease); }
+.wi-bar.rec > i { background: var(--c-other); }
+.wi-bar.new { height: 8px; }
+.wi-bar.new > i { background: var(--c1); }
+.wi-nums { display: flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+.wi-now { color: var(--text-muted); font-weight: var(--w-strong); }
+.wi-arrow { color: var(--text-muted); }
+.wi-then { font-size: 15px; color: var(--text); }
+.wi-delta { font-size: 12px; font-weight: var(--w-regular); color: var(--text-muted); }
+.wi-harvest { display: flex; flex-direction: column; align-items: flex-end; }
+.wi-harvest .t { display: none; white-space: nowrap; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); font-weight: var(--w-strong); }
+.wi-harvest b { font-size: 13px; color: var(--text); }
+.wi-verdict { justify-self: end; font-size: 12px; font-weight: var(--w-strong); text-transform: uppercase; letter-spacing: .06em; color: var(--text); }
+.wi-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: var(--s-2); }
+.wi-foot svg { width: 14px; height: 14px; }
+.wi-foot .spacer { flex: 1; }
+@media (max-width: 1100px) { .wi-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .wi-head-row { display: none; }
+  .wi-row { grid-template-columns: 1fr auto; }
+  .wi-risk { grid-column: 1 / -1; }
+  .wi-harvest { align-items: flex-start; }
+  .wi-harvest .t { display: block; }
+}
+.share-toast { position: fixed; z-index: 1000; right: var(--s-4); bottom: var(--s-4); max-width: min(460px, calc(100vw - 32px)); display: flex; align-items: flex-start; gap: var(--s-2); padding: 12px; border-radius: var(--r); background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow); animation: share-in var(--t) var(--ease); }
+.share-toast > svg { flex: 0 0 auto; margin-top: 2px; color: var(--good); }
+.share-toast.warn > svg { color: var(--warn); }
+.share-toast-body { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; flex: 1; font-size: 13px; line-height: 20px; }
+.share-toast-url { font-family: var(--mono); font-size: 12px; color: var(--text-muted); overflow-wrap: anywhere; }
+@keyframes share-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* END what-if climate stress test + share link */
+/* Suspense placeholder for code-split routes and the map */
+.route-fallback { border-radius: var(--r); background: var(--surface-2); min-height: 60vh; animation: pulse 1.2s var(--ease) infinite; }
+.route-fallback.full { position: fixed; inset: 0; border-radius: 0; background: var(--bg); min-height: 0; animation: none; }
+.map.route-fallback { min-height: 0; }

@@ -1,6 +1,7 @@
 // Soil context from ISRIC SoilGrids 2.0 (250 m modeled soil map, non-NASA) or the farmer's known texture.
 import type { SoilProfile, SoilTexture } from '../domain/types';
 import { idbGet, idbSet } from '../state/idb';
+import { fetchJson, isNetDown, NetError } from '../weather/net';
 
 /** FAO-56 Table 19 mid-range total available water (θFC − θWP) by texture, mm water per m soil. */
 export const TEXTURE_AWC: Record<SoilTexture, number> = {
@@ -70,30 +71,65 @@ export function soilGridsQuery(lat: number, lon: number) {
   return `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon.toFixed(4)}&lat=${lat.toFixed(4)}&${props}&${depths}&value=mean`;
 }
 
-async function fetchTimeout(url: string, ms: number) {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), ms);
-  try { return await fetch(url, { signal: ctl.signal }); } finally { clearTimeout(t); }
-}
+export const SOILGRIDS_TIMEOUT_MS = 12_000;
+/** After SoilGrids times out or is unreachable, skip it for a while so switching farms stays instant. */
+const SOILGRIDS_BACKOFF_MS = 3 * 60_000;
+let soilGridsDownUntil = 0;
+export const resetSoilGridsBackoff = () => { soilGridsDownUntil = 0; };
 
-/** SoilGrids is slow (~5–20 s) and masks urban/water cells; try the point, then two nearby points. */
-export async function fetchSoil(lat: number, lon: number): Promise<SoilProfile | null> {
+/**
+ * SoilGrids is slow (~5–20 s) and masks urban/water cells; try the point, then two nearby points when the
+ * point is masked. Network failures (timeout, offline, HTTP) throw a NetError so the caller can fall back to
+ * typical values for the texture class; a masked area returns null.
+ */
+export async function fetchSoil(lat: number, lon: number, opts: { force?: boolean; signal?: AbortSignal; fetchImpl?: typeof fetch } = {}): Promise<SoilProfile | null> {
   const key = `soil:${lat.toFixed(3)}:${lon.toFixed(3)}`;
   const hit = await idbGet<SoilProfile>(key);
   if (hit) return { ...hit, cached: true };
+  if (!opts.force && Date.now() < soilGridsDownUntil) throw new NetError('SoilGrids', 'offline', 'SoilGrids offline (skipped after a recent failure)');
   const tries: [number, number][] = [[0, 0], [0.02, 0.02], [-0.02, -0.02]];
   for (const [dLat, dLon] of tries) {
-    let res: Response;
-    try { res = await fetchTimeout(soilGridsQuery(lat + dLat, lon + dLon), 30000); }
-    catch (e: any) { throw new Error(e?.name === 'AbortError' ? 'SoilGrids timed out' : `SoilGrids unreachable (${e?.message ?? e})`); }
-    if (!res.ok) throw new Error(`SoilGrids HTTP ${res.status}`);
-    const prof = parseSoilGrids(await res.json(), new Date().toISOString());
-    if (prof) { await idbSet(key, prof); return prof; }
+    let json: any;
+    try {
+      json = await fetchJson(soilGridsQuery(lat + dLat, lon + dLon), { timeoutMs: SOILGRIDS_TIMEOUT_MS, service: 'SoilGrids', signal: opts.signal, fetchImpl: opts.fetchImpl });
+    } catch (e) {
+      if (isNetDown(e) || (e instanceof NetError && e.kind === 'http' && (e.status ?? 500) >= 500)) soilGridsDownUntil = Date.now() + SOILGRIDS_BACKOFF_MS;
+      throw e;
+    }
+    const prof = parseSoilGrids(json, new Date().toISOString());
+    if (prof) { soilGridsDownUntil = 0; await idbSet(key, prof); return prof; }
   }
   return null;
 }
 
-/** Which soil water capacity drives the model: farmer texture > SoilGrids > default loam. */
+/**
+ * Typical topsoil composition per USDA texture class (near the class centroid of the texture triangle, with
+ * common cropland organic matter), used when SoilGrids cannot be reached. AWC comes from Saxton & Rawls (2006)
+ * like a SoilGrids profile, so the model treats both paths the same way. The farmer can override the texture.
+ */
+export const TYPICAL_TEXTURE: Record<Exclude<SoilTexture, 'unknown'>, { sand: number; clay: number; omPct: number }> = {
+  sand: { sand: 92, clay: 3, omPct: 0.5 },
+  'loamy-sand': { sand: 82, clay: 6, omPct: 1 },
+  'sandy-loam': { sand: 65, clay: 10, omPct: 1.5 },
+  loam: { sand: 42, clay: 20, omPct: 2.5 },
+  'silt-loam': { sand: 20, clay: 15, omPct: 2.5 },
+  'clay-loam': { sand: 32, clay: 34, omPct: 2.5 },
+  clay: { sand: 22, clay: 50, omPct: 2.5 },
+};
+
+/** Default soil properties for a texture class ("unknown" → loam). Source "default"; no chemistry is invented. */
+export function typicalSoil(texture: SoilTexture = 'loam'): SoilProfile {
+  const t = texture === 'unknown' ? 'loam' : texture;
+  const c = TYPICAL_TEXTURE[t];
+  return {
+    source: 'default', texture: t,
+    sandPct: c.sand, clayPct: c.clay, siltPct: 100 - c.sand - c.clay, socPct: Math.round((c.omPct / 1.724) * 100) / 100,
+    ph: null, nitrogenGKg: null, cec: null, bulkDensity: null,
+    awcMmPerM: saxtonRawlsAwc(c.sand, c.clay, c.omPct),
+  };
+}
+
+/** Which soil water capacity drives the model: farmer texture > SoilGrids > typical loam (Saxton & Rawls). */
 export function effectiveSoil(farmerTexture: SoilTexture, grid: SoilProfile | null): SoilProfile {
   if (farmerTexture !== 'unknown') {
     return {
@@ -102,5 +138,5 @@ export function effectiveSoil(farmerTexture: SoilTexture, grid: SoilProfile | nu
     } as SoilProfile;
   }
   if (grid) return grid;
-  return { source: 'default', clayPct: null, sandPct: null, siltPct: null, socPct: null, ph: null, nitrogenGKg: null, cec: null, bulkDensity: null, texture: 'unknown', awcMmPerM: TEXTURE_AWC.unknown };
+  return typicalSoil('loam');
 }

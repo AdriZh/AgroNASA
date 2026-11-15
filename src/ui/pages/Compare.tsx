@@ -8,6 +8,8 @@ import { fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDayMonth, fmtDate } from '../../domain/dates';
 import { CashTimeline, CostChart, RangeBar, ReplayChart } from '../components/charts';
 import { BudgetBar, CardTitle, Callout, Disclaimer, Money, NasaLoading, pct, ReasonList, Ref, Seg, StatRows, StatusBadge, Tag } from '../components/common';
+import { WhatIfPanel } from '../components/WhatIf';
+import { WeatherError } from '../components/NetStatus';
 
 const PRIORITY_LABEL = { cost: 'lowest cost', climate: 'lowest climate exposure', continuity: 'continuity', return: 'modeled return' };
 const BEST_LABEL = { cost: 'Best for lowest cost', climate: 'Best for climate risk', continuity: 'Best for continuity', return: 'Best for modeled return' };
@@ -78,10 +80,17 @@ export function PlanCard({ p, cur, label, tone, best, onWhy, selected, compact }
   );
 }
 
+/** One honest line that names every caveat in engine.notes; the full notes sit behind "Details". */
 export function disclaimerText(engine: EngineOutput, edited: boolean) {
-  const unreviewed = engine.pack.reviewStatus !== 'reviewed';
-  const lead = !edited && unreviewed ? 'Demo results: synthetic prices and an unreviewed rule pack.' : unreviewed ? 'Demo results: an unreviewed rule pack and partly synthetic prices.' : 'Input costs include synthetic template prices.';
-  return `${lead} Climate risk is a replay of past seasons, not a forecast.`;
+  const has = (c: string) => engine.notes.some((n) => n.code === c);
+  const parts: string[] = [];
+  if (has('BUDGET_PLACEHOLDER')) parts.push('a placeholder budget');
+  parts.push(edited ? 'partly synthetic prices' : 'synthetic prices');
+  if (has('PRICE_IMPLAUSIBLE')) parts.push('a corrected FAOSTAT price');
+  if (engine.pack.reviewStatus !== 'reviewed') parts.push('an unreviewed rule pack');
+  if (engine.notes.some((n) => n.code === 'HISTORY_INCOMPLETE' && /assumed/i.test(n.text))) parts.push('an assumed usual plan');
+  const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
+  return `Demo results: ${list}. Climate risk is a replay of past seasons, not a forecast.`;
 }
 
 type DetailTab = 'reasons' | 'cash' | 'replay' | 'lines';
@@ -104,7 +113,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
     </div>
   );
   if (engineError) return <div>{head}<Callout tone="bad">Engine error: {engineError}</Callout></div>;
-  if (!engine) return <div>{head}{data.weatherStatus === 'error' ? <Callout tone="bad">NASA POWER data could not be loaded for this location ({data.weatherError}). Try “Refresh live NASA data” or another location.</Callout> : <NasaLoading place={sc.location.label} />}</div>;
+  if (!engine) return <div>{head}{data.weatherStatus === 'error' ? <WeatherError /> : <NasaLoading place={sc.location.label} />}</div>;
 
   const plans = [engine.baseline, ...engine.alternatives];
   const chosen = plans.find((p) => p.id === sel) ?? engine.allPlans.find((p) => p.id === sel) ?? (engine.alternatives[0] ?? engine.baseline);
@@ -120,8 +129,8 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
     setDot(Math.round(el.scrollLeft / w));
   };
   const priceSrc = (c: string) => { const s = engine.prices[c]?.source; return s === 'faostat-country' ? 'FAOSTAT' : s === 'faostat-median' ? 'FAOSTAT median' : s === 'farmer' ? 'yours' : 'placeholder'; };
-  const notesDetails = engine.notes.map((n) => (
-    <span key={n.code}>{n.code === 'UNREVIEWED_RULES' && <><span className="chip">{engine.pack.reviewStatus}</span>{' '}</>}{n.text}</span>
+  const notesDetails = engine.notes.map((n, k) => (
+    <span key={k}>{n.severity === 'warn' && <b>Check: </b>}{n.code === 'UNREVIEWED_RULES' && <><span className="chip">{engine.pack.reviewStatus}</span>{' '}</>}{n.text}</span>
   ));
 
   return (
@@ -142,7 +151,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
       </div>
       <div className="plan-dots" aria-hidden>{plans.map((p, i) => <i key={p.id} className={i === dot ? 'on' : ''} />)}</div>
 
-      {/* What-if panel slot: the climate what-if panel mounts here, right after the plan cards. */}
+      <WhatIfPanel />
 
       <div className="grid g2 section">
         <div className="card">

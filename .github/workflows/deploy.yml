@@ -34,3 +34,16 @@ jobs:
           git add -A
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Deploy ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+      - name: Verify the live site serves this build (no 404 assets)
+        run: |
+          URL="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/"
+          WANT=$(grep -o 'assets/index-[^"]*\.js' dist/index.html | head -1)
+          echo "Waiting for $URL to serve $WANT"
+          for i in $(seq 1 40); do
+            if curl -fsS "$URL" | grep -q "$WANT"; then echo "live after ~$(((i-1)*15))s"; break; fi
+            [ "$i" = 40 ] && { echo "::error::live site did not update"; exit 1; }
+            sleep 15
+          done
+          for a in $(grep -o '\./assets/[^"]*' dist/index.html); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$URL${a#./}"); echo "$code $a"; [ "$code" = 200 ] || exit 1
+          done

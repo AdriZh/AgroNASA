@@ -1,7 +1,5 @@
 // FAOSTAT country context: currency & exchange rate (PE), producer prices (PP),
 // cropland nutrient budget (ESB) and temperature change (ET). Built by scripts/build-faostat.py.
-import faostat from './faostat/countries.json';
-
 export interface CountryInfo {
   iso2: string; name: string; m49: string;
   currency?: string; currencyName?: string; lcuPerUsd?: number; fxYear?: number;
@@ -10,18 +8,38 @@ export interface CountryInfo {
   nutrientsYear?: number;
   warming?: { meanC: number; from: number; to: number; series: Record<string, number> };
 }
-const DATA = faostat as unknown as { countries: Record<string, CountryInfo>; globalMedianUsdPerT: Record<string, { usdPerT: number; n: number }>; retrieved: string };
+type FaoData = { countries: Record<string, CountryInfo>; globalMedianUsdPerT: Record<string, { usdPerT: number; n: number }>; retrieved: string };
 
-export const COUNTRIES = DATA.countries;
-export const FAOSTAT_RETRIEVED = DATA.retrieved;
+// The FAOSTAT table (~230 kB) is code-split out of the main bundle and loaded once at startup, in parallel
+// with the app (see loadFaostat / AppContext). Until it arrives every lookup below returns "unknown".
+let DATA: FaoData = { countries: {}, globalMedianUsdPerT: {}, retrieved: '' };
+const FX: Record<string, number> = { USD: 1 };
+let loaded: Promise<void> | null = null;
+let ready = false;
+
+function install(d: FaoData) {
+  DATA = d;
+  for (const c of Object.values(DATA.countries)) if (c.currency && c.lcuPerUsd && !FX[c.currency]) FX[c.currency] = c.lcuPerUsd;
+  // Senegal's FAOSTAT rate defines XOF; keep the pack currencies anchored to their reference countries.
+  if (DATA.countries.SN?.lcuPerUsd) FX.XOF = DATA.countries.SN.lcuPerUsd;
+  if (DATA.countries.KZ?.lcuPerUsd) FX.KZT = DATA.countries.KZ.lcuPerUsd;
+  ready = true;
+}
+
+/** Load the FAOSTAT country table (idempotent; a failed chunk load can be retried). */
+export function loadFaostat(): Promise<void> {
+  if (!loaded) {
+    loaded = import('./faostat/countries.json').then((m: any) => install((m.default ?? m) as FaoData));
+    loaded.catch(() => { loaded = null; });
+  }
+  return loaded;
+}
+export const faostatReady = () => ready;
+
+export const countries = () => DATA.countries;
+export const faostatRetrieved = () => DATA.retrieved;
 export const countryInfo = (iso2?: string): CountryInfo | undefined => (iso2 ? DATA.countries[iso2.toUpperCase()] : undefined);
 export const countryList = () => Object.values(DATA.countries).filter((c) => c.currency).sort((a, b) => a.name.localeCompare(b.name));
-
-const FX: Record<string, number> = { USD: 1 };
-for (const c of Object.values(DATA.countries)) if (c.currency && c.lcuPerUsd && !FX[c.currency]) FX[c.currency] = c.lcuPerUsd;
-// Senegal's FAOSTAT rate defines XOF; keep the pack currencies anchored to their reference countries.
-if (DATA.countries.SN?.lcuPerUsd) FX.XOF = DATA.countries.SN.lcuPerUsd;
-if (DATA.countries.KZ?.lcuPerUsd) FX.KZT = DATA.countries.KZ.lcuPerUsd;
 
 /** Local currency units per USD (FAOSTAT, latest annual), or undefined if unknown. */
 export const fxPerUsd = (currency: string) => FX[currency.toUpperCase()];
@@ -33,13 +51,31 @@ export function fxFactor(from: string, to: string): number {
   return a && b ? b / a : 1;
 }
 
-export interface PriceRef { usdPerT: number; year?: number; source: 'faostat-country' | 'faostat-median'; label: string }
-/** Farm-gate price: country FAOSTAT producer price if available, else the global median (2018+). */
+/**
+ * Plausibility band for FAOSTAT country producer prices, as a factor around the 2018+ global median.
+ * FAOSTAT's USD/t series converts local prices at official exchange rates, so a few entries are off by an
+ * order of magnitude (e.g. hyperinflation years, unit or LCU/USD mix-ups: beans at 71 USD/t, millet at 40 USD/t).
+ * Outside the band the country price is not used; the global median is, and the label says so.
+ */
+export const PRICE_PLAUSIBLE_FACTOR = 3;
+
+/** Crops priced with another FAOSTAT item (winter and spring types share one producer-price series). */
+const PRICE_ALIAS: Record<string, string> = { winterrapeseed: 'rapeseed' };
+
+export interface PriceRef { usdPerT: number; year?: number; source: 'faostat-country' | 'faostat-median'; label: string; replaced?: { usdPerT: number; year: number } }
+/** Farm-gate price: country FAOSTAT producer price if available and plausible, else the global median (2018+). */
 export function cropPriceUsd(iso2: string | undefined, cropId: string): PriceRef | null {
+  cropId = PRICE_ALIAS[cropId] ?? cropId;
   const c = countryInfo(iso2);
   const p = c?.prices[cropId];
-  if (p) return { usdPerT: p.usdPerT, year: p.year, source: 'faostat-country', label: `FAOSTAT producer price, ${c!.name} ${p.year}` };
   const g = DATA.globalMedianUsdPerT[cropId];
-  if (g) return { usdPerT: g.usdPerT, source: 'faostat-median', label: `FAOSTAT global median producer price (${g.n} countries, 2018+)` };
+  const implausible = !!(p && g && (p.usdPerT > g.usdPerT * PRICE_PLAUSIBLE_FACTOR || p.usdPerT < g.usdPerT / PRICE_PLAUSIBLE_FACTOR));
+  if (p && !implausible) return { usdPerT: p.usdPerT, year: p.year, source: 'faostat-country', label: `FAOSTAT producer price, ${c!.name} ${p.year}` };
+  if (g) {
+    const label = implausible
+      ? `FAOSTAT global median producer price (${g.n} countries, 2018+) — ${c!.name}'s ${p!.year} value (${Math.round(p!.usdPerT)} USD/t) is >${PRICE_PLAUSIBLE_FACTOR}× off and not used`
+      : `FAOSTAT global median producer price (${g.n} countries, 2018+)`;
+    return { usdPerT: g.usdPerT, source: 'faostat-median', label, ...(implausible ? { replaced: { usdPerT: p!.usdPerT, year: p!.year } } : {}) };
+  }
   return null;
 }

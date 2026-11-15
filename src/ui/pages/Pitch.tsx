@@ -41,6 +41,9 @@ function Slide({ n, total, kicker, icon, title, children }: { n: number; total: 
   );
 }
 
+/** Source footnote at the bottom of a data slide. */
+const Source = ({ children }: { children: ReactNode }) => <div className="muted" style={{ fontSize: 11.5, marginTop: 'auto', paddingTop: 8, paddingBottom: 18 }}>* Sources: {children}</div>;
+
 /** Highlighted phrase in a slide title (brand ink; no gradient text). */
 const G = ({ children }: { children: ReactNode }) => <span className="hl">{children}</span>;
 
@@ -279,22 +282,26 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         <motion.div {...fade(0.3)} style={{ height: 260 }}><OrbitVisual /></motion.div>
       </div>
     ) },
-    { id: 'problem', kicker: 'The problem', icon: <CloudRain size={14} />, body: (
+    { id: 'problem', kicker: '01 / The problem', icon: <CloudRain size={14} />, body: (
       <>
         <motion.h2 {...up(0.1)}>Every season, farmers bet their savings on the sky, before they know the rain.</motion.h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 24, flex: 1, alignItems: 'center' }}>
-          <motion.div {...fade(0.2)}>
-            {rows.length > 0 && minRow && maxRow && <SeasonRainChart rows={rows} highlight={[minRow.year, maxRow.year]} height={210} />}
-            <div className="muted" style={{ fontSize: 12 }}>Season rain by year at {place}, mm, NASA POWER (grid cell). Driest and wettest years highlighted.</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: 32, flex: 1, alignItems: 'center' }}>
+          <motion.div {...up(0.2)}>
+            <div className="hl" style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' }}>The rain gamble</div>
+            <h3 style={{ fontSize: 'clamp(20px, 2.2vw, 30px)', lineHeight: 1.2, margin: '8px 0 16px' }}>The wettest year brought <span className="hl">{(mx / Math.max(1, mn)).toFixed(1)}×</span> the rain of the driest, on the same field.</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 16px', alignItems: 'baseline' }}>
+              <b className="ink" style={{ fontSize: 26 }}>$170 B</b><span className="muted" style={{ fontSize: 14 }}>yearly smallholder finance gap; 70% of need unmet</span>
+              <b className="ink" style={{ fontSize: 26 }}>1 : 1,000+</b><span className="muted" style={{ fontSize: 14 }}>extension agents to farmers in many countries</span>
+              <b className="ink" style={{ fontSize: 26 }}>608 M</b><span className="muted" style={{ fontSize: 14 }}>farms worldwide, 84% under 2 ha: the market</span>
+            </div>
           </motion.div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Panel d={0.3}><div className="num-xl" style={{ fontSize: 40 }}>{(mx / Math.max(1, mn)).toFixed(1)}×</div><p style={{ marginTop: 6, fontSize: 14 }}>swing in season rain at one place ({Math.round(mn)}–{Math.round(mx)} mm)</p></Panel>
-            <Panel d={0.35}><div className="num-xl" style={{ fontSize: 40 }}>$170 B</div><p style={{ marginTop: 6, fontSize: 14 }}>yearly smallholder finance gap; 70% of need unmet (ISF Advisors 2019)</p></Panel>
-            <Panel d={0.4}><div className="num-xl" style={{ fontSize: 40 }}>1 : 1,000+</div><p style={{ marginTop: 6, fontSize: 14 }}>extension agents to farmers in many countries (Fabregas et al., Science 2019)</p></Panel>
-            <Panel d={0.45}><div className="num-xl" style={{ fontSize: 40 }}>608 M</div><p style={{ marginTop: 6, fontSize: 14 }}>farms worldwide, 84% under 2 ha: the market (FAO)</p></Panel>
-          </div>
+          <motion.div {...fade(0.3)}>
+            <b className="ink" style={{ fontSize: 16 }}>Season rain at {place}, every year since 2001 (mm)</b>
+            {minRow && maxRow && <div className="muted" style={{ fontSize: 13 }}>Highlighted: driest {minRow.year} ({Math.round(mn)} mm) and wettest {maxRow.year} ({Math.round(mx)} mm)</div>}
+            {rows.length > 0 && minRow && maxRow && <SeasonRainChart rows={rows} highlight={[minRow.year, maxRow.year]} height={200} />}
+          </motion.div>
         </div>
-        <motion.div {...up(0.5)} style={{ marginTop: 12, marginBottom: 20 }}>
+        <motion.div {...up(0.5)} style={{ marginTop: 8 }}>
           <b style={{ fontSize: 15 }}>Why it happens</b>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginTop: 6 }}>
             {[['Rain decides', 'Rain-fed farms give 52% of world crop output (FAO 2025).'], ['Cash comes before rain', 'Inputs are paid before sowing; credit and insurance rarely reach smallholders.'], ['Advice is scarce', 'Generic tips, no check of what a plan costs or how it fails in a bad year.'], ['Markets push one crop', 'Wheat ≈ 56% of Kazakhstan’s sown area (2024 plan).']].map(([h, d]) => (
@@ -302,6 +309,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
             ))}
           </div>
         </motion.div>
+        <Source>NASA POWER (grid cell, not a field station); ISF Advisors 2019; Fabregas, Kremer &amp; Schilbach, Science 2019; FAO.</Source>
       </>
     ) },
     { id: 'cash', kicker: 'The cash gap', icon: <Wallet size={14} />, body: (
@@ -329,14 +337,22 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         </div>
       </>
     ) },
-    { id: 'solution', kicker: 'Our solution', icon: <Sprout size={14} />, body: (
+    { id: 'solution', kicker: '02 / Our solution', icon: <Sprout size={14} />, body: (
       <>
-        <motion.h2 {...up(0.1)}>Which next plans can I <G>afford</G>, and how do they hold up in a <G>bad year</G>?</motion.h2>
-        <motion.p {...up(0.2)} style={{ fontSize: 15 }}><b className="ink">1</b> Pin the field · <b className="ink">2</b> Enter crops &amp; budget · <b className="ink">3</b> Compare affordable plans · <b className="ink">4</b> Print or share. Live for {place}:</motion.p>
+        <motion.h2 {...up(0.1)} style={{ marginBottom: 8 }}>Which next plans can I <G>afford</G>, and how do they hold up in a <G>bad year</G>?</motion.h2>
+        <motion.div {...up(0.15)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          {['Pin your field', 'Enter crops & budget', 'Compare plans you can afford', 'Print or share'].map((s, k, a) => (
+            <span key={s} style={{ display: 'contents' }}>
+              <span className="boxed" style={{ padding: '6px 12px', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}><span className="hl">{k + 1}</span> {s}</span>
+              {k < a.length - 1 && <ArrowRight size={16} className="muted" aria-hidden />}
+            </span>
+          ))}
+        </motion.div>
+        <motion.div {...up(0.2)} className="ink" style={{ fontSize: 15, fontWeight: 600 }}>Live for {place}: your usual plan against the two best plans that fit the budget</motion.div>
         {engine && plans.length > 0 ? <MiniCompare plans={plans} cur={cur} stress={stress} /> : null}
       </>
     ) },
-    { id: 'how', kicker: 'How it works', icon: <Cpu size={14} />, body: (
+    { id: 'how', kicker: '03 / How it works', icon: <Cpu size={14} />, body: (
       <>
         <motion.h2 {...up(0.1)}>Published science in a free web app: no black box.</motion.h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 1fr', gap: 16, flex: 1, alignItems: 'stretch' }}>
@@ -372,11 +388,11 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         </motion.div>
       </>
     ) },
-    { id: 'edge', kicker: 'Why it is better', icon: <Target size={14} />, body: (
+    { id: 'edge', kicker: '04 / Why it is better', icon: <Target size={14} />, body: (
       <>
         <motion.h2 {...up(0.1)}>Others show what grows. Field Shift shows what you can <G>afford</G>.</motion.h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, flex: 1, alignItems: 'center' }}>
-          <motion.div {...fade(0.2)}><PositionMap /><div className="muted" style={{ fontSize: 12 }}>Placed from each tool’s public pages, Nov 2026. Nearest: E-PICSA shows rainfall history and budgets, but people read the risk.</div></motion.div>
+          <motion.div {...fade(0.2)}><b className="ink" style={{ fontSize: 16 }}>Where similar tools stand</b><div className="muted" style={{ fontSize: 13 }}>Nearest: E-PICSA shows rainfall history and budgets, but people read the risk.</div><PositionMap /></motion.div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <Panel d={0.3}><b className="ink">Affordability first</b><p style={{ marginTop: 4, fontSize: 14 }}>Plans that run out of cash before a due date are excluded, with the reason shown.</p></Panel>
             <Panel d={0.35}><b className="ink">Bad years, not averages</b><p style={{ marginTop: 4, fontSize: 14 }}>Each plan replayed through 24 real consecutive season pairs, plus a drier &amp; hotter test.</p></Panel>
@@ -384,9 +400,10 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
             <Panel d={0.45}><b className="ink">Every number traceable</b><p style={{ marginTop: 4, fontSize: 14 }}>Reason codes and sources on every plan; no AI in the decision; checked against real harvests.</p></Panel>
           </div>
         </div>
+        <Source>each tool’s public pages, checked Nov 2026 (E-PICSA: GIZ 2023; PxD 2024 annual report; Digital Green; ADAS Crop Planner, Apr 2026).</Source>
       </>
     ) },
-    { id: 'next', kicker: 'What comes next', icon: <Rocket size={14} />, body: (
+    { id: 'next', kicker: '05 / What comes next', icon: <Rocket size={14} />, body: (
       <>
         <motion.h2 {...up(0.1)}>Next: every market, every language, every farmer.</motion.h2>
         <div className="grid g2" style={{ gap: 12, flex: 1, alignContent: 'center' }}>
@@ -406,7 +423,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         </motion.div>
       </>
     ) },
-    { id: 'team', kicker: `Why us · Team ${TEAM_NAME}`, icon: <Users size={14} />, body: (
+    { id: 'team', kicker: `06 / Why us · Team ${TEAM_NAME}`, icon: <Users size={14} />, body: (
       <>
         <motion.h2 {...up(0.1)}>Builders, educators and founders: <G>Team {TEAM_NAME}</G>.</motion.h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 200px', gap: 20, flex: 1, alignItems: 'center' }}>

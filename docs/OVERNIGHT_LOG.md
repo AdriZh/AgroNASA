@@ -19,6 +19,8 @@ https://adrizh.github.io/AgroNASA/  (work in progress — final status below)
 - **Adopted the owner's addendum** (relayed from the owner's other session at 07:47 UTC, verified against `OVERNIGHT_ADDENDUM.md` on `claude/focused-cray-1xqvhn`): diagnose-before-retry, security review before final deploy, full audit, honest 1–10 scoring with pivots below 8.
 - **Live-URL check method:** this session's network policy blocks `*.github.io`, so "serves the new build" is verified by (a) the `pages build and deployment` run succeeding for the gh-pages commit that the main workflow pushed, and (b) the identical `dist/` passing the Playwright smoke test locally. I did not request a network-policy change because nobody is awake to approve it.
 
+- **Did not re-render the 30-second video.** Its scenes are custom animations, not UI captures, and every number in it (usual plan −74,500 XOF; Option A +53,000 XOF / 0 % severe stress; Option B +42,800 XOF / 4 %) still matches the app after the engine changes, so it is not misleading. Re-rendering would cost time for no accuracy gain.
+
 ## Failures and how they were handled
 
 - 07:41 UTC — first Pages deploy (`3247173`) failed: `deploy-pages` → 404 "Ensure GitHub Pages has been enabled". Root cause: Pages disabled for the repo. Fix: published to a `gh-pages` branch (auto-enabled Pages) and switched the workflow to publish there. Runs `43691246641` + `43691281747` green.

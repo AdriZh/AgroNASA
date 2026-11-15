@@ -11,6 +11,7 @@ import { BudgetBar, CardTitle, Callout, Disclaimer, Money, NasaLoading, pct, Rea
 import { WhatIfPanel } from '../components/WhatIf';
 import { WeatherError } from '../components/NetStatus';
 import { RiskRow } from '../components/stress';
+import { CustomPlan, NearMisses } from '../components/CustomPlan';
 import type { PlanStress } from '../../engine/whatif';
 
 export const PRIORITY_LABEL = { cost: 'lowest cost', climate: 'lowest climate exposure', continuity: 'continuity', return: 'modeled return' };
@@ -33,7 +34,7 @@ export function Seq({ crops, size }: { crops: [string, string]; size?: 'sm' }) {
 }
 
 /** Sub-line under the cash-cost hero number; color only for the budget verdict. */
-function BudgetLine({ p, cur }: { p: PlanResult; cur: string }) {
+export function BudgetLine({ p, cur }: { p: PlanResult; cur: string }) {
   const b = p.budget;
   const budget = b.cap + b.inflowsTotal;
   if (b.status === 'unverified') return <span className="sub"><span className="warn-t">Budget not verified:</span> {b.missingEssential.length} price{b.missingEssential.length === 1 ? '' : 's'} missing</span>;
@@ -59,7 +60,7 @@ export function tradeOffText(alternatives: PlanResult[], cur: string): string | 
   return `${other.label || 'Option B'} earns ${diff} more in a typical year${risk}.`;
 }
 
-function harvestText(p: PlanResult) {
+export function harvestText(p: PlanResult) {
   const parts = p.seasons.map((s, k) => (s.cropId === 'fallow' ? 'fallow' : `${fmtNum(p.outcome.yields[k]?.median, 1)} t`));
   return parts.join(' + ');
 }
@@ -125,6 +126,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
   const [tab, setTab] = useState<DetailTab>('reasons');
   const [openLine, setOpenLine] = useState<number | null>(null);
   const [dot, setDot] = useState(0);
+  const [custom, setCustom] = useState<{ pack: string; crops: [string, string] } | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const head = (
     <div className="page-head">
@@ -148,6 +150,13 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
   const nSeasons = Object.values(engine.risks)[0]?.years.length ?? 0;
   const labelOf = (p: PlanResult, i: number) => (p.isBaseline ? 'Your usual plan' : i === 1 ? BEST_FIT : p.label || 'Option B');
   const tradeOff = tradeOffText(engine.alternatives, cur);
+  // the custom-plan card starts on the best fit (or the usual plan) so it is never empty; reset when the region changes
+  const customCrops = custom && custom.pack === engine.pack.id ? custom.crops : (engine.alternatives[0] ?? engine.baseline).crops;
+  const setCustomCrops = (crops: [string, string]) => setCustom({ pack: engine.pack.id, crops });
+  const tryPlan = (crops: [string, string]) => {
+    setCustomCrops(crops);
+    requestAnimationFrame(() => document.getElementById('custom-plan')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
+  };
   const showWhy = (id: string) => { setSel(id); requestAnimationFrame(() => document.getElementById('detail')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })); };
   const onRowScroll = () => {
     const el = rowRef.current; if (!el) return;
@@ -177,6 +186,9 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
       </div>
       <div className="plan-dots" aria-hidden>{plans.map((p, i) => <i key={p.id} className={i === dot ? 'on' : ''} />)}</div>
       {tradeOff && <p className="mini trade-off">{tradeOff}</p>}
+
+      <NearMisses engine={engine} onTry={tryPlan} />
+      <CustomPlan engine={engine} value={customCrops} onChange={setCustomCrops} />
 
       <WhatIfPanel />
 

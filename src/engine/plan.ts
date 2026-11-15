@@ -418,7 +418,7 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
     if (picked.some((q) => [...q.crops].sort().join('+') === set)) continue;
     picked.push(p);
   }
-  const alternatives = picked.map((p, i) => ({ ...p, rank: i + 1, label: i === 0 ? 'Option A' : 'Option B' }));
+  const alternatives = picked.map((p, i) => ({ ...p, rank: i + 1, label: i === 0 ? 'Best fit' : 'Option B' }));
   const excluded = all.filter((p) => !p.feasible);
   return { pack, window: windows[0], windows, areaHa, risks, risksAfterFallow, prices, fx, baseline, alternatives, allPlans: all, excluded, notes };
 }

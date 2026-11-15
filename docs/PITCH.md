@@ -41,8 +41,8 @@ The table above follows the 7-slide submission cut (Title, Problem, Solution, Da
 ## Live demo script (90 s)
 
 1. **Overview** hero: one line on rain swinging 309 to 976 mm → click **Senegal demo**.
-2. **Compare** (one hero number per card): usual Groundnut→Millet 454,500 XOF, **74,500 over** the 380,000 budget; Option A 327,000 (53,000 left, 0 of 24 severe); Option B 337,200 (42,800 left, 1 of 24).
-3. **What-if → “Drier & hotter”** (−15 % rain, +2 °C): the usual plan goes from 2 to 5 of 24 severe; Option A goes to 2. The replay re-runs live in ~30–50 ms.
+2. **Compare** (one hero number per card): usual Groundnut→Millet 454,500 XOF, **74,500 over** the 380,000 budget; Best fit 327,000 (53,000 left, 0 of 24 severe); Option B 337,200 (42,800 left, 1 of 24).
+3. **What-if → “Drier & hotter”** (−15 % rain, +2 °C): the usual plan goes from 2 to 5 of 24 severe; Best fit goes to 2. The replay re-runs live in ~30–50 ms.
 4. Switch to the **Kazakhstan demo** (Kostanay, 200 ha), **Drier & hotter**: the wheat monoculture (over budget, flagged as a monoculture) jumps **9 → 16 of 24** severe; the fallow break holds (Fallow→Rapeseed 2 → 6, Fallow→Wheat 5 → 7). The fallow trades income for lower cost and risk; modeled net is on the cards.
 5. **Evidence → hindcast vs FAOSTAT harvests**: Kazakhstan wheat r = 0.59, Senegal weak (r ≈ 0.2) and why; all four known drought years in the driest third.
 6. **Share** button: the scenario is in the URL, so anyone opens the same view.

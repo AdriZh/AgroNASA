@@ -11,7 +11,7 @@ import { CardTitle, Loading, NasaLoading, PlanSkeleton, Tag } from '../component
 import { LocationSearch, PresetGrid } from '../components/LocationPicker';
 import { OrbitVisual } from '../components/OrbitVisual';
 import { WeatherError } from '../components/NetStatus';
-import { PlanCard } from './Compare';
+import { BEST_FIT, CASH_CAPTION, PlanCard } from './Compare';
 import { useDrierHotter } from '../components/stress';
 
 const NASA_SOURCES: [string, string][] = [
@@ -65,8 +65,9 @@ export function Overview({ go }: { go: (r: Route) => void }) {
             <div className="hero-art" aria-hidden><OrbitVisual /></div>
             {best ? (
               <>
-                <PlanCard p={best} cur={cur} label="Best fit" tone="brand" best compact risk={stress?.get(best.id) ?? null} showNet />
-                <div className="spread"><span className="mini">Best fit for the {place} {scenario.synthetic ? 'demo farm' : 'farm'}</span><button className="btn ghost sm" onClick={() => go('compare')}>All plans <ArrowRight /></button></div>
+                <PlanCard p={best} cur={cur} label={BEST_FIT} tone="brand" best compact risk={stress?.get(best.id) ?? null} showNet />
+                <p className="mini">{CASH_CAPTION}</p>
+                <div className="spread"><span className="mini">{BEST_FIT} for the {place} {scenario.synthetic ? 'demo farm' : 'farm'}</span><button className="btn ghost sm" onClick={() => go('compare')}>All plans <ArrowRight /></button></div>
               </>
             ) : engine ? (
               <div className="card preview"><p className="mini">No plan fits the stated constraints here. Compare shows the smallest change that would help.</p><button className="btn ghost sm" onClick={() => go('compare')}>Open Compare <ArrowRight /></button></div>

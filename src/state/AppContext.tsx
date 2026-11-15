@@ -12,6 +12,7 @@ import { countryInfo, faostatReady, fxFactor, loadFaostat } from '../data/countr
 import { errorText } from '../weather/net';
 import { idbClear } from './idb';
 import { loadSpace, type SpaceData } from './space';
+import { sanitizeScenario } from './shareCodec';
 
 const LS_KEY = 'fieldshift:v1:scenarios';
 const LS_ACTIVE = 'fieldshift:v1:active';
@@ -46,8 +47,10 @@ function loadScenarios(): FarmScenario[] {
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (raw) {
-      const list = JSON.parse(raw) as FarmScenario[];
-      if (Array.isArray(list) && list.length) return list.map((s) => ({ ...s, allowFallow: s.allowFallow ?? false }));
+      // device storage is validated like a share link: a corrupted or tampered entry is skipped, not rendered
+      const list: unknown = JSON.parse(raw);
+      const ok = Array.isArray(list) ? list.slice(0, 200).map((s) => sanitizeScenario(s, { keepIds: true })).flatMap((r) => (r.ok ? [r.scenario] : [])) : [];
+      if (ok.length) return ok;
     }
   } catch { /* ignore */ }
   return DEMOS.map((d) => structuredClone(d));
@@ -252,7 +255,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     select: (id) => setActiveId(id),
     createNew: (at) => { const s = blankScenario(at); setScenarios((l) => [...l, s]); setActiveId(s.id); },
     resetDemo: (id) => { const d = DEMOS.find((x) => x.id === id); if (!d) return; setScenarios((l) => (l.some((s) => s.id === id) ? l.map((s) => (s.id === id ? structuredClone(d) : s)) : [...l, structuredClone(d)])); setActiveId(id); },
-    importScenario: (s) => { const copy = { ...s, id: `import-${Date.now()}` }; setScenarios((l) => [...l, copy]); setActiveId(copy.id); },
+    // imported files are untrusted: validated (types, ranges, known crops, no extra keys) or rejected with a message
+    importScenario: (s) => { const r = sanitizeScenario(s); if (!r.ok) throw new Error(r.error); const copy = { ...r.scenario, id: `import-${Date.now()}` }; setScenarios((l) => [...l, copy]); setActiveId(copy.id); },
     deleteAll: async () => { try { localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_ACTIVE); } catch { /* */ } await idbClear(); setScenarios(DEMOS.map((d) => structuredClone(d))); setActiveId(DEMOS[0].id); },
     data, refreshLive: () => load(true),
     engine, engineError, reviews, soil,

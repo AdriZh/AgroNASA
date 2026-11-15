@@ -1,6 +1,6 @@
 import type { DailySeries } from '../domain/types';
 import { addDays, diffDays, toISO } from '../domain/dates';
-import { idbGet, idbSet } from '../state/idb';
+import { idbGet, idbSet, looksLikeSeries } from '../state/idb';
 import { errorText, fetchJson, NetError } from './net';
 
 /** 25 years × 9 parameters is ~1.3 MB and POWER can take 30+ s to assemble it. */
@@ -32,20 +32,27 @@ export interface QualityReport { records: number; missing: Record<string, number
 /** Parse a POWER daily point JSON response into a dense, validated columnar series. */
 export function parsePower(json: any, query: string, retrievedAt: string, label: string): { series: DailySeries; quality: QualityReport } {
   const params = json?.properties?.parameter;
-  if (!params) throw new Error(json?.messages?.join?.(' ') || json?.message || 'Unexpected NASA POWER response');
+  if (!params || typeof params !== 'object' || Array.isArray(params)) {
+    const msg = Array.isArray(json?.messages) ? json.messages.filter((m: unknown) => typeof m === 'string').join(' ') : typeof json?.message === 'string' ? json.message : '';
+    throw new Error(msg.slice(0, 300) || 'Unexpected NASA POWER response');
+  }
   const fill = Number(json?.header?.fill_value ?? -999);
   const first = params.PRECTOTCORR ?? params[Object.keys(params)[0]];
-  const keys = Object.keys(first).sort();
+  if (!first || typeof first !== 'object' || Array.isArray(first)) throw new Error('Unexpected NASA POWER response');
+  // untrusted payload: keys must be YYYYMMDD and the record no longer than ~60 years, so a bad body cannot exhaust memory
+  const keys = Object.keys(first).filter((k) => /^\d{8}$/.test(k)).sort();
+  if (!keys.length) throw new Error('NASA POWER returned no daily records');
   const start = `${keys[0].slice(0, 4)}-${keys[0].slice(4, 6)}-${keys[0].slice(6, 8)}`;
   const lastK = keys[keys.length - 1];
   const end = `${lastK.slice(0, 4)}-${lastK.slice(4, 6)}-${lastK.slice(6, 8)}`;
   const n = diffDays(start, end) + 1;
+  if (!(n >= 1 && n <= 22_000)) throw new Error('NASA POWER returned an implausible date range');
   const duplicates = keys.length - new Set(keys).size;
   const coords = json?.geometry?.coordinates ?? [];
   const series: DailySeries = {
     meta: {
       lat: Number(coords[1]), lon: Number(coords[0]), elevation: Number(coords[2] ?? 0),
-      start, end, retrievedAt, query, sources: json?.header?.sources ?? ['MERRA2'], fillValue: fill, cached: false, label,
+      start, end, retrievedAt, query, sources: Array.isArray(json?.header?.sources) ? json.header.sources.filter((x: unknown) => typeof x === 'string').slice(0, 10) : ['MERRA2'], fillValue: fill, cached: false, label,
     },
     n, P: [], TX: [], TN: [], T: [], RH: [], WS: [], RS: [], GWR: [], GWT: [],
   };
@@ -54,12 +61,12 @@ export function parsePower(json: any, query: string, retrievedAt: string, label:
   for (const p of POWER_PARAMS) {
     const k = KEY[p];
     const arr: (number | null)[] = new Array(n).fill(null);
-    const src = params[p] ?? {};
+    const src = params[p] && typeof params[p] === 'object' ? params[p] : {};
     let miss = 0;
     for (let i = 0; i < n; i++) {
       const iso = addDays(start, i);
       const v = src[iso.replace(/-/g, '')];
-      if (v == null || v === fill || !Number.isFinite(v)) { miss++; continue; }
+      if (typeof v !== 'number' || v === fill || !Number.isFinite(v)) { miss++; continue; }
       const [lo, hi] = PLAUSIBLE[k as string];
       if (v < lo || v > hi) { implausible++; miss++; continue; }
       arr[i] = v;
@@ -90,7 +97,7 @@ export interface FetchResult { series: DailySeries; quality?: QualityReport; fro
 export async function fetchPower(lat: number, lon: number, opts: { force?: boolean; signal?: AbortSignal } = {}): Promise<FetchResult> {
   const cell = powerGridCell(lat, lon);
   const cacheKey = `power:${cell.cLat.toFixed(3)}:${cell.cLon.toFixed(3)}`;
-  const cached = await idbGet<DailySeries>(cacheKey);
+  const cached = await idbGet<DailySeries>(cacheKey, looksLikeSeries);
   const ageDays = cached ? diffDays(cached.meta.retrievedAt.slice(0, 10), toISO(Date.now())) : Infinity;
   if (cached && !opts.force && ageDays < 7) return { series: { ...cached, meta: { ...cached.meta, cached: true } }, fromCache: true };
 

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -38,10 +39,35 @@ function preloadFirstScreenData(): Plugin {
   };
 }
 
+/**
+ * Content Security Policy: index.html carries `script-src 'self'`. In the build, every inline <script> and inline
+ * event handler left in the final HTML (the data preloader above, the fonts' onload) is allowed by its SHA-256
+ * hash, so no 'unsafe-inline' is needed for scripts. The dev server injects its own inline scripts (React
+ * refresh), so the policy is removed there.
+ */
+function cspHashes(): Plugin {
+  const META = /<meta http-equiv="Content-Security-Policy" content="([^"]*)"\s*\/?>/;
+  const sha = (s: string) => `'sha256-${createHash('sha256').update(s, 'utf8').digest('base64')}'`;
+  return {
+    name: 'field-shift-csp',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (!ctx.bundle) return html.replace(META, '');
+        const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => sha(m[1]));
+        const handlers = [...html.matchAll(/\son[a-z]+="([^"]*)"/g)].map((m) => sha(m[1]));
+        const extra = [...scripts, ...(handlers.length ? ["'unsafe-hashes'", ...handlers] : [])];
+        if (!META.test(html)) throw new Error('index.html has no Content-Security-Policy meta tag');
+        return html.replace(META, (tag, content: string) => tag.replace(content, content.replace("script-src 'self'", ["script-src 'self'", ...new Set(extra)].join(' '))));
+      },
+    },
+  };
+}
+
 // `base` is relative so the static build works on GitHub Pages sub-paths and any static host.
 export default defineConfig({
   base: './',
-  plugins: [react(), preloadFirstScreenData()],
+  plugins: [react(), preloadFirstScreenData(), cspHashes()],
   // JSON.parse of a string literal is much faster to evaluate than an equivalent JS object literal.
   json: { stringify: true },
   build: {

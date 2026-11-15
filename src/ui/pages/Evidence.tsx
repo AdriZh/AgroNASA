@@ -80,7 +80,7 @@ function ClimateTab() {
       <CountryContext />
       <div className="card"><div className="card-head"><h3>Data provenance</h3><div className="chips"><Ref id="R5" /><Ref id="R6" /><Ref id="R17" /><Ref id="R8" /></div></div>
         <StatRows rows={[
-          ['Query', <a className="url" href={s.meta.query} target="_blank" rel="noreferrer">{s.meta.query}</a>, 'wrap'],
+          ['Query', <a className="url" href={s.meta.query} target="_blank" rel="noopener noreferrer">{s.meta.query}</a>, 'wrap'],
           ['Retrieved', fmtDate(s.meta.retrievedAt.slice(0, 10))],
           ['Sources', s.meta.sources.join(', '), 'wrap'],
           ['Time standard', 'LST'],

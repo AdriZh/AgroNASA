@@ -22,7 +22,7 @@ export function ReportPage() {
   };
   const onImport = async (f: File) => {
     try {
-      const j = JSON.parse(await f.text());
+      if (f.size > 2_000_000) throw new Error('file is larger than 2 MB'); const j = JSON.parse(await f.text());
       const s: FarmScenario = j.scenario ?? j;
       if (!s.location || !Array.isArray(s.history)) throw new Error('not a Field Shift scenario');
       importScenario(s); setMsg(`Imported “${s.name}”.`);
@@ -146,7 +146,7 @@ export function ReportPage() {
           <h2>Data and sources</h2>
           <p className="mini">NASA POWER {data.series?.meta.start}–{data.series?.meta.end} ({data.weatherOrigin === 'bundled' ? 'archived snapshot' : data.weatherOrigin === 'cache' ? 'cached' : 'live'}, retrieved {data.series?.meta.retrievedAt.slice(0, 10)}). Soil: {data.soilGrid ? `SoilGrids ${data.soilGrid.texture}, AWC ${fmtNum(data.soilGrid.awcMmPerM, 0)} mm/m` : 'SoilGrids offline, typical values for the texture class used'}.</p>
           <ol className="mini" style={{ paddingLeft: 20, margin: 0 }}>
-            {SOURCES.filter((s) => cited.has(s.id)).map((s) => <li key={s.id}><span className="mono">[{s.id}]</span> <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a></li>)}
+            {SOURCES.filter((s) => cited.has(s.id)).map((s) => <li key={s.id}><span className="mono">[{s.id}]</span> <a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a></li>)}
           </ol>
           <p className="mini">Field Shift informs rather than decides. Modeled values are conditional historical scenarios, not forecasts or guarantees. NASA does not endorse this tool.</p>
         </section>

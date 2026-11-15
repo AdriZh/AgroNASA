@@ -160,6 +160,12 @@ docs/          pitch kit, review log
 
 Crop history, fertilizer, prices and budget stay in the browser. NASA POWER, SoilGrids, Open-Meteo and the map/geocoder receive only coordinates or a place name. Export, import and delete-all are on the Report page.
 
+## Security
+
+No secrets, no backend and no third-party scripts: a strict Content-Security-Policy (`script-src 'self'` plus build-time hashes) allows only the NASA, ISRIC, Open-Meteo, OpenStreetMap and Google Fonts hosts the app uses.
+Share links, imported files, device storage and API responses are size-limited, schema-checked and clamped (`tests/security.test.ts`). `npm audit` reports 0 vulnerabilities, and the deploy workflow uses least-privilege permissions and SHA-pinned actions.
+Details, CSP rationale and residual risks: [docs/SECURITY.md](docs/SECURITY.md).
+
 ## Credits & disclosure
 
 Weather and soil-wetness data: NASA POWER Project (NASA Langley Research Center). Satellite imagery: NASA EOSDIS GIBS / Worldview. Soil: ISRIC SoilGrids. Forecast: Open-Meteo. Maps © OpenStreetMap contributors. **NASA does not endorse this project.**

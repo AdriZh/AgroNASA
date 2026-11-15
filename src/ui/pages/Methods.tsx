@@ -97,7 +97,7 @@ export function MethodsPage() {
       <section className="card section">
         <div className="card-head"><h2>Evidence register</h2></div>
         <div className="table-wrap"><table><thead><tr><th>ID</th><th>Source</th><th>Used as</th><th>Limits</th></tr></thead>
-          <tbody>{SOURCES.map((s) => <tr key={s.id}><td className="mono" style={{ verticalAlign: 'top', paddingTop: 10 }}>{s.id}</td><td className="wrap" style={{ verticalAlign: 'top', paddingTop: 10, paddingBottom: 10 }}><a href={s.url} target="_blank" rel="noreferrer">{s.title}</a></td><td style={{ verticalAlign: 'top', paddingTop: 10 }}>{KIND[s.kind]}</td><td className="wrap mini" style={{ verticalAlign: 'top', paddingTop: 10, paddingBottom: 10 }}>{s.limits}</td></tr>)}</tbody></table></div>
+          <tbody>{SOURCES.map((s) => <tr key={s.id}><td className="mono" style={{ verticalAlign: 'top', paddingTop: 10 }}>{s.id}</td><td className="wrap" style={{ verticalAlign: 'top', paddingTop: 10, paddingBottom: 10 }}><a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a></td><td style={{ verticalAlign: 'top', paddingTop: 10 }}>{KIND[s.kind]}</td><td className="wrap mini" style={{ verticalAlign: 'top', paddingTop: 10, paddingBottom: 10 }}>{s.limits}</td></tr>)}</tbody></table></div>
       </section>
     </div>
   );

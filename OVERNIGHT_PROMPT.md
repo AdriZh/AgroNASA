@@ -75,6 +75,15 @@ Influence/Impact, Creativity, Validity (scientific soundness), Relevance (to the
 - If something burns more than about 15% of your effort without progress, cut it, log it and move on.
 - Don't change the product name or the core concept (affordability-first rotation planning with NASA data); refine it.
 
+## Usage limit: assume you can be cut off at any moment
+
+You cannot see your remaining token budget. When it runs out, you halt mid-step with no warning. So:
+- **Create `docs/OVERNIGHT_LOG.md` right after Wave 1, and update, commit and push it after every milestone.** The owner must never wake up to an empty log.
+- **Never leave `main` broken.** Only fast-forward `main` to a commit where `npm test && npm run build` passed. Unfinished work stays on your branch or in the agents' worktrees.
+- **Push before you start anything long.** That means before spawning a wave of agents or before a big refactor.
+- **Stop on your own when the work is done; don't invent endless extra work.** After Wave 4 and one judge-driven fix round, finish the log and end. If you're past Wave 3 and things feel long, skip optional polish and go straight to the final log.
+- **Watch for a usage-limit or rate-limit error,** whether on you or on an agent. If you see one, don't retry in a loop: immediately commit, push, update the log with what was unfinished, and stop.
+
 ## Before you stop
 
 Write `docs/OVERNIGHT_LOG.md` with these sections:

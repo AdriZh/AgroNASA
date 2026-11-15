@@ -17,6 +17,13 @@
   /* chart series, fixed order, never cycled */
   --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; --c6: #008300;
   --c-other: #9aa59e;   --chart-grid: #e6eae3; --chart-axis: #56635b;
+  /* crop-group chips (CropIcon): glyph colour + soft fill */
+  --crop-cereal: #8a5d00;  --crop-cereal-soft: #fbefd3;
+  --crop-legume: #2c6e2f;  --crop-legume-soft: #e2f1df;
+  --crop-oilseed: #5b45a8; --crop-oilseed-soft: #ece8f8;
+  --crop-tuber: #8f4a24;   --crop-tuber-soft: #f6e6dc;
+  --crop-fallow: #6b6157;  --crop-fallow-soft: #ebe7e2;
+  --crop-cover: #116e69;   --crop-cover-soft: #dcf0ee;
   /* type */
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -43,6 +50,12 @@
     --bad:  #f0837a;      --bad-soft:  #3a1b18;
     --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #0ca30c;
     --c-other: #6b776f;   --chart-grid: #263029; --chart-axis: #9ba8a0;
+    --crop-cereal: #e6b04c;  --crop-cereal-soft: #33280f;
+    --crop-legume: #7fcb7f;  --crop-legume-soft: #183019;
+    --crop-oilseed: #b8a5f2; --crop-oilseed-soft: #272040;
+    --crop-tuber: #e9a07a;   --crop-tuber-soft: #3a241a;
+    --crop-fallow: #b5ab9f;  --crop-fallow-soft: #2b2825;
+    --crop-cover: #63d0c7;   --crop-cover-soft: #12302e;
     --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px rgba(0, 0, 0, .25);
   }
 }
@@ -57,6 +70,12 @@
   --bad:  #f0837a;      --bad-soft:  #3a1b18;
   --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #0ca30c;
   --c-other: #6b776f;   --chart-grid: #263029; --chart-axis: #9ba8a0;
+  --crop-cereal: #e6b04c;  --crop-cereal-soft: #33280f;
+  --crop-legume: #7fcb7f;  --crop-legume-soft: #183019;
+  --crop-oilseed: #b8a5f2; --crop-oilseed-soft: #272040;
+  --crop-tuber: #e9a07a;   --crop-tuber-soft: #3a241a;
+  --crop-fallow: #b5ab9f;  --crop-fallow-soft: #2b2825;
+  --crop-cover: #63d0c7;   --crop-cover-soft: #12302e;
   --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px rgba(0, 0, 0, .25);
 }
 
@@ -330,6 +349,18 @@ td.wrap, .table-wrap td.wrap { white-space: normal; }
 .seq .arrow { color: var(--text-muted); display: inline-flex; }
 .seq.sm { font-size: 16px; line-height: 24px; }
 .seq.sm .crop .em { font-size: 16px; }
+/* CropIcon: one line glyph per crop on a crop-group chip */
+.crop-ic { display: inline-flex; align-items: center; justify-content: center; flex: none; vertical-align: middle; border-radius: var(--r-sm); color: var(--crop-c); background: var(--crop-c-soft); }
+.crop-ic svg { display: block; }
+.crop-ic-cereal { --crop-c: var(--crop-cereal); --crop-c-soft: var(--crop-cereal-soft); }
+.crop-ic-legume { --crop-c: var(--crop-legume); --crop-c-soft: var(--crop-legume-soft); }
+.crop-ic-oilseed { --crop-c: var(--crop-oilseed); --crop-c-soft: var(--crop-oilseed-soft); }
+.crop-ic-tuber { --crop-c: var(--crop-tuber); --crop-c-soft: var(--crop-tuber-soft); }
+.crop-ic-fallow { --crop-c: var(--crop-fallow); --crop-c-soft: var(--crop-fallow-soft); }
+.crop-ic-cover { --crop-c: var(--crop-cover); --crop-c-soft: var(--crop-cover-soft); }
+.crop-pair { display: inline-flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 2px; }
+.crop-pair-item, .crop-name { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.crop-pair-arrow { color: var(--text-muted); }
 .plan-cost { display: flex; flex-direction: column; gap: var(--s-2); }
 .plan-cost .sub { font-size: 13px; line-height: 20px; color: var(--text-muted); }
 .plan-sow { display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 20px; color: var(--text-muted); }
@@ -570,6 +601,12 @@ details.disclose > .body { margin-top: var(--s-3); }
     --bad:  #b3261e;      --bad-soft:  #fcebe9;
     --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; --c6: #008300;
     --c-other: #9aa59e;   --chart-grid: #e6eae3; --chart-axis: #56635b;
+    --crop-cereal: #8a5d00;    --crop-cereal-soft: #fbefd3;
+    --crop-legume: #2c6e2f;    --crop-legume-soft: #e2f1df;
+    --crop-oilseed: #5b45a8; --crop-oilseed-soft: #ece8f8;
+    --crop-tuber: #8f4a24;     --crop-tuber-soft: #f6e6dc;
+    --crop-fallow: #6b6157;    --crop-fallow-soft: #ebe7e2;
+    --crop-cover: #116e69;     --crop-cover-soft: #dcf0ee;
     --shadow: none;
   }
   @page { margin: 16mm; }

@@ -18,6 +18,7 @@ import { CAT_TOKEN, SeasonRainChart, useChartTheme } from '../components/charts'
 import { BEST_FIT, CASH_CAPTION, PlanCard, PRIORITY_LABEL, tradeOffText } from './Compare';
 import { HindcastChart } from '../components/Hindcast';
 import { allHindcasts } from '../../data/hindcast/hindcast';
+import { TEAM } from '../../data/team';
 import type { PlanResult } from '../../engine/plan';
 import type { PlanStress } from '../../engine/whatif';
 import { useDrierHotter } from '../components/stress';
@@ -396,6 +397,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
         <motion.div {...quick(0.15)} className="live-url">
           <span className="caption">Try it live</span>
           <a href="https://adrizh.github.io/AgroNASA/" target="_blank" rel="noopener noreferrer">adrizh.github.io/AgroNASA</a>
+          <span className="caption" style={{ marginLeft: 'auto', textTransform: 'none', letterSpacing: 0 }}>Team: {TEAM.join(' · ')}</span>
         </motion.div>
       </>
     ) },

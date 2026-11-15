@@ -181,6 +181,17 @@ No secrets, no backend and no third-party scripts: a strict Content-Security-Pol
 Share links, imported files, device storage and API responses are size-limited, schema-checked and clamped (`tests/security.test.ts`). `npm audit` reports 0 vulnerabilities, and the deploy workflow uses least-privilege permissions and SHA-pinned actions.
 Details, CSP rationale and residual risks: [docs/SECURITY.md](docs/SECURITY.md).
 
+## Team
+
+1. ayu.ogura
+2. zhamilya.toleukhan
+3. fernando.stoll
+4. francisco.correia
+5. Iuliia Zakhartsova
+6. Ruslan Kan
+
+Developed alongside the team's Fieldwise prototype (https://fieldwise-rotation-studio.relaxedwand2.chatgpt.site), which inspired some ideas; Field Shift's NASA replay, budget and risk engine is its own.
+
 ## Credits & disclosure
 
 Weather and soil-wetness data: NASA POWER Project (NASA Langley Research Center). Satellite imagery: NASA EOSDIS GIBS / Worldview. Soil: ISRIC SoilGrids. Forecast: Open-Meteo. Maps © OpenStreetMap contributors. **NASA does not endorse this project.**

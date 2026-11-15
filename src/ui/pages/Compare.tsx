@@ -1,9 +1,10 @@
 import { Fragment, useRef, useState, type ReactNode } from 'react';
+import { CropIcon, CropPair } from '../components/CropIcon';
 import type { Route } from '../../App';
 import { ArrowDown, ArrowLeft, ArrowRight, Ban, CloudSunRain, Coins, Pencil } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
 import type { EngineOutput, PlanResult } from '../../engine/plan';
-import { CROPS, cropEmoji, cropName } from '../../data/crops';
+import { CROPS, cropName } from '../../data/crops';
 import { fmtApprox, fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDayMonth, fmtDate } from '../../domain/dates';
 import { CashTimeline, CostChart, RangeBar, ReplayChart } from '../components/charts';
@@ -26,9 +27,9 @@ const nb = (x: number) => (Math.abs(x) >= 1e6 ? `${(x / 1e6).toLocaleString('en-
 export function Seq({ crops, size }: { crops: [string, string]; size?: 'sm' }) {
   return (
     <p className={`seq ${size ?? ''}`} aria-label={`${cropName(crops[0])} then ${cropName(crops[1])}`}>
-      <span className="crop"><span className="em" aria-hidden>{cropEmoji(crops[0])}</span>{cropName(crops[0])}</span>
+      <span className="crop"><CropIcon id={crops[0]} size={size ? 20 : 24} />{cropName(crops[0])}</span>
       <span className="arrow" aria-hidden><ArrowRight size={size ? 14 : 18} /></span>
-      <span className="crop"><span className="em" aria-hidden>{cropEmoji(crops[1])}</span>{cropName(crops[1])}</span>
+      <span className="crop"><CropIcon id={crops[1]} size={size ? 20 : 24} />{cropName(crops[1])}</span>
     </p>
   );
 }
@@ -196,7 +197,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
               <tbody>
                 {risks.map((r) => (
                   <tr key={`${r.cropId}:${r.seasonLabel}`}>
-                    <td>{CROPS[r.cropId].emoji} {cropName(r.cropId)}{engine.windows.length > 1 && r.seasonLabel ? <span className="muted"> · {r.seasonLabel}</span> : null}</td>
+                    <td><span className="crop-name"><CropIcon id={r.cropId} size={18} />{cropName(r.cropId)}</span>{engine.windows.length > 1 && r.seasonLabel ? <span className="muted"> · {r.seasonLabel}</span> : null}</td>
                     <td><div className="row" style={{ gap: 8, flexWrap: 'nowrap' }}><RangeBar p20={r.p20Rel} med={r.medianRel} p80={r.p80Rel} width={72} /><span>{pct(r.medianRel)}</span></div></td>
                     <td className="num">{pct(r.pSevere)}</td>
                     <td className="num">{pct(r.pHeat)}</td>
@@ -234,7 +235,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
                   <div className="spread" style={{ marginBottom: 8 }}><span className="caption">Harvest, whole field</span><Tag t="modeled" /></div>
                   <StatRows rows={chosen.seasons.map((s, k) => {
                     const y = chosen.outcome.yields[k];
-                    return [<>{CROPS[s.cropId].emoji} {s.cropId === 'fallow' ? 'Fallow' : cropName(s.cropId)}</>, s.cropId === 'fallow' ? 'no harvest' : <span className="row" style={{ flexWrap: 'nowrap', justifyContent: 'flex-end' }}>{s.risk && <RangeBar p20={s.risk.p20Rel} med={s.risk.medianRel} p80={s.risk.p80Rel} width={72} />}{fmtNum(y?.p20, 1)}–{fmtNum(y?.p80, 1)} t</span>] as [ReactNode, ReactNode];
+                    return [<span className="crop-name"><CropIcon id={s.cropId} size={18} />{s.cropId === 'fallow' ? 'Fallow' : cropName(s.cropId)}</span>, s.cropId === 'fallow' ? 'no harvest' : <span className="row" style={{ flexWrap: 'nowrap', justifyContent: 'flex-end' }}>{s.risk && <RangeBar p20={s.risk.p20Rel} med={s.risk.medianRel} p80={s.risk.p80Rel} width={72} />}{fmtNum(y?.p20, 1)}–{fmtNum(y?.p80, 1)} t</span>] as [ReactNode, ReactNode];
                   })} />
                   <p className="mini" style={{ marginTop: 8 }}>Range is a bad year (20th percentile) to a good year (80th). Sale prices: {chosen.crops.filter((c) => c !== 'fallow').map((c) => `${cropName(c)} ${fmtMoney(engine.prices[c]?.perT, cur)}/t (${priceSrc(c)})`).join(' · ')}.</p>
                 </div>
@@ -268,7 +269,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
                     {chosen.budget.lines.map((l, i) => (
                       <Fragment key={i}>
                         <tr className={l.cash ? '' : 'dim'} onClick={() => setOpenLine(openLine === i ? null : i)}>
-                          <td className="hide-sm">S{l.season} {cropEmoji(l.cropId)}</td>
+                          <td className="hide-sm"><span className="crop-name">S{l.season} <CropIcon id={l.cropId} size={16} title /></span></td>
                           <td className="wrap">{l.label}{!l.cash && ' (non-cash)'}</td>
                           <td className="num hide-sm">{fmtNum(l.qty, 1)} {l.unit}</td>
                           <td className="num hide-sm">{l.unitPrice == null ? <span className="warn-t">missing</span> : <>{fmtNum(l.unitPrice, 2)}{l.overridden && <span className="muted" title="Your price"> · yours</span>}</>}</td>
@@ -298,7 +299,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
                 const blocks = p.reasons.filter((r) => r.severity === 'block');
                 return (
                   <tr key={p.id}>
-                    <td style={{ verticalAlign: 'top', paddingTop: 10 }}>{cropEmoji(p.crops[0])} {cropName(p.crops[0])} → {cropEmoji(p.crops[1])} {cropName(p.crops[1])}</td>
+                    <td style={{ verticalAlign: 'top', paddingTop: 10 }}><CropPair crops={p.crops} /></td>
                     <td className="num" style={{ verticalAlign: 'top', paddingTop: 10 }}>{n0(p.budget.totalCash)}</td>
                     <td className="wrap" style={{ paddingTop: 10, paddingBottom: 10 }}>
                       {blocks.map((r, k) => <div key={k}>{r.text}{r.refs.length > 0 && <span className="refs" style={{ marginLeft: 6 }}>{r.refs.slice(0, 2).map((x) => <Ref key={x} id={x} />)}</span>}</div>)}

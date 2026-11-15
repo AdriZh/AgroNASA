@@ -60,14 +60,14 @@ export const CROPS: Record<string, CropDef> = {
     sources: ['R8', 'R18', 'R28', 'R30'],
   },
   barley: {
-    id: 'barley', name: 'Spring barley', family: 'Poaceae', group: 'cereal', emoji: '🌾',
+    id: 'barley', name: 'Spring barley', family: 'Poaceae', group: 'cereal', emoji: '🍺',
     kc: [0.3, 1.15, 0.25], stages: [15, 25, 35, 15], rootDepthM: 1.0, p: 0.55, ky: 1.0,
     heatThresholdC: 32, frostSensitive: false, sowTempC: 7, tMeanRange: [7, 26], phRange: [6.0, 8.5],
     minReturnSeasons: 0, diseaseGroups: ['cereal-root-rot'], labor: 'low', residueForLivestock: true, irrigationRequired: false,
     sources: ['R8', 'R28'],
   },
   flax: {
-    id: 'flax', name: 'Oilseed flax', family: 'Linaceae', group: 'oilseed', emoji: '🌼',
+    id: 'flax', name: 'Oilseed flax', family: 'Linaceae', group: 'oilseed', emoji: '🪻',
     kc: [0.35, 1.1, 0.25], stages: [20, 25, 35, 15], rootDepthM: 1.0, p: 0.5, ky: 1.0,
     heatThresholdC: 32, frostSensitive: false, sowTempC: 9, tMeanRange: [9, 26], phRange: [5.5, 7.8],
     minReturnSeasons: 4, diseaseGroups: ['fusarium-flax'], labor: 'low', residueForLivestock: false, irrigationRequired: false,
@@ -88,14 +88,14 @@ export const CROPS: Record<string, CropDef> = {
     sources: ['R8', 'R18', 'R29'],
   },
   lentil: {
-    id: 'lentil', name: 'Lentil', family: 'Fabaceae', group: 'legume', emoji: '🫘',
+    id: 'lentil', name: 'Lentil', family: 'Fabaceae', group: 'legume', emoji: '🍲',
     kc: [0.4, 1.1, 0.3], stages: [15, 25, 35, 20], rootDepthM: 0.7, p: 0.5, ky: 1.0,
     heatThresholdC: 32, frostSensitive: false, sowTempC: 7, tMeanRange: [9, 27], phRange: [6.0, 8.2],
     minReturnSeasons: 2, diseaseGroups: ['pulse-root-rot'], labor: 'low', residueForLivestock: true, irrigationRequired: false,
     sources: ['R8', 'R28', 'R32'],
   },
   soybean: {
-    id: 'soybean', name: 'Soybean', family: 'Fabaceae', group: 'legume', emoji: '🫘',
+    id: 'soybean', name: 'Soybean', family: 'Fabaceae', group: 'legume', emoji: '🫛',
     kc: [0.4, 1.15, 0.5], stages: [15, 25, 40, 20], rootDepthM: 0.8, p: 0.5, ky: 0.85, kyStages: [0.2, 0.8, 1.0, 0],
     heatThresholdC: 35, frostSensitive: true, sowTempC: 12, tMeanRange: [14, 32], phRange: [5.8, 7.5],
     minReturnSeasons: 1, diseaseGroups: ['sclerotinia'], labor: 'low', residueForLivestock: false, irrigationRequired: false,
@@ -116,7 +116,7 @@ export const CROPS: Record<string, CropDef> = {
     sources: ['R8', 'R18', 'R32'],
   },
   chickpea: {
-    id: 'chickpea', name: 'Chickpea', family: 'Fabaceae', group: 'legume', emoji: '🫘',
+    id: 'chickpea', name: 'Chickpea', family: 'Fabaceae', group: 'legume', emoji: '🧆',
     kc: [0.4, 1.0, 0.35], stages: [20, 30, 45, 25], rootDepthM: 0.9, p: 0.5, ky: 0.9,
     heatThresholdC: 32, frostSensitive: false, sowTempC: 8, tMeanRange: [10, 28], phRange: [6.0, 8.5],
     minReturnSeasons: 2, diseaseGroups: ['pulse-root-rot'], labor: 'low', residueForLivestock: true, irrigationRequired: false,
@@ -137,7 +137,7 @@ export const CROPS: Record<string, CropDef> = {
     sources: ['R8', 'R18'],
   },
   winterwheat: {
-    id: 'winterwheat', name: 'Winter wheat', family: 'Poaceae', group: 'cereal', emoji: '🌾',
+    id: 'winterwheat', name: 'Winter wheat', family: 'Poaceae', group: 'cereal', emoji: '🍞',
     kc: [0.4, 1.15, 0.25], stages: [40, 150, 45, 30], rootDepthM: 1.5, p: 0.55, ky: 1.0, kyStages: [0.2, 0.6, 0.5, 0],
     heatThresholdC: 32, frostSensitive: false, sowTempC: -99, tMeanRange: [3, 20], phRange: [5.5, 8.2],
     minReturnSeasons: 0, diseaseGroups: ['cereal-root-rot'], labor: 'low', residueForLivestock: true, irrigationRequired: false,
@@ -151,7 +151,7 @@ export const CROPS: Record<string, CropDef> = {
     sources: ['R8', 'R29'],
   },
   pigeonpea: {
-    id: 'pigeonpea', name: 'Pigeon pea', family: 'Fabaceae', group: 'legume', emoji: '🫛',
+    id: 'pigeonpea', name: 'Pigeon pea', family: 'Fabaceae', group: 'legume', emoji: '🌿',
     kc: [0.4, 1.0, 0.4], stages: [20, 35, 50, 25], rootDepthM: 1.5, p: 0.55, ky: 0.9,
     heatThresholdC: 38, frostSensitive: true, sowTempC: 18, tMeanRange: [18, 34], phRange: [5.0, 8.0],
     minReturnSeasons: 1, diseaseGroups: ['fusarium-pulse'], labor: 'medium', residueForLivestock: true, irrigationRequired: false,
@@ -165,7 +165,7 @@ export const CROPS: Record<string, CropDef> = {
     sources: ['R8', 'R29'],
   },
   teff: {
-    id: 'teff', name: 'Teff', family: 'Poaceae', group: 'cereal', emoji: '🌾',
+    id: 'teff', name: 'Teff', family: 'Poaceae', group: 'cereal', emoji: '🫓',
     kc: [0.3, 1.0, 0.3], stages: [15, 25, 40, 20], rootDepthM: 0.6, p: 0.55, ky: 1.0,
     heatThresholdC: 32, frostSensitive: false, sowTempC: 12, tMeanRange: [11, 28], phRange: [5.0, 8.0],
     minReturnSeasons: 0, diseaseGroups: [], labor: 'high', residueForLivestock: true, irrigationRequired: false,

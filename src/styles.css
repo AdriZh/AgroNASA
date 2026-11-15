@@ -534,7 +534,7 @@ details.disclose > .body { margin-top: var(--s-3); }
 .mini-compare .plan .seq { font-size: 18px; }
 .mc-calls { grid-column: 1; display: flex; flex-direction: column; justify-content: space-between; gap: var(--s-2); }
 .mc-r3 { grid-row: 3; justify-content: center; }
-.mc-r4 { grid-row: 4; }
+.mc-r4 { grid-row: 4; justify-content: space-around; }
 .mc-call { display: grid; grid-template-columns: 24px 1fr 18px; gap: var(--s-2); align-items: center; }
 .mc-call b { display: block; color: var(--brand); font-size: 15px; line-height: 20px; }
 .mc-call span:not(.mc-n) { display: block; font-size: 13px; line-height: 18px; color: var(--text-muted); }
@@ -897,3 +897,8 @@ main.fit { padding-top: var(--s-3); padding-bottom: var(--s-3); }
   .pl-score { text-align: left; }
   .score-pop { left: 0; right: auto; }
 }
+
+/* Pitch slide 3: keep the mini-compare to cost, budget and NASA-replay risk so it fits 1280×720
+   (the full expected-profit block stays on the Compare page). */
+.mini-compare .plan-profit { display: none; }
+.mini-compare { transform: scale(.93); transform-origin: top center; }

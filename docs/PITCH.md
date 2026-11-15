@@ -24,19 +24,19 @@ Slides on the problem, cash gap, sowing science, decision funnel and live result
 The Space Apps submission guide (checked 14 Nov 2026) allows **a video ≤ 30 s or a deck of ≤ 7 slides** including the title.
 Re-check the current guide before submitting.
 
-## Speaker notes (≈ 2 min live, one line per slide for a 30 s video)
+## Speaker notes (≈ 2 min live)
 
-| # | Slide | Say (live) | 30-second video line |
-|---|---|---|---|
-| 1 | Title | “Field Shift turns 25 years of NASA Earth data plus what a farmer already knows into two-season rotation plans they can actually afford.” | “Field Shift: NASA climate history + your budget → rotation plans you can afford.” |
-| 2 | Problem | “At Bambey, Senegal, NASA POWER shows season rainfall from 309 to 976 mm — 3.2×. An average year hides that. And an agronomically ideal plan you can’t fund before planting isn’t a plan.” | “Rain varies 3× year to year; cash is tight.” |
-| 3 | Solution | “Four short steps: farm & history, resources, compare, evidence. One question: which plans can I realistically consider and afford?” | “Enter your field, history and budget.” |
-| 4 | Data fusion | “NASA POWER daily weather and soil wetness, GIBS satellite layers; plus farmer records, SoilGrids soil, local prices, rule packs and a 16-day forecast. The engine is published science: FAO-56, FAO-66, Sivakumar onset.” | “NASA POWER, SMAP, MODIS, IMERG + SoilGrids + your records.” |
-| 5 | Live result | “At Bambey the usual groundnut→millet plan costs 454,500 XOF, 74,500 over the 380,000 budget, with 2 of 24 season pairs severe (5 if drier and hotter). Sesame→cowpea costs 353,250, leaves 26,750, has 0 of 24 severe (2 drier and hotter) and the highest expected profit, about 744,000 XOF. Sesame→millet costs 327,000, leaves 53,000, 0 of 24 (2), about 684,000.” | “Usual plan over budget → two that fit, ranked by discounted expected profit, with risk and reasons.” |
-| 6 | Hindcast | “We checked the model against real FAOSTAT national yields, detrended. Kazakhstan wheat r = 0.59 over 24 years; Senegal millet 0.18 and groundnut 0.20, weak because one grid cell is compared with a whole country. All four known drought years, Senegal 2002 and 2011 and Kazakhstan 2010 and 2012, fall in the model’s driest third. 135 automated tests also reproduce the archived NASA query and the FAO-56 textbook example.” | “Checked against real harvests: known drought years land in the driest third.” |
-| 7 | Impact | “Works anywhere POWER exists, demo farms fully offline, near-zero cost. Next: a 90-day pilot with farmers and a local agronomist.” | “Global, offline, free — pilot next.” |
+| # | Slide | Say (live) |
+|---|---|---|
+| 1 | Title | “Field Shift, from space to soil. We are Team Minervitos.” |
+| 2 | Problem & market | “At Bambey, Senegal, season rain swings 3.2× between years, and farmers pay for seed and fertilizer before they know which year it is. Smallholders face a USD 170 billion yearly finance gap (ISF 2019), and in many countries one extension agent serves over 1,000 farmers (Fabregas et al., Science 2019). 608 million farms, 84% under 2 ha, are the market.” |
+| 3 | Solution | “One question: which next plans can I afford, and how do they hold up in a bad year? Here the usual groundnut → millet plan is 74,500 XOF over budget; two alternatives fit, with their NASA-replayed risk.” |
+| 4 | How it works | “NASA POWER daily weather since 2001, SoilGrids, FAOSTAT prices and the farmer’s records go into published science: Sivakumar onset, FAO-56 water balance, FAO-66 yield response, a cash check at every due date. A static React + TypeScript app, no backend, 180 automated tests.” |
+| 5 | Why better | “Others show what grows; we show what you can afford. The closest tool, E-PICSA, shows rainfall history and budgets but leaves the risk to people. We compute it for every plan, anywhere on Earth, with every number traceable.” |
+| 6 | What comes next | “Planned, not built yet: every market in its own language, an AI assistant that explains plans using only the engine’s numbers, voice for farmers who don’t read easily, and a live data dashboard for co-ops, NGOs and ministries. First, a 90-day pilot with an NGO and an agronomist.” |
+| 7 | Why us | “Zhamilya and Ruslan build software for start-ups, Francisco brings TUM engineering and agri-PV experience, Iuliia business and venture capital, Ayu taught agricultural education in Laos, Fernando is an astronomy olympiad medallist. Scan the QR to try it.” |
 
-The table above follows the 7-slide submission cut (Title, Problem, Solution, Data fusion, Live result, Hindcast, Impact). The full 12-slide story adds: Cash gap, Who it serves, Science 1 (sowing date), Science 2 (soil-water bucket), Decision funnel.
+The deck is exactly 7 slides: Title, Problem & market, Solution, How it works, Why better, What comes next, Why us.
 
 ## Live demo script (90 s)
 

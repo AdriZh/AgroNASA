@@ -92,14 +92,20 @@ export function sowingFor(s: DailySeries, w: SowingWindow, crop: CropDef, year: 
   return d ? { date: d, detected: true, falseStarts: 0 } : { date: `${year}-${latest}`, detected: false, falseStarts: 0 };
 }
 
-export interface YearSim extends SeasonSim { year: number; sowingDetected: boolean; meanT: number | null }
+export interface YearSim extends SeasonSim {
+  year: number; sowingDetected: boolean; meanT: number | null; falseStarts: number;
+  /** Failed season: no valid rain onset inside the sowing window (the farmer could not establish the crop). */
+  failed?: 'no-onset';
+}
+/** A season counts as severe when the water-limited yield is below half of attainable, or the season failed. */
+export const isSevere = (y: Pick<YearSim, 'relYield' | 'failed'>) => !!y.failed || y.relYield < 0.5;
 
 export interface CropRisk {
   cropId: string;
   seasonId?: string; seasonLabel?: string;
   years: YearSim[];
   medianRel: number; p20Rel: number; p80Rel: number;
-  pSevere: number;            // share of years with Ya/Ym < 0.5
+  pSevere: number;            // share of years with Ya/Ym < 0.5 or a failed season (no onset)
   medianHeat: number; pHeat: number;
   pFrost: number;             // frost-sensitive: share of years with frost after emergence
   medianIrrigation: number;
@@ -131,7 +137,11 @@ export function replayCrop(s: DailySeries, w: SowingWindow, crop: CropDef, soil:
       const i0 = dayIndex(s.meta.start, sw.date);
       for (let d = 7; d < sim.days; d++) { const tn = s.TN[i0 + d]; if (tn != null && tn <= 0) frostAfter++; }
     }
-    sims.push({ ...sim, frostDays: frostAfter, year: y, sowingDetected: sw.detected, meanT: seasonMeanT(s, sw.date, seasonLength(crop)) });
+    // No agronomic onset by the end of the window (Sivakumar 1988, R19): previously the crop was silently "sown"
+    // on the last window day and scored like any other year. It is now kept in the record as a failed season
+    // (counted as severe), never skipped.
+    const failed = w.method === 'rain-onset' && !sw.detected ? ('no-onset' as const) : undefined;
+    sims.push({ ...sim, failed, frostDays: frostAfter, year: y, sowingDetected: sw.detected, falseStarts: sw.falseStarts, meanT: seasonMeanT(s, sw.date, seasonLength(crop)) });
   }
   const rel = sims.map((x) => x.relYield);
   const sowDoys = sims.filter((x) => x.sowingDetected).map((x) => doy(x.sowing));
@@ -141,7 +151,7 @@ export function replayCrop(s: DailySeries, w: SowingWindow, crop: CropDef, soil:
   return {
     cropId: crop.id, years: sims,
     medianRel: median(rel), p20Rel: quantile(rel, 0.2), p80Rel: quantile(rel, 0.8),
-    pSevere: sims.filter((x) => x.relYield < 0.5).length / n,
+    pSevere: sims.filter(isSevere).length / n,
     medianHeat: median(sims.map((x) => x.heatDaysFlowering)), pHeat: sims.filter((x) => x.heatDaysFlowering >= 3).length / n,
     pFrost: crop.frostSensitive ? sims.filter((x) => x.frostDays > 0).length / n : 0,
     medianIrrigation: median(sims.map((x) => x.irrigationMm)),

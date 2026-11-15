@@ -3,34 +3,37 @@ import type { CropDef } from '../domain/types';
 // Crop parameters. Kc, stage lengths, rooting depth and p: FAO-56 Tables 11, 12, 22 (R8), with stage
 // lengths shortened to the short-cycle varieties typical of each demo region. Ky: FAO-66 (R18) where
 // published; values marked "analogue" borrow from a similar crop and need local review.
+// kyStages: FAO-33 (Doorenbos & Kassam 1979, Table 24; R37) Ky for the vegetative, flowering, yield-formation
+// and ripening periods ("—" in the table → 0). Only crops listed in that table carry them; pearl millet uses the
+// sorghum values as an analogue (FAO-33 lists no millet). Other crops keep the seasonal Ky.
 // Heat thresholds are exploratory screening values around flowering (R30), not injury thresholds.
 // tMeanRange: season-mean air temperature tolerance used for screening (FAO ECOCROP-style absolute limits, R34).
 
 export const CROPS: Record<string, CropDef> = {
   millet: {
     id: 'millet', name: 'Pearl millet', family: 'Poaceae', group: 'cereal', emoji: '🌾',
-    kc: [0.3, 1.0, 0.3], stages: [15, 25, 35, 15], rootDepthM: 1.2, p: 0.55, ky: 1.0,
+    kc: [0.3, 1.0, 0.3], stages: [15, 25, 35, 15], rootDepthM: 1.2, p: 0.55, ky: 1.0, kyStages: [0.2, 0.55, 0.45, 0.2],
     heatThresholdC: 40, frostSensitive: true, sowTempC: 16, tMeanRange: [18, 36], phRange: [5.0, 8.0],
     minReturnSeasons: 0, diseaseGroups: ['striga-host'], labor: 'medium', residueForLivestock: true, irrigationRequired: false,
     sources: ['R8', 'R18', 'R3'],
   },
   sorghum: {
     id: 'sorghum', name: 'Sorghum', family: 'Poaceae', group: 'cereal', emoji: '🌾',
-    kc: [0.3, 1.0, 0.55], stages: [20, 30, 40, 20], rootDepthM: 1.2, p: 0.55, ky: 0.9,
+    kc: [0.3, 1.0, 0.55], stages: [20, 30, 40, 20], rootDepthM: 1.2, p: 0.55, ky: 0.9, kyStages: [0.2, 0.55, 0.45, 0.2],
     heatThresholdC: 38, frostSensitive: true, sowTempC: 15, tMeanRange: [15, 35], phRange: [5.5, 8.5],
     minReturnSeasons: 0, diseaseGroups: ['striga-host'], labor: 'medium', residueForLivestock: true, irrigationRequired: false,
     sources: ['R8', 'R18'],
   },
   maize: {
     id: 'maize', name: 'Maize', family: 'Poaceae', group: 'cereal', emoji: '🌽',
-    kc: [0.3, 1.2, 0.6], stages: [20, 30, 35, 15], rootDepthM: 1.0, p: 0.55, ky: 1.25,
+    kc: [0.3, 1.2, 0.6], stages: [20, 30, 35, 15], rootDepthM: 1.0, p: 0.55, ky: 1.25, kyStages: [0.4, 1.5, 0.5, 0.2],
     heatThresholdC: 35, frostSensitive: true, sowTempC: 10, tMeanRange: [13, 33], phRange: [5.5, 7.5],
     minReturnSeasons: 0, diseaseGroups: ['striga-host'], labor: 'medium', residueForLivestock: true, irrigationRequired: false,
     sources: ['R8', 'R18', 'R30'],
   },
   groundnut: {
     id: 'groundnut', name: 'Groundnut', family: 'Fabaceae', group: 'legume', emoji: '🥜',
-    kc: [0.4, 1.15, 0.6], stages: [20, 25, 30, 15], rootDepthM: 0.7, p: 0.5, ky: 0.7,
+    kc: [0.4, 1.15, 0.6], stages: [20, 25, 30, 15], rootDepthM: 0.7, p: 0.5, ky: 0.7, kyStages: [0.2, 0.8, 0.6, 0],
     heatThresholdC: 35, frostSensitive: true, sowTempC: 16, tMeanRange: [17, 34], phRange: [5.5, 7.5],
     minReturnSeasons: 1, diseaseGroups: ['groundnut-pests'], labor: 'high', residueForLivestock: true, irrigationRequired: false,
     sources: ['R8', 'R18', 'R3'],
@@ -51,7 +54,7 @@ export const CROPS: Record<string, CropDef> = {
   },
   wheat: {
     id: 'wheat', name: 'Spring wheat', family: 'Poaceae', group: 'cereal', emoji: '🌾',
-    kc: [0.3, 1.15, 0.25], stages: [15, 25, 40, 20], rootDepthM: 1.2, p: 0.55, ky: 1.15,
+    kc: [0.3, 1.15, 0.25], stages: [15, 25, 40, 20], rootDepthM: 1.2, p: 0.55, ky: 1.15, kyStages: [0.2, 0.6, 0.5, 0],
     heatThresholdC: 32, frostSensitive: false, sowTempC: 8, tMeanRange: [8, 26], phRange: [5.5, 8.2],
     minReturnSeasons: 0, diseaseGroups: ['cereal-root-rot'], labor: 'low', residueForLivestock: true, irrigationRequired: false,
     sources: ['R8', 'R18', 'R28', 'R30'],
@@ -79,7 +82,7 @@ export const CROPS: Record<string, CropDef> = {
   },
   sunflower: {
     id: 'sunflower', name: 'Sunflower', family: 'Asteraceae', group: 'oilseed', emoji: '🌻',
-    kc: [0.35, 1.0, 0.35], stages: [20, 30, 40, 20], rootDepthM: 1.2, p: 0.45, ky: 0.95,
+    kc: [0.35, 1.0, 0.35], stages: [20, 30, 40, 20], rootDepthM: 1.2, p: 0.45, ky: 0.95, kyStages: [0.25, 1.0, 0.8, 0],
     heatThresholdC: 35, frostSensitive: true, sowTempC: 10, tMeanRange: [13, 32], phRange: [6.0, 8.0],
     minReturnSeasons: 4, diseaseGroups: ['sclerotinia'], labor: 'low', residueForLivestock: false, irrigationRequired: false,
     sources: ['R8', 'R18', 'R29'],
@@ -93,21 +96,21 @@ export const CROPS: Record<string, CropDef> = {
   },
   soybean: {
     id: 'soybean', name: 'Soybean', family: 'Fabaceae', group: 'legume', emoji: '🫘',
-    kc: [0.4, 1.15, 0.5], stages: [15, 25, 40, 20], rootDepthM: 0.8, p: 0.5, ky: 0.85,
+    kc: [0.4, 1.15, 0.5], stages: [15, 25, 40, 20], rootDepthM: 0.8, p: 0.5, ky: 0.85, kyStages: [0.2, 0.8, 1.0, 0],
     heatThresholdC: 35, frostSensitive: true, sowTempC: 12, tMeanRange: [14, 32], phRange: [5.8, 7.5],
     minReturnSeasons: 1, diseaseGroups: ['sclerotinia'], labor: 'low', residueForLivestock: false, irrigationRequired: false,
     sources: ['R8', 'R18', 'R32'],
   },
   potato: {
     id: 'potato', name: 'Potato', family: 'Solanaceae', group: 'tuber', emoji: '🥔',
-    kc: [0.5, 1.15, 0.75], stages: [25, 30, 40, 25], rootDepthM: 0.5, p: 0.35, ky: 1.1,
+    kc: [0.5, 1.15, 0.75], stages: [25, 30, 40, 25], rootDepthM: 0.5, p: 0.35, ky: 1.1, kyStages: [0.45, 0.8, 0.7, 0.2],
     heatThresholdC: 30, frostSensitive: true, sowTempC: 8, tMeanRange: [8, 24], phRange: [4.8, 7.0],
     minReturnSeasons: 3, diseaseGroups: ['solanaceae'], labor: 'high', residueForLivestock: false, irrigationRequired: false,
     sources: ['R8', 'R18'],
   },
   bean: {
     id: 'bean', name: 'Common bean', family: 'Fabaceae', group: 'legume', emoji: '🫘',
-    kc: [0.4, 1.15, 0.35], stages: [15, 25, 35, 15], rootDepthM: 0.7, p: 0.45, ky: 1.15,
+    kc: [0.4, 1.15, 0.35], stages: [15, 25, 35, 15], rootDepthM: 0.7, p: 0.45, ky: 1.15, kyStages: [0.2, 1.1, 0.75, 0.2],
     heatThresholdC: 32, frostSensitive: true, sowTempC: 12, tMeanRange: [12, 28], phRange: [5.5, 7.5],
     minReturnSeasons: 1, diseaseGroups: ['bean-root-rot'], labor: 'medium', residueForLivestock: true, irrigationRequired: false,
     sources: ['R8', 'R18', 'R32'],
@@ -135,7 +138,7 @@ export const CROPS: Record<string, CropDef> = {
   },
   winterwheat: {
     id: 'winterwheat', name: 'Winter wheat', family: 'Poaceae', group: 'cereal', emoji: '🌾',
-    kc: [0.4, 1.15, 0.25], stages: [40, 150, 45, 30], rootDepthM: 1.5, p: 0.55, ky: 1.0,
+    kc: [0.4, 1.15, 0.25], stages: [40, 150, 45, 30], rootDepthM: 1.5, p: 0.55, ky: 1.0, kyStages: [0.2, 0.6, 0.5, 0],
     heatThresholdC: 32, frostSensitive: false, sowTempC: -99, tMeanRange: [3, 20], phRange: [5.5, 8.2],
     minReturnSeasons: 0, diseaseGroups: ['cereal-root-rot'], labor: 'low', residueForLivestock: true, irrigationRequired: false,
     sources: ['R8', 'R18', 'R30'],

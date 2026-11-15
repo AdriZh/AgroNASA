@@ -71,7 +71,11 @@ describe('demo farms keep their headline results', () => {
     expect(out.baseline.reasons.some((r) => r.code === 'MONOCULTURE' && r.refs.includes('G-R6'))).toBe(true);
     expect(out.baseline.budget.status).toBe('unaffordable');
     expect(out.alternatives).toHaveLength(2);
-    for (const p of out.alternatives) expect(p.crops).not.toContain('wheat');
+    // Risk numbers changed with the soil-water fixes (off-season snow/autumn recharge, FAO-56 ch. 7 bare-soil
+    // evaporation, FAO-33 growth-period Ky): sunflower is now riskier and fallow → wheat — the classic
+    // steppe fallow rotation (KZ-R1, R28) — ranks second. Every option still breaks the wheat monoculture.
+    expect(out.alternatives.map((p) => p.id)).toEqual(['fallow→rapeseed', 'fallow→wheat']);
+    for (const p of out.alternatives) expect(p.crops.filter((c) => c === 'wheat').length).toBeLessThan(2);
   });
 });
 

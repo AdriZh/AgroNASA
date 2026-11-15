@@ -91,7 +91,7 @@ export function baselineCrops(sc: FarmScenario, pack: RegionPack): [string, stri
   return [first, first];
 }
 
-const GROUP_NOUN: Record<string, string> = { cereal: 'a cereal', legume: 'a legume', oilseed: 'an oilseed / fibre crop', tuber: 'a tuber crop', cover: 'a cover crop' };
+const GROUP_NOUN: Record<string, string> = { cereal: 'a cereal', legume: 'a legume', oilseed: 'an oilseed', tuber: 'a tuber crop', cover: 'a cover crop' };
 
 function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: RegionPack, plannedRisks: (CropRisk | null)[], soil: SoilProfile): Reason[] {
   const R: Reason[] = [];

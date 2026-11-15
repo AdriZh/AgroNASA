@@ -10,7 +10,7 @@ export type SourceTag =
   | 'synthetic';  // illustrative demo value — not a real quote
 
 export type AreaUnit = 'ha' | 'acre' | 'm2';
-export type Priority = 'cost' | 'climate' | 'continuity' | 'return';
+export type Priority = 'cost' | 'climate' | 'continuity' | 'return' | 'soil';
 export type LaborLevel = 'low' | 'medium' | 'high';
 export type Tri = 'yes' | 'no' | 'unknown';
 export type SoilTexture = 'sand' | 'loamy-sand' | 'sandy-loam' | 'loam' | 'silt-loam' | 'clay-loam' | 'clay' | 'unknown';

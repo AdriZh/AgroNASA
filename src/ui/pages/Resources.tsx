@@ -14,6 +14,7 @@ const PRIORITIES: { v: Priority; label: string; d: string }[] = [
   { v: 'climate', label: 'Lower climate risk', d: 'Fewest severe-stress seasons in the 25-year NASA replay.' },
   { v: 'continuity', label: 'Continuity', d: 'Stay close to crops you already grow and know.' },
   { v: 'return', label: 'Higher return', d: 'Highest median modeled net (uses your prices; not a guarantee).' },
+  { v: 'soil', label: 'Soil benefit', d: 'Legumes, break crops and rest first: residual nitrogen and pest breaks (rule-pack benefits).' },
 ];
 
 export function ResourcesPage({ go }: { go: (r: Route) => void }) {

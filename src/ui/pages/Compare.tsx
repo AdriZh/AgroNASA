@@ -15,7 +15,7 @@ import { RiskRow } from '../components/stress';
 import { CustomPlan, NearMisses } from '../components/CustomPlan';
 import type { PlanStress } from '../../engine/whatif';
 
-export const PRIORITY_LABEL = { cost: 'lowest cost', climate: 'lowest climate exposure', continuity: 'continuity', return: 'modeled return' };
+export const PRIORITY_LABEL = { cost: 'lowest cost', climate: 'lowest climate exposure', continuity: 'continuity', return: 'modeled return', soil: 'soil benefit' };
 /** The top-ranked alternative is "Best fit" everywhere (landing, Compare, slides, what-if text). */
 export const BEST_FIT = 'Best fit';
 /** Caption that defends the cash-cost headline (Compare header, landing card, slide 5). */
@@ -122,7 +122,7 @@ export function disclaimerText(engine: EngineOutput, edited: boolean) {
 type DetailTab = 'reasons' | 'cash' | 'replay' | 'lines';
 
 export function ComparePage({ go }: { go: (r: Route) => void }) {
-  const { engine, engineError, scenario: sc, data } = useApp();
+  const { engine, engineError, scenario: sc, data, update } = useApp();
   const [sel, setSel] = useState<string | null>(null);
   const [tab, setTab] = useState<DetailTab>('reasons');
   const [openLine, setOpenLine] = useState<number | null>(null);
@@ -134,7 +134,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
       <div>
         <span className="caption">Step 3 of 4</span>
         <h1>Compare two-season plans</h1>
-        {engine && <p>{engine.areaHa.toFixed(2)} ha · {engine.baseline.seasons[0].year === engine.baseline.seasons[1].year ? `${engine.baseline.seasons[0].year} ${engine.windows.map((w) => w.label).join(' + ')}` : `${engine.baseline.seasons[0].year}–${engine.baseline.seasons[1].year}`} · {fmtMoney(engine.baseline.budget.cap, sc.currency)} spendable{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, sc.currency)} confirmed inflows` : ''} · ranked by {PRIORITY_LABEL[sc.priority]}{engine.notes.some((n) => n.code === 'BUDGET_PLACEHOLDER') && <>{' '}<button type="button" className="badge warn budget-chip" onClick={() => go('resources')} title="This budget is a placeholder, not your money. Enter the cash you really have in Resources."><Pencil />Placeholder budget · set yours</button></>}</p>}
+        {engine && <p>{engine.areaHa.toFixed(2)} ha · {engine.baseline.seasons[0].year === engine.baseline.seasons[1].year ? `${engine.baseline.seasons[0].year} ${engine.windows.map((w) => w.label).join(' + ')}` : `${engine.baseline.seasons[0].year}–${engine.baseline.seasons[1].year}`} · {fmtMoney(engine.baseline.budget.cap, sc.currency)} spendable{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, sc.currency)} confirmed inflows` : ''} · ranked by{' '}<select className="goal-select" aria-label="Ranking goal" value={sc.priority} onChange={(e) => update((s) => ({ ...s, priority: e.target.value as typeof sc.priority }))}>{(Object.keys(PRIORITY_LABEL) as (keyof typeof PRIORITY_LABEL)[]).map((k) => <option key={k} value={k}>{PRIORITY_LABEL[k]}</option>)}</select>{engine.notes.some((n) => n.code === 'BUDGET_PLACEHOLDER') && <>{' '}<button type="button" className="badge warn budget-chip" onClick={() => go('resources')} title="This budget is a placeholder, not your money. Enter the cash you really have in Resources."><Pencil />Placeholder budget · set yours</button></>}</p>}
         {engine && <p className="mini">{CASH_CAPTION}</p>}
       </div>
       <div className="page-actions"><button className="btn" onClick={() => go('resources')}><ArrowLeft /> Edit resources</button><button className="btn primary" onClick={() => go('evidence')}>Review evidence <ArrowRight /></button></div>

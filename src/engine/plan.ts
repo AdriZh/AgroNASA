@@ -137,7 +137,7 @@ export function cropScreenItems(c: CropDef, r: CropRisk | null, soil: SoilProfil
     const ss = r.season;
     if (ss && ss.applicable && !ss.pass) {
       const need = ss.gddNeed != null ? `needs about ${ss.gddNeed.toLocaleString('en-US')} °C·d above ${ss.tbaseC} °C (its ${ss.cycleDays}-day FAO-56 cycle at ${((c.tMeanRange[0] + c.tMeanRange[1]) / 2).toFixed(0)} °C) and ` : `its ${ss.cycleDays}-day cycle (FAO-56 stage lengths) `;
-      add('SEASON_TOO_SHORT', 'block', `${need}matures before the first autumn frost in only ${ss.okYears} of ${ss.years} years (median frost-free season ${ss.medianFrostFreeDays} days, last spring frost ${mmddLabel(ss.medianLastSpring)}, first autumn frost ${mmddLabel(ss.medianFirstAutumn)}).`, `matures before frost in only ${ss.okYears} of ${ss.years} years`, ['R8', 'R40', 'R17']);
+      add('SEASON_TOO_SHORT', 'block', `${need}matures before the first autumn frost in only ${ss.okYears} of ${ss.years} years (median frost-free season ${ss.medianFrostFreeDays} days, last spring frost ${mmddLabel(ss.medianLastSpring)}, first autumn frost ${mmddLabel(ss.medianFirstAutumn)}).`, `matures before frost in only ${ss.okYears} of ${ss.years} years`, ['R8', 'R41', 'R17']);
     }
     if (r.pHeat >= 0.3) add('HEAT_EXPOSURE', 'warn', `≥3 days with Tmax ≥ ${c.heatThresholdC} °C around flowering in ${(r.pHeat * 100).toFixed(0)}% of years (exploratory threshold).`, `≥3 days ≥ ${c.heatThresholdC} °C at flowering in ${pc(r.pHeat)} of years`, ['R30', 'R17']);
     if (r.pFrost >= 0.2) add('FROST_RISK', 'warn', `frost (Tmin ≤ 0 °C) after emergence in ${(r.pFrost * 100).toFixed(0)}% of years.`, `frost after emergence in ${pc(r.pFrost)} of years`, ['R17']);
@@ -389,7 +389,7 @@ export function screenCrop(ctx: EngineContext, w: SowingWindow, cropId: string):
     if (r.meanSeasonT != null) parts.push(`season mean ${r.meanSeasonT.toFixed(0)} °C`);
     parts.push(`water-limited yield ${(r.medianRel * 100).toFixed(0)}%`);
     line = [...parts, ...warns.map((i) => i.short)].join('; ');
-    refs.unshift(...(ss?.applicable && !ss.frostFree ? ['R17', 'R40', 'R8'] : ['R17', 'R8']));
+    refs.unshift(...(ss?.applicable && !ss.frostFree ? ['R17', 'R41', 'R8'] : ['R17', 'R8']));
   }
   return { cropId, seasonId: w.id, seasonLabel: w.label, ok: !blocks.length, items, line, refs: uniq(refs), grown: commonlyGrown(ctx.sc.countryIso2, cropId) };
 }
@@ -578,7 +578,7 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
   const slot2 = keep(pack.mode === 'double' ? windows[1] ?? windows[0] : undefined, pack.mode === 'double' ? (windows[1] ?? windows[0]).crops : pack.crops);
   if (filtered) {
     const n = new Set(screen.map((x) => x.cropId)).size, ok = new Set(screen.filter((x) => x.ok).map((x) => x.cropId)).size;
-    notes.push({ code: 'CLIMATE_CONTEXT_ONLY', severity: 'info', text: `Global screening: ${ok} of ${n} library crops pass the NASA climate and season-length screen here; the other ${n - ok} are not offered (see “Why these crops here?”).`, refs: ['R17', 'R40', 'R8'] });
+    notes.push({ code: 'CLIMATE_CONTEXT_ONLY', severity: 'info', text: `Global screening: ${ok} of ${n} library crops pass the NASA climate and season-length screen here; the other ${n - ok} are not offered (see “Why these crops here?”).`, refs: ['R17', 'R41', 'R8'] });
   }
   for (const a of slot1) for (const b of slot2) {
     if (!CROPS[a] || !CROPS[b]) continue;

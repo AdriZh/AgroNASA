@@ -185,6 +185,46 @@ export const CROPS: Record<string, CropDef> = {
     minReturnSeasons: 0, diseaseGroups: [], labor: 'low', residueForLivestock: true, irrigationRequired: false,
     sources: ['R28'],
   },
+  // ── Cover / catch crops for short field-free windows (engine/window.ts) ──────────────────────────────
+  // Grown for soil benefit, not for sale: `cover: true` keeps them out of the cash-crop ranking, they carry a
+  // seed cost only and no revenue. Green manures are cut at flowering, so their "maturity" is termination at
+  // flowering and Kc stays at mid-season (no senescence). Kc / rooting depth / p from the nearest FAO-56
+  // Table 12 / 22 crop (R8: cowpeas, rapeseed, oats); days to flowering, frost tolerance and seed rates from
+  // SARE (R40); GDD sums = those days × typical summer mean temperature above the base temperature (R41).
+  // All demo-unreviewed: they need a local agronomist's check before real use.
+  'cowpea-gm': {
+    id: 'cowpea-gm', name: 'Cowpea green manure', family: 'Fabaceae', group: 'legume', emoji: '🫘',
+    kc: [0.4, 1.05, 1.05], stages: [10, 15, 20, 5], rootDepthM: 0.6, p: 0.45, ky: 1.0,
+    heatThresholdC: 36, frostSensitive: true, sowTempC: 16, tMeanRange: [17, 35], phRange: [5.5, 7.5],
+    minReturnSeasons: 0, diseaseGroups: [], labor: 'low', residueForLivestock: true, irrigationRequired: false,
+    sources: ['R8', 'R40', 'R41'],
+    cover: true, tbase: 10, gddToMaturity: 750, coverSeed: { kgPerHa: 40, usdPerKg: 1.2 }, reviewStatus: 'demo-unreviewed',
+  },
+  'mustard-gm': {
+    id: 'mustard-gm', name: 'Mustard green manure', family: 'Brassicaceae', group: 'oilseed', emoji: '🌼',
+    kc: [0.35, 1.0, 1.0], stages: [10, 15, 20, 5], rootDepthM: 1.0, p: 0.6, ky: 1.0,
+    heatThresholdC: 30, frostSensitive: false, sowTempC: 5, tMeanRange: [6, 26], phRange: [5.5, 8.2],
+    minReturnSeasons: 2, diseaseGroups: ['sclerotinia'], labor: 'low', residueForLivestock: false, irrigationRequired: false,
+    sources: ['R8', 'R40', 'R41'],
+    cover: true, tbase: 5, gddToMaturity: 550, coverSeed: { kgPerHa: 8, usdPerKg: 3 }, reviewStatus: 'demo-unreviewed',
+  },
+  buckwheat: {
+    // pseudo-cereal (Polygonaceae); grouped with cereals only for the rotation-rule screen
+    id: 'buckwheat', name: 'Buckwheat cover', family: 'Polygonaceae', group: 'cereal', emoji: '🌸',
+    kc: [0.35, 1.0, 1.0], stages: [10, 15, 15, 5], rootDepthM: 0.6, p: 0.5, ky: 1.0,
+    heatThresholdC: 32, frostSensitive: true, sowTempC: 10, tMeanRange: [12, 28], phRange: [5.0, 7.5],
+    minReturnSeasons: 0, diseaseGroups: [], labor: 'low', residueForLivestock: false, irrigationRequired: false,
+    sources: ['R40', 'R41'],
+    cover: true, tbase: 5, gddToMaturity: 600, coverSeed: { kgPerHa: 60, usdPerKg: 1.5 }, reviewStatus: 'demo-unreviewed',
+  },
+  'oat-vetch': {
+    id: 'oat-vetch', name: 'Oats + vetch cover', family: 'Poaceae', group: 'cereal', emoji: '🌿',
+    kc: [0.3, 1.1, 1.0], stages: [15, 20, 20, 5], rootDepthM: 0.8, p: 0.55, ky: 1.0,
+    heatThresholdC: 30, frostSensitive: false, sowTempC: 5, tMeanRange: [5, 24], phRange: [5.5, 8.0],
+    minReturnSeasons: 0, diseaseGroups: [], labor: 'low', residueForLivestock: true, irrigationRequired: false,
+    sources: ['R8', 'R40', 'R41'],
+    cover: true, tbase: 0, gddToMaturity: 800, coverSeed: { kgPerHa: 80, usdPerKg: 0.6 }, reviewStatus: 'demo-unreviewed',
+  },
   // ---- Steppe break crops (demo-unreviewed: parameters from FAO tables, not locally calibrated) ----
   // Oats: Kc 0.3 / 1.15 / 0.25 = FAO-56 Table 12 "Oats"; stages 15/25/40/20 d = FAO-56 Table 11 small grains,
   // shortened to a ~100-day steppe spring crop like the wheat entry; root 1.0 m, p 0.55 = FAO-56 Table 22 small grains.

@@ -123,8 +123,6 @@ export interface CropDef {
   frostSensitive: boolean;
   sowTempC: number;           // 5-day mean T2M needed to sow (temperature-driven sowing)
   tMeanRange: [number, number]; // season mean air temperature range for screening (°C)
-  /** Optional GDD base temperature and thermal time to maturity (°C·d); see src/engine/season.ts. None calibrated yet. */
-  tbaseC?: number; gddToMaturity?: number;
   phRange: [number, number];
   minReturnSeasons: number;   // seasons that must pass before the same crop again
   diseaseGroups: string[];    // shared pathogen groups (e.g. sclerotinia)
@@ -132,6 +130,16 @@ export interface CropDef {
   residueForLivestock: boolean;
   irrigationRequired: boolean;
   sources: string[];          // evidence ids
+  /** Cover / catch crop: grown for soil benefit (green manure, cover), never ranked as a cash crop. */
+  cover?: boolean;
+  /** Base temperature for growing-degree days (°C), used by the short-window check (engine/window.ts) and the season-length check (engine/season.ts). */
+  tbase?: number;
+  /** Growing-degree days above `tbase` from sowing to maturity — for green manures, to termination at flowering. */
+  gddToMaturity?: number;
+  /** Cover crops only: seed rate and an indicative seed price (USD/kg). Seed is their only cost; they earn no revenue. */
+  coverSeed?: { kgPerHa: number; usdPerKg: number };
+  /** Parameters not yet reviewed by a local agronomist. */
+  reviewStatus?: 'demo-unreviewed';
 }
 
 export interface RotationRule {

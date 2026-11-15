@@ -81,7 +81,7 @@ describe('season length at the demo locations', () => {
     const st = cotton.items.find((i) => i.reason.code === 'SEASON_TOO_SHORT')!;
     expect(st.reason.severity).toBe('block');
     expect(st.short).toMatch(/^matures before frost in only \d+ of 25 years$/);
-    expect(st.reason.refs).toContain('R40');
+    expect(st.reason.refs).toContain('R41');
   });
   it('Kostanay spring crops of the steppe pack all mature before frost', () => {
     const out = run(DEMO_KAZAKHSTAN, kostanay);

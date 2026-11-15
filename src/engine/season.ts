@@ -6,18 +6,20 @@
 // screen can reuse these functions without going through the planning engine.
 //
 // Method notes
+// - Killing frost: Tmin ≤ 0 °C for frost-sensitive crops, ≤ −2 °C for frost-tolerant ones (killingFrostC); the
+//   per-year frost record itself (frostYears) defaults to Tmin ≤ 0 °C.
 // - Season year: 1 Jan – 31 Dec in the northern hemisphere, 1 Jul – 30 Jun in the southern one. Frost in the
 //   first 196 days of the season year is "spring" frost, frost after that "autumn" frost (as in frostDates).
 // - Crop need: the crop library has no calibrated base temperatures or thermal-time requirements, so by default
 //   the check compares the crop's cycle length (sum of the FAO-56 stage lengths, R8 Table 11 as used by the
 //   water balance) with the days from that year's sowing to the first autumn frost. GDD (McMaster & Wilhelm
-//   1997, R40: Σ max(0, Tmean − Tbase)) is reported alongside, with a conventional Tbase of 10 °C for
-//   warm-season (frost-sensitive) crops and 5 °C for cool-season crops unless a crop defines `tbaseC`.
+//   1997, R41: Σ max(0, Tmean − Tbase)) is reported alongside, with a conventional Tbase of 10 °C for
+//   warm-season (frost-sensitive) crops and 5 °C for cool-season crops unless a crop defines `tbase`.
 // - Tropical crops (frost-sensitive, ECOCROP minimum season mean ≥ 15 °C: pearl millet, sorghum, groundnut,
 //   cowpea, sesame, rice, cotton, pigeon pea) have FAO-56 cycles that hold at tropical temperatures; in a cool
 //   summer they develop more slowly and a day count would wave them through. For them the cycle is converted to
 //   thermal time, need = cycle days × (mid-range season mean − Tbase), and the crop matures in a year when the GDD
-//   from sowing to the first autumn frost reach that need. A crop that defines both `tbaseC` and
+//   from sowing to the first autumn frost reach that need. A crop that defines both `tbase` and
 //   `gddToMaturity` is always checked on thermal time with its own need.
 // - Overwintering crops (frost-tolerant with a cycle of more than 200 days, e.g. winter wheat) and crops sown in
 //   the autumn half of the season year (rabi, Australian autumn break) are not checked: frost during their
@@ -27,6 +29,12 @@ import type { DailySeries } from '../domain/types';
 import { addDays, dayIndex } from '../domain/dates';
 
 export const FROST_TMIN_C = 0;
+/**
+ * Killing frost for the maturity check: 0 °C for frost-sensitive crops, −2 °C for frost-tolerant ones — the same
+ * convention as killTempC in window.ts (the field-window fit), so both features agree on when a crop is killed.
+ * Not imported from window.ts to keep this module free of an import cycle (window → replay → season).
+ */
+export const killingFrostC = (c: { frostSensitive: boolean }) => (c.frostSensitive ? 0 : -2);
 const SPRING_DAYS = 196;          // first 196 days of the season year count as spring (≈ 15 July north)
 const MAX_MISSING_SHARE = 0.1;    // a season year with more than 10% missing Tmin is skipped
 const OVERWINTER_DAYS = 200;
@@ -43,7 +51,7 @@ export interface FrostYear {
 export interface SeasonCrop {
   stages: number[]; frostSensitive: boolean;
   tMeanRange?: [number, number];
-  tbaseC?: number; gddToMaturity?: number;
+  tbase?: number; gddToMaturity?: number;  // as CropDef (shared with engine/window.ts)
 }
 
 export interface SeasonYearCheck {
@@ -81,11 +89,12 @@ function medianMmdd(s: DailySeries, offsets: number[]): string | null {
   return addDays(seasonStart(s, y0 + 1), Math.round(m)).slice(5);
 }
 
-const cache = new WeakMap<DailySeries, FrostYear[]>();
+const cache = new WeakMap<DailySeries, Map<number, FrostYear[]>>();
 
 /** Last spring frost, first autumn frost and frost-free days for every complete season year of the record. */
 export function frostYears(s: DailySeries, thresholdC = FROST_TMIN_C): FrostYear[] {
-  if (thresholdC === FROST_TMIN_C && cache.has(s)) return cache.get(s)!;
+  const memo = cache.get(s) ?? new Map<number, FrostYear[]>();
+  if (memo.has(thresholdC)) return memo.get(thresholdC)!;
   const y0 = Number(s.meta.start.slice(0, 4)), y1 = Number(s.meta.end.slice(0, 4));
   const out: FrostYear[] = [];
   for (let y = y0; y <= y1; y++) {
@@ -108,7 +117,8 @@ export function frostYears(s: DailySeries, thresholdC = FROST_TMIN_C): FrostYear
       frostFreeDays: (first >= 0 ? first : 365) - last - 1,
     });
   }
-  if (thresholdC === FROST_TMIN_C) cache.set(s, out);
+  memo.set(thresholdC, out);
+  cache.set(s, memo);
   return out;
 }
 
@@ -125,7 +135,7 @@ export function gdd(s: DailySeries, fromIso: string, days: number, tbaseC: numbe
   return sum;
 }
 
-export const cropTbase = (c: SeasonCrop) => c.tbaseC ?? (c.frostSensitive ? 10 : 5);
+export const cropTbase = (c: SeasonCrop) => c.tbase ?? (c.frostSensitive ? 10 : 5);
 export const cycleDays = (c: SeasonCrop) => c.stages.reduce((a, b) => a + b, 0);
 /** Tropical crop: frost-sensitive with an ECOCROP minimum season mean of 15 °C or more (checked on thermal time). */
 export const isTropical = (c: SeasonCrop) => c.frostSensitive && !!c.tMeanRange && c.tMeanRange[0] >= 15;
@@ -136,9 +146,9 @@ export const isTropical = (c: SeasonCrop) => c.frostSensitive && !!c.tMeanRange 
  * frost-sensitive crops), i.e. the longest season the frost record allows.
  */
 export function seasonLengthCheck(s: DailySeries, crop: SeasonCrop, sowings?: Record<number, string>): SeasonLengthCheck {
-  const fy = frostYears(s);
+  const fy = frostYears(s, killingFrostC(crop));
   const days = cycleDays(crop), tb = cropTbase(crop);
-  const gddNeed = crop.tbaseC != null && crop.gddToMaturity != null ? crop.gddToMaturity : isTropical(crop) ? Math.round(days * ((crop.tMeanRange![0] + crop.tMeanRange![1]) / 2 - tb)) : null;
+  const gddNeed = crop.tbase != null && crop.gddToMaturity != null ? crop.gddToMaturity : isTropical(crop) ? Math.round(days * ((crop.tMeanRange![0] + crop.tMeanRange![1]) / 2 - tb)) : null;
   const frostFree = fy.length > 0 && fy.filter((f) => f.firstAutumnFrost == null).length > fy.length / 2;
   const base: SeasonLengthCheck = {
     applicable: false, frostFree, cycleDays: days, tbaseC: tb, gddNeed, years: 0, okYears: 0, pass: true,

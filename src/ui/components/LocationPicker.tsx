@@ -24,7 +24,8 @@ export const WORLD_PRESETS: (Place & { flag: string; system: string })[] = [
   { label: 'Northam, Australia', lat: -31.6, lon: 116.9, iso2: 'AU', flag: '🇦🇺', system: 'Wheat · canola · lupin' },
 ];
 
-export function LocationSearch({ onPick }: { onPick: (p: Place) => void; compact?: boolean }) {
+/** `compact`: one line — search on Enter, GPS button beside the box (onboarding panel). */
+export function LocationSearch({ onPick, compact }: { onPick: (p: Place) => void; compact?: boolean }) {
   const [q, setQ] = useState('');
   const [hits, setHits] = useState<GeoHit[]>([]);
   const [busy, setBusy] = useState(false);
@@ -48,12 +49,12 @@ export function LocationSearch({ onPick }: { onPick: (p: Place) => void; compact
   };
   return (
     <div>
-      <div className="row">
-        <div className="input-icon">
-          <Search aria-hidden />
-          <input className="input" placeholder="Search any village, district or region — or type lat, lon" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && search()} aria-label="Search location" />
+      <div className="row" style={compact ? { flexWrap: 'nowrap' } : undefined}>
+        <div className="input-icon" style={compact ? { flex: 1, minWidth: 0 } : undefined}>
+          {busy && compact ? <Loader2 className="spin" aria-hidden /> : <Search aria-hidden />}
+          <input className="input" placeholder={compact ? 'Search a place, or lat, lon' : 'Search any village, district or region — or type lat, lon'} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && search()} aria-label="Search location" />
         </div>
-        <button className="btn" onClick={search} disabled={busy}>{busy ? <Loader2 className="spin" /> : null}Search</button>
+        {!compact && <button className="btn" onClick={search} disabled={busy}>{busy ? <Loader2 className="spin" /> : null}Search</button>}
         <button className="btn" onClick={gps} title="Use device GPS"><Crosshair /> GPS</button>
       </div>
       {err && <p className="mini warn-t" style={{ marginTop: 8 }}>{err}</p>}

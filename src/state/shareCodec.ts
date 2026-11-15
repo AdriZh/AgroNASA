@@ -5,6 +5,7 @@ import { CROPS } from '../data/crops';
 import { packById } from '../data/regionPacks';
 import { normalizeWhatIf, WHATIF_NONE, type WhatIf } from '../engine/whatif';
 import { DEFAULT_WEIGHTS, DELTA_RANGE, PRIORITY_KEYS, weightsFromPriority } from '../engine/plan';
+import { capVertices } from '../domain/geo';
 
 export const SHARE_VERSION = 1;
 export const SHARE_MAX_URL = 2000;
@@ -36,12 +37,13 @@ type Compact = {
   ir: [string, number]; lb?: string; ua?: string[]; mc?: string[]; f: string; pr?: string; pw?: number[]; bo?: [string, string];
   h?: (string | number | null)[][]; fz?: (string | number | null)[][];
   so?: [string, number?, number?]; po?: Record<string, number | null>; sy?: 1; w?: [number, number];
+  bd?: [number, number][]; // field outline, [lat, lon] × ≤ 40
 };
 
 const round = (x: number, d: number) => Math.round(x * 10 ** d) / 10 ** d;
 const flags = (sc: FarmScenario) => `${sc.needsResidue ? 1 : 0}${sc.allowFallow ? 1 : 0}`;
 
-type Detail = { fertilizer: boolean; notes: boolean; historyMax?: number };
+type Detail = { fertilizer: boolean; notes: boolean; historyMax?: number; boundary?: boolean };
 function compact(sc: FarmScenario, w: WhatIf, opts: Detail): Compact {
   const hIdx = new Map(sc.history.map((h, k) => [h.id, k]));
   const c: Compact = {
@@ -68,6 +70,7 @@ function compact(sc: FarmScenario, w: WhatIf, opts: Detail): Compact {
   if (so.texture !== 'unknown' || so.labPh != null || so.labSocPct != null) c.so = [so.texture, ...(so.labPh != null || so.labSocPct != null ? [so.labPh ?? undefined, so.labSocPct ?? undefined] : [])] as Compact['so'];
   if (Object.keys(sc.priceOverrides).length) c.po = sc.priceOverrides;
   if (sc.synthetic) c.sy = 1;
+  if (opts.boundary !== false && Array.isArray(sc.boundary) && sc.boundary.length >= 3) c.bd = capVertices(sc.boundary).map(([la, lo]) => [round(la, 5), round(lo, 5)]);
   const wn = normalizeWhatIf(w);
   if (wn.rainScale !== 1 || wn.dT !== 0) c.w = [wn.rainScale, wn.dT];
   return c;
@@ -78,7 +81,8 @@ function trim<T>(a: (T | null)[]): (T | null)[] { let n = a.length; while (n > 0
 /** Encode a scenario (+ what-if) into a URL-safe token. Drops history notes, then fertilizer, then old seasons if the link would be too long. */
 export function encodeShare(sc: FarmScenario, w: WhatIf = WHATIF_NONE, budget = SHARE_MAX_URL - 120): string {
   // the engine only reads the last few seasons of history, so very long histories degrade gracefully
-  const tries: Detail[] = [{ fertilizer: true, notes: true }, { fertilizer: true, notes: false }, { fertilizer: false, notes: false }, { fertilizer: false, notes: false, historyMax: 8 }, { fertilizer: false, notes: false, historyMax: 4 }];
+  // the drawn outline goes first: the area and centre it produced are kept either way
+  const tries: Detail[] = [{ fertilizer: true, notes: true }, { fertilizer: true, notes: true, boundary: false }, { fertilizer: true, notes: false, boundary: false }, { fertilizer: false, notes: false, boundary: false }, { fertilizer: false, notes: false, historyMax: 8, boundary: false }, { fertilizer: false, notes: false, historyMax: 4, boundary: false }];
   let token = '';
   for (const o of tries) { token = toB64url(JSON.stringify(compact(sc, w, o))); if (token.length <= budget) break; }
   return token;
@@ -206,6 +210,10 @@ function validate(c: any, ids: Ids = {}): { scenario: FarmScenario; whatIf: What
     },
     priceOverrides: po, synthetic: c.sy === 1,
   };
+  if (c.bd != null) {
+    const pts = arr(c.bd, 'field boundary', 40).map((v) => { const x = arr(v, 'boundary point', 2); return [num(x[0], 'boundary latitude', -90, 90), num(x[1], 'boundary longitude', -180, 180)] as [number, number]; });
+    if (pts.length >= 3) scenario.boundary = pts;
+  }
   // what-if values are clamped to the slider range rather than rejected
   const w = c.w == null ? WHATIF_NONE : (() => { const x = arr(c.w, 'what-if', 2); return normalizeWhatIf({ rainScale: num(x[0], 'rain change'), dT: num(x[1], 'temperature change') }); })();
   return { scenario, whatIf: w };

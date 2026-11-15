@@ -76,6 +76,8 @@ export interface FarmScenario {
   name: string;
   regionPackId?: string;      // auto-detected from location if absent
   location: LatLon & { label?: string };
+  /** Field outline drawn on the map, [lat, lon] vertices; when present, location is its centroid and area its size. */
+  boundary?: [number, number][] | null;
   countryIso2?: string;       // ISO 3166 alpha-2, from reverse geocoding or the farmer
   area: number;
   areaUnit: AreaUnit;

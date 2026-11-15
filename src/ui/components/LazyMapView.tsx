@@ -12,3 +12,13 @@ export function MapView(props: Props) {
     </Suspense>
   );
 }
+
+const FieldImpl = lazy(() => import('./FieldMap').then((m) => ({ default: m.FieldMap })));
+/** Onboarding map (draw / pin), code-split like MapView. */
+export function FieldMap(props: ComponentProps<typeof FieldImpl>) {
+  return (
+    <Suspense fallback={<div className="field-map route-fallback" role="status" aria-label="Loading map" />}>
+      <FieldImpl {...props} />
+    </Suspense>
+  );
+}

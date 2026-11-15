@@ -34,6 +34,20 @@ export async function geocode(q: string): Promise<GeoHit[]> {
   return hits;
 }
 
+/** Short place name and country for a point (Nominatim reverse geocoding at district level). */
+export async function reversePlace(lat: number, lon: number): Promise<{ label: string; iso2?: string } | null> {
+  const j = await fetchJson(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=12&addressdetails=1&lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`, { headers: { 'Accept-Language': 'en' }, timeoutMs: 8_000, service: 'Reverse geocoder' });
+  const a = j?.address;
+  if (!a || typeof a !== 'object') return null;
+  const pick = (...ks: string[]) => ks.map((k) => a[k]).find((v) => typeof v === 'string' && v.trim());
+  const place = pick('village', 'town', 'city', 'municipality', 'hamlet', 'suburb', 'county', 'district');
+  const region = pick('state', 'region', 'province', 'county');
+  const country = pick('country');
+  const label = [place, region !== place ? region : undefined, country].filter(Boolean).join(', ').slice(0, 160);
+  const cc = a.country_code;
+  return label ? { label, iso2: typeof cc === 'string' && /^[a-z]{2}$/i.test(cc) ? cc.toUpperCase() : undefined } : null;
+}
+
 /** ISO 3166 alpha-2 country code for a point (OpenStreetMap Nominatim reverse geocoding, country level). */
 export async function reverseCountry(lat: number, lon: number): Promise<string | null> {
   const j = await fetchJson(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=3&lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`, { headers: { 'Accept-Language': 'en' }, timeoutMs: 8_000, service: 'Reverse geocoder' });

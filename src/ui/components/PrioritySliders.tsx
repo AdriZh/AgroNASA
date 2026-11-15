@@ -9,7 +9,7 @@ import { useApp } from '../../state/AppContext';
 
 export const CRITERIA: Record<Priority, { label: string; short: string; d: (v: number) => string; icon: JSX.Element }> = {
   climate: {
-    label: 'Avoid bad-year losses', short: 'bad-year caution', icon: <CloudSunRain size={15} />,
+    label: 'Climate resilience', short: 'climate resilience', icon: <CloudSunRain size={15} />,
     d: (v) => (v === 0 ? 'Plans are judged on an average year.' : `Revenue counts ${Math.round(v * 100)}% of the way from an average year to a bad year (20th percentile of the NASA replay).`),
   },
   cost: {
@@ -29,7 +29,7 @@ export const CRITERIA: Record<Priority, { label: string; short: string; d: (v: n
 const level = (v: number) => (v === 0 ? 'off' : v < 0.35 ? 'low' : v < 0.7 ? 'medium' : 'high');
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
-/** One line describing the ranking, e.g. "expected profit, a year later worth 85% · bad-year caution high · …". */
+/** One line describing the ranking, e.g. "expected profit, a year later worth 85% · climate resilience high · …". */
 export function weightsSummary(w: PriorityWeights): string {
   const delta = w.delta ?? DEFAULT_WEIGHTS.delta;
   const parts = PRIORITY_KEYS.filter((k) => (w[k] ?? 0) > 0).sort((a, b) => w[b] - w[a]).map((k) => `${CRITERIA[k].short} ${level(w[k])}`);

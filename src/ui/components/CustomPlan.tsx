@@ -20,7 +20,7 @@ const GROUPS: { id: 'cereal' | 'legume' | 'oilseed' | 'other'; label: string }[]
 const groupOf = (c: CropDef) => (c.cover ? 'other' : c.group === 'cereal' || c.group === 'legume' || c.group === 'oilseed' ? c.group : 'other');
 
 /** Every crop in the library, grouped; crops of the local calendar first, the rest marked. */
-function cropOptions(engine: EngineOutput, slot: 0 | 1) {
+export function cropOptions(engine: EngineOutput, slot: 0 | 1) {
   const cal = new Set(engine.pack.mode === 'double' ? engine.windows[slot]?.crops ?? [] : engine.windows.flatMap((w) => w.crops));
   return GROUPS.map((g) => {
     const crops = Object.values(CROPS).filter((c) => groupOf(c) === g.id);
@@ -97,7 +97,7 @@ export function CustomPlan({ engine, value, onChange }: { engine: EngineOutput; 
                 <span className="caption">Cash cost</span>
                 <span className="hero-num"><Money v={p.budget.totalCash} cur={cur} /></span>
               </div>
-              <BudgetBar cost={p.budget.totalCash} cap={p.budget.cap + p.budget.inflowsTotal} status={p.budget.status} />
+              <BudgetBar cost={p.budget.totalCash} cap={p.budget.cap} status={p.budget.status} />
               <BudgetLine p={p} cur={cur} />
               <StatRows rows={[
                 ['Due before first sowing', fmtMoney(p.budget.upfront, cur)],

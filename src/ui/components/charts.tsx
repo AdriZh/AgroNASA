@@ -225,7 +225,7 @@ export function CashTimeline({ b, currency }: { b: BudgetResult; currency: strin
         <Tooltip {...tipProps(t, (v) => `${Math.round(v).toLocaleString('en-US')} ${currency}`)} />
         <Legend {...legendProps} />
         <Line isAnimationActive={false} type="stepAfter" dataKey="outflow" name="Cumulative cash out" stroke={t.c2} strokeWidth={2} dot={lastDot(t, t.c2, data.length)} />
-        <Line isAnimationActive={false} type="stepAfter" dataKey="available" name="Cash available (funds − reserve + confirmed inflows)" stroke={t.c1} strokeWidth={2} dot={lastDot(t, t.c1, data.length)} />
+        <Line isAnimationActive={false} type="stepAfter" dataKey="available" name="Cash available (funds − reserve)" stroke={t.c1} strokeWidth={2} dot={lastDot(t, t.c1, data.length)} />
       </LineChart>
     </ResponsiveContainer>
   );

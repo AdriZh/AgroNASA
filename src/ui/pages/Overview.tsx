@@ -26,7 +26,7 @@ const NASA_SOURCES: [string, string][] = [
 ];
 const GROUND_SOURCES: [string, string][] = [
   ['Farmer records', 'Crop sequence, dates, outcomes and fertilizer, stored only on this device.'],
-  ['Budget and local quotes', 'Funds, reserve, dated inflows, editable unit prices.'],
+  ['Budget and local quotes', 'Funds, reserve, editable unit prices.'],
   ['ISRIC SoilGrids 2.0', 'Texture, carbon, pH → water-holding capacity. Your texture overrides it.'],
   ['Regional rule packs', 'Crop calendars, return intervals, disease groups, each with source IDs.'],
   ['FAOSTAT (FAO)', 'Producer prices, exchange rates, nitrogen budgets for 240 countries.'],
@@ -124,7 +124,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
         <div className="cols">
           {([
             ['Farm & history', 'Pin the field, set the area, add the last crops and fertilizer. Unknowns stay unknown.', 'farm'],
-            ['Resources', 'Cash, reserve, inflows, seed and market limits, and how much each goal matters.', 'resources'],
+            ['Resources', 'Cash, reserve, irrigation and which crops are allowed.', 'resources'],
             ['Compare plans', 'Your usual plan against up to two feasible alternatives, with reasons.', 'compare'],
             ['Evidence', 'NASA climate record, season so far, forecast and satellite layers.', 'evidence'],
           ] as const).map(([t, d, r], i) => (

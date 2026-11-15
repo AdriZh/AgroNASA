@@ -1,11 +1,10 @@
-// Step 2 · Budget & crops: what you can spend, irrigation, and which crops are allowed. Fits one window.
-// Prices are computed from data (FAOSTAT + regional templates) and only shown when the farmer asks to adjust them.
+// Step 2 · Budget & crops: funds and reserve, irrigation, and a menu of allowed crops. Fallow is always considered.
+// Prices are computed from data (FAOSTAT + regional templates) and stay hidden unless the farmer opens them.
 import { useEffect, useState } from 'react';
 import type { Route } from '../../App';
-import { ArrowLeft, ArrowRight, Droplets, Info, RotateCcw, Sprout, Tags, Wallet, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Droplets, RotateCcw, Sprout, Tags, X } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
 import { cropName } from '../../data/crops';
-import { countryInfo } from '../../data/countries';
 import { fmtMoney } from '../../domain/units';
 import { CropIcon } from '../components/CropIcon';
 import { NumInput, Seg } from '../components/common';
@@ -21,7 +20,6 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
   const toggle = (c: string) => setAllowed((x) => (x === c ? !allowed(c) : allowed(x)));
   const nAllowed = crops.filter(allowed).length;
   const edited = Object.keys(sc.priceOverrides).length;
-  const country = countryInfo(sc.countryIso2);
 
   return (
     <div className="onboard">
@@ -39,10 +37,7 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
               <NumInput value={sc.reserve} min={0} onChange={(v) => update((s) => ({ ...s, reserve: Math.max(0, v ?? 0) }))} />
             </label>
           </div>
-          <p className="spendable"><Wallet size={14} aria-hidden /> You can spend <b>{fmtMoney(Math.max(0, sc.availableFunds - sc.reserve), cur)}</b> <span className="muted">(money − reserve)</span></p>
-          <label className="field" style={{ maxWidth: 200 }}>First season to plan
-            <NumInput value={sc.firstSeasonYear} onChange={(v) => update((s) => ({ ...s, firstSeasonYear: Math.round(v ?? s.firstSeasonYear) }))} />
-          </label>
+          <p className="spendable mini">= {fmtMoney(Math.max(0, sc.availableFunds - sc.reserve), cur)} to spend</p>
 
           <div className="divider" />
           <div>
@@ -60,7 +55,7 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
         <section className="onboard-panel">
           <div>
             <h1>Which crops can you grow?</h1>
-            <p className="mini">All are allowed to start. Untick any you can’t get seed for or can’t sell. A rest (fallow) season is always considered.</p>
+            <p className="mini">All allowed to start. Tap a crop to leave it out.</p>
           </div>
           <div className="crop-chips" role="group" aria-label="Allowed crops">
             {crops.map((c) => (
@@ -77,17 +72,11 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
         </section>
       </div>
 
-      <div className="prices-note">
-        <Info size={16} aria-hidden />
-        <p>
-          Prices and costs were <b>computed from data</b>: crop prices from FAOSTAT{country ? ` for ${country.name}` : ''}, input costs from a regional template{engine && engine.fx.factor !== 1 ? `, converted to ${cur}` : ''}.
-          They are estimates — adjust them to your local prices.{edited ? ` ${edited} edited.` : ''}
-        </p>
-        <button type="button" className="btn sm" onClick={() => setPricesOpen(true)}><Tags size={14} /> Adjust prices</button>
-      </div>
-
       <div className="onboard-foot">
-        <button type="button" className="btn" onClick={() => go('farm')}><ArrowLeft /> Your field</button>
+        <div className="row" style={{ gap: 8 }}>
+          <button type="button" className="btn" onClick={() => go('farm')}><ArrowLeft /> Your field</button>
+          <button type="button" className="btn ghost sm" onClick={() => setPricesOpen(true)} title="Prices and costs are computed from data (FAOSTAT + regional template)"><Tags size={14} /> Prices{edited ? ` (${edited} edited)` : ''}</button>
+        </div>
         <button type="button" className="btn primary" onClick={() => go('compare')}>Compare plans <ArrowRight /></button>
       </div>
 

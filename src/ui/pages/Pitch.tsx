@@ -270,8 +270,8 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     { id: 'cash', kicker: 'The cash gap', icon: <Wallet size={14} />, body: (
       <>
         <motion.h2 {...up(0.1)}>An ideal rotation you can’t pay for before planting is not a plan.</motion.h2>
-        <motion.p {...up(0.2)} style={{ maxWidth: 900 }}>Most tools rank crops by agronomy alone. Field Shift checks <b>cash first</b>: funds minus a reserve, plus only confirmed, dated inflows; never assumed harvest income or credit.</motion.p>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: 32 }}>{engine && <CashBar plan={engine.baseline} cap={engine.baseline.budget.cap + engine.baseline.budget.inflowsTotal} cur={cur} />}</div>
+        <motion.p {...up(0.2)} style={{ maxWidth: 900 }}>Most tools rank crops by agronomy alone. Field Shift checks <b>cash first</b>: funds minus a reserve; never assumed harvest income or credit.</motion.p>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: 32 }}>{engine && <CashBar plan={engine.baseline} cap={engine.baseline.budget.cap} cur={cur} />}</div>
         <motion.div {...up(1)} className="muted" style={{ fontSize: 13 }}>{scenario.name} · synthetic demo prices · editable in the app</motion.div>
       </>
     ) },
@@ -334,7 +334,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
           {engine && <Funnel steps={[
             ['Rotations screened', engine.allPlans.length + 1, 'every 2-season pair in the pack'],
             ['Pass rotation & constraint rules', engine.allPlans.filter((p) => p.eligible).length, 'return intervals, disease groups, seed, labor, climate'],
-            ['Affordable at every due date', engine.allPlans.filter((p) => p.feasible).length, 'funds − reserve + confirmed inflows'],
+            ['Affordable at every due date', engine.allPlans.filter((p) => p.feasible).length, 'funds − reserve'],
             ['Shown, ranked by your priorities', engine.alternatives.length, `plus your usual plan, always shown`],
           ]} />}
         </div>

@@ -69,7 +69,6 @@ export function ReportPage() {
               ['Area', `${sc.area} ${sc.areaUnit} (${engine.areaHa.toFixed(2)} ha)`],
               ['Funds · reserve', `${fmtMoney(sc.availableFunds, cur)} · ${fmtMoney(sc.reserve, cur)}`],
               ['Spendable', fmtMoney(engine.baseline.budget.cap, cur)],
-              ['Confirmed inflows', `${fmtMoney(engine.baseline.budget.inflowsTotal, cur)} (no harvest income or credit assumed)`, 'wrap'],
               ['Irrigation', `${sc.irrigation}${sc.irrigation === 'yes' ? ` (${sc.irrigationCapacityMm} mm)` : ''}`],
               ['Ranking priorities', weightsSummary(sc.weights), 'wrap'],
               ['Seed unavailable', sc.unavailableCrops.map(cropName).join(', ') || 'none', 'wrap'],

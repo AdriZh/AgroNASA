@@ -1,4 +1,6 @@
 import { PACKS } from '../../data/regionPacks';
+import { TEAM } from '../../data/team';
+import { CropIcon } from '../components/CropIcon';
 import { CROPS } from '../../data/crops';
 import { SOURCES } from '../../data/sources';
 import { Ref, Tag } from '../components/common';
@@ -10,6 +12,8 @@ const CODES: [string, string][] = [
   ['RETURN_INTERVAL', 'Same crop before its minimum break (rule G-R1 / SN-R2 / KZ-R2).'],
   ['DISEASE_GROUP', 'Consecutive hosts of a shared soil-borne pathogen (G-R2 / KZ-R3).'],
   ['LEGUME_BENEFIT / FALLOW_BENEFIT', 'Legume or fallow before a cereal (G-R3 / SN-R1 / KZ-R1).'],
+  ['MONOCULTURE · SAME_FAMILY', 'Same crop, or same family / shared pest group, in consecutive seasons, including last season → season 1 (G-R6 / G-R7). Never the top-ranked option while a feasible alternation exists.'],
+  ['BREAK_CROP · ALTERNATION', 'Cereal → legume, or any other change of crop group (cereal ↔ legume ↔ oilseed ↔ tuber); credited in the ranking (G-R8 / G-R9).'],
   ['SEED_UNAVAILABLE · MARKET_CONSTRAINT · LABOR_LIMIT · IRRIGATION_REQUIRED', 'Hard farmer constraints; never silently relaxed.'],
   ['CLIMATE_UNSUITABLE', 'Season mean temperature outside crop range in most years, or median water-limited yield < 35%.'],
   ['CLIMATE_RISK_HIGH · HEAT_EXPOSURE · FROST_RISK', 'Warnings from the NASA replay (≥35% severe years; ≥30% years with ≥3 hot days at flowering; ≥20% years with frost after emergence).'],
@@ -68,7 +72,10 @@ export function MethodsPage() {
           <h2>8. Privacy</h2>
           <p>Crop history, fertilizer records, prices and budget are stored in this browser (localStorage); public datasets are cached in IndexedDB. Requests to NASA POWER, SoilGrids, Open-Meteo and the map and geocoder contain only coordinates or a place name; providers still see network information. Export, import and delete-all are on the Report page. No account, no tracking.</p>
 
-          <h2>9. AI disclosure and limits</h2>
+          <h2>9. Team</h2>
+          <p>{TEAM.join(' · ')}. Developed alongside the team's Fieldwise prototype, which inspired some ideas.</p>
+
+          <h2>10. AI disclosure and limits</h2>
           <p>AI assistance was used for research synthesis, documents and code. Recommendations are produced by fixed rules and published formulas, not by a language model. Not validated agronomic advice: rule packs await local review; no user tests or field validation are claimed. NASA data is credited; NASA does not endorse this project.</p>
         </div>
       </article>
@@ -88,7 +95,7 @@ export function MethodsPage() {
               <div className="table-wrap"><table><thead><tr><th>Rule</th><th>Kind</th><th>Text</th><th>Sources</th><th>Reviewed</th></tr></thead>
                 <tbody>{p.rules.map((r) => <tr key={r.id}><td className="mono">{r.id}</td><td>{r.kind}</td><td className="wrap">{r.text}</td><td><span className="chips">{r.sources.map((x) => <Ref key={x} id={x} />)}</span></td><td>{r.reviewed ? 'yes' : 'no'}</td></tr>)}</tbody></table></div>
               <div className="table-wrap"><table><thead><tr><th>Crop</th><th>Kc ini/mid/end</th><th>Stages (d)</th><th className="num">Root m</th><th className="num">p</th><th className="num">Ky</th><th className="num">Heat °C</th><th>Season T °C</th><th className="num">Return</th></tr></thead>
-                <tbody>{p.crops.filter((c) => c !== 'fallow').map((c) => { const d = CROPS[c]; return <tr key={c}><td>{d.emoji} {d.name}</td><td>{d.kc.join(' / ')}</td><td>{d.stages.join('+')}</td><td className="num">{d.rootDepthM}</td><td className="num">{d.p}</td><td className="num">{d.ky}</td><td className="num">{d.heatThresholdC}</td><td>{d.tMeanRange.join('–')}</td><td className="num">{d.minReturnSeasons}</td></tr>; })}</tbody></table></div>
+                <tbody>{p.crops.filter((c) => c !== 'fallow').map((c) => { const d = CROPS[c]; return <tr key={c}><td><span className="crop-name"><CropIcon id={c} size={18} />{d.name}</span></td><td>{d.kc.join(' / ')}</td><td>{d.stages.join('+')}</td><td className="num">{d.rootDepthM}</td><td className="num">{d.p}</td><td className="num">{d.ky}</td><td className="num">{d.heatThresholdC}</td><td>{d.tMeanRange.join('–')}</td><td className="num">{d.minReturnSeasons}</td></tr>; })}</tbody></table></div>
             </div>
           </details>
         ))}

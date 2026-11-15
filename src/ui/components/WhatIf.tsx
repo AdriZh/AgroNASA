@@ -6,8 +6,8 @@ import { useApp } from '../../state/AppContext';
 import { useWhatIf } from '../../state/share';
 import { isIdentity, isRobust, stressHeadline, stressTest, WHATIF_PRESETS, type PlanStress, type WhatIf, type WhatIfResult } from '../../engine/whatif';
 import { completeYears } from '../../weather/indicators';
-import { cropEmoji, cropName } from '../../data/crops';
 import { CardTitle, pct, Tag } from './common';
+import { CropPair } from './CropIcon';
 
 const DEBOUNCE_MS = 150;
 const key = (w: WhatIf) => `${w.rainScale}|${w.dT}`;
@@ -26,7 +26,7 @@ function Row({ p, active }: { p: PlanStress; active: boolean }) {
     <div className={`wi-row ${p.isBaseline ? 'is-base' : ''}`}>
       <div className="wi-plan">
         <span className={`wi-tag ${p.isBaseline ? 'base' : ''}`}>{p.isBaseline ? 'Your usual plan' : p.label}</span>
-        <span className="wi-crops">{cropEmoji(p.crops[0])} {cropName(p.crops[0])} → {cropEmoji(p.crops[1])} {cropName(p.crops[1])}</span>
+        <span className="wi-crops"><CropPair crops={p.crops} size={16} /></span>
       </div>
       <div className="wi-risk" aria-label={`Severe water-stress risk ${pct(now)} under the NASA record${active ? `, ${pct(then)} under the what-if` : ''}`}>
         <div className="wi-bars" aria-hidden>

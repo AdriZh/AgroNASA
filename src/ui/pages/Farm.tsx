@@ -10,6 +10,7 @@ import { LocationSearch, PresetGrid } from '../components/LocationPicker';
 import { normalizeApplication, fmtNum } from '../../domain/units';
 import { TEXTURE_LABEL } from '../../soil/soil';
 import { MapView } from '../components/LazyMapView';
+import { CropIcon } from '../components/CropIcon';
 import { CardTitle, Callout, Empty, Field, NumInput, StatRows, Tag, uid } from '../components/common';
 import { powerGridCell } from '../../weather/power';
 
@@ -126,7 +127,7 @@ export function FarmPage({ go }: { go: (r: Route) => void }) {
                   <tr key={h.id}>
                     <td style={{ minWidth: 90 }}><NumInput className="sm" value={h.year} onChange={(v) => setH(h.id, { year: Math.round(v ?? h.year) })} /></td>
                     {multiSeason && <td><select className="input sm" style={{ minWidth: 120 }} value={h.seasonId ?? pack.seasons.find((x) => x.crops.includes(h.cropId))?.id ?? pack.seasons[0].id} onChange={(e) => setH(h.id, { seasonId: e.target.value })}>{pack.seasons.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select></td>}
-                    <td><select className="input sm" style={{ minWidth: 150 }} value={h.cropId} onChange={(e) => setH(h.id, { cropId: e.target.value })}>{[...new Set([...crops, ...Object.keys(CROPS)])].map((c) => <option key={c} value={c}>{CROPS[c].emoji} {cropName(c)}</option>)}</select></td>
+                    <td><span className="crop-name"><CropIcon id={h.cropId} size={20} /><select className="input sm" style={{ minWidth: 150 }} value={h.cropId} onChange={(e) => setH(h.id, { cropId: e.target.value })}>{[...new Set([...crops, ...Object.keys(CROPS)])].map((c) => <option key={c} value={c}>{cropName(c)}</option>)}</select></span></td>
                     <td><input className="input sm" type="date" value={h.plantedOn ?? ''} onChange={(e) => setH(h.id, { plantedOn: e.target.value || undefined })} /></td>
                     <td><input className="input sm" type="date" value={h.harvestedOn ?? ''} onChange={(e) => setH(h.id, { harvestedOn: e.target.value || undefined })} /></td>
                     <td><input type="checkbox" checked={h.approximateDate} onChange={(e) => setH(h.id, { approximateDate: e.target.checked })} aria-label="approximate dates" /></td>

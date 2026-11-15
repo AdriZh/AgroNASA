@@ -24,6 +24,10 @@ It replays 25 years (2001–2025) of daily **NASA POWER** weather for the farmer
 
 **Next.** A 90-day pilot with farmers and an extension agronomist in one region; replace synthetic prices with dated local quotes; reviewed rule packs.
 
+## Team
+
+ayu.ogura, zhamilya.toleukhan, fernando.stoll, francisco.correia, Iuliia Zakhartsova, Ruslan Kan
+
 ## AI disclosure (if the form asks)
 
 AI assistance (Claude) was used for research synthesis, documents and code. Recommendations are produced by fixed, published rules and models — no AI in the decision path. NASA does not endorse this project.

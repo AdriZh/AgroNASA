@@ -936,3 +936,8 @@ main.fit { padding-top: var(--s-3); padding-bottom: var(--s-3); }
 .mc2-score .caption { margin-bottom: 6px; }
 @media (max-width: 900px) { .mini-compare2 { grid-template-columns: minmax(0, 1fr); } }
 .mini-compare2 .pl-row { grid-template-columns: minmax(220px, 1.7fr) 1.35fr 1.1fr 1.1fr .9fr 48px; gap: var(--s-2); }
+.mini-compare2 { grid-template-rows: auto 1fr; align-items: start; }
+.mc2-sliders { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; padding: 10px 16px; }
+.mc2-sliders .prio-sliders.compact { gap: var(--s-2) var(--s-4); }
+.mc2-sliders .wi-ticks { display: none; }
+.mc2-score .mini { display: none; }

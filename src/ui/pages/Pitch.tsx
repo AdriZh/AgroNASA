@@ -16,7 +16,7 @@ import { BrandMark } from '../components/Logo';
 import { OrbitVisual } from '../components/OrbitVisual';
 import { CAT_TOKEN, SeasonRainChart, useChartTheme } from '../components/charts';
 import { BEST_FIT, CASH_CAPTION, PlanCard, PlanRows, ScoreTable, scoreAll, tradeOffText } from './Compare';
-import { weightsSummary } from '../components/PrioritySliders';
+import { PrioritySliders, weightsSummary } from '../components/PrioritySliders';
 import { HindcastChart } from '../components/Hindcast';
 import { allHindcasts } from '../../data/hindcast/hindcast';
 import { TEAM, TEAM_NAME, TEAM_PROFILES } from '../../data/team';
@@ -213,12 +213,13 @@ function MiniCompare({ engine, cur, weights }: { engine: EngineOutput; cur: stri
   const labelOf = (p: PlanResult, k: number) => (p.isBaseline ? 'Your usual plan' : k === 1 ? BEST_FIT : p.label || 'Option B');
   return (
     <motion.div {...quick(0)} className="mini-compare2">
+      <div className="mc2-sliders boxed"><span className="caption hl">What matters to you · drag to re-rank live</span><PrioritySliders compact /></div>
       <PlanRows plans={plans} labelOf={labelOf} scores={scores} cur={cur}>
         <div className="pl-add"><span className="btn sm" aria-hidden><Plus size={14} /> Add your own plan</span><span className="muted" style={{ fontSize: 13 }}>scored on the same scale as the plans above</span></div>
       </PlanRows>
       {best && (
         <motion.div {...quick(0.2)} className="mc2-score boxed">
-          <div className="caption hl">Hover a score · {BEST_FIT} breakdown</div>
+          <div className="caption hl">{BEST_FIT} · score breakdown</div>
           <ScoreTable score={best} />
         </motion.div>
       )}
@@ -407,7 +408,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
             </span>
           ))}
         </motion.div>
-        <motion.div {...up(0.2)} className="ink" style={{ fontSize: 15, fontWeight: 600 }}>Live for {place}: your usual plan against the two best plans, with profit, soil and harvest side by side</motion.div>
+        <motion.div {...up(0.2)} className="ink" style={{ fontSize: 15, fontWeight: 600 }}>Live for {place}: move a slider and every score, rank and breakdown updates</motion.div>
         {engine && plans.length > 0 ? <MiniCompare engine={engine} cur={cur} weights={scenario.weights} /> : null}
       </>
     ) },
@@ -583,6 +584,9 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
 
   useEffect(() => {
     const f = (e: KeyboardEvent) => {
+      // a slider or field on a slide keeps its own keys (arrows move the slider, not the deck)
+      const el = e.target as HTMLElement | null;
+      if (el && el.closest('input, select, textarea, [contenteditable="true"]') && e.key !== 'Escape') return;
       if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') setI((x) => Math.min(n - 1, x + 1));
       if (e.key === 'ArrowLeft' || e.key === 'PageUp') setI((x) => Math.max(0, x - 1));
       if (e.key === 'Escape') go('overview');

@@ -183,10 +183,10 @@ Details, CSP rationale and residual risks: [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Team
 
-1. ayu.ogura
-2. zhamilya.toleukhan
-3. fernando.stoll
-4. francisco.correia
+1. Ayu Ogura
+2. Zhamilya Toleukhan
+3. Fernando Stoll
+4. Francisco Correia
 5. Iuliia Zakhartsova
 6. Ruslan Kan
 

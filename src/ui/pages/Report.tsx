@@ -1,4 +1,5 @@
 import { Download, Printer, Trash2, Upload } from 'lucide-react';
+import { weightsSummary } from '../components/PrioritySliders';
 import { CropPair } from '../components/CropIcon';
 import { useRef, useState } from 'react';
 import { useApp } from '../../state/AppContext';
@@ -69,7 +70,8 @@ export function ReportPage() {
               ['Funds · reserve', `${fmtMoney(sc.availableFunds, cur)} · ${fmtMoney(sc.reserve, cur)}`],
               ['Spendable', fmtMoney(engine.baseline.budget.cap, cur)],
               ['Confirmed inflows', `${fmtMoney(engine.baseline.budget.inflowsTotal, cur)} (no harvest income or credit assumed)`, 'wrap'],
-              ['Irrigation · labor · priority', `${sc.irrigation}${sc.irrigation === 'yes' ? ` (${sc.irrigationCapacityMm} mm)` : ''} · ${sc.laborAvailable} · ${sc.priority}`],
+              ['Irrigation', `${sc.irrigation}${sc.irrigation === 'yes' ? ` (${sc.irrigationCapacityMm} mm)` : ''}`],
+              ['Ranking priorities', weightsSummary(sc.weights), 'wrap'],
               ['Seed unavailable', sc.unavailableCrops.map(cropName).join(', ') || 'none', 'wrap'],
               ['History', [...sc.history].sort((a, b) => a.year - b.year).map((h) => `${h.year} ${cropName(h.cropId)} (${h.outcome ?? 'unknown'})`).join(' → ') || 'none reported', 'wrap'],
             ]} />

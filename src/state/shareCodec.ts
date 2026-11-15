@@ -4,6 +4,7 @@ import type { FarmScenario } from '../domain/types';
 import { CROPS } from '../data/crops';
 import { packById } from '../data/regionPacks';
 import { normalizeWhatIf, WHATIF_NONE, type WhatIf } from '../engine/whatif';
+import { DEFAULT_WEIGHTS, DELTA_RANGE, PRIORITY_KEYS, weightsFromPriority } from '../engine/plan';
 
 export const SHARE_VERSION = 1;
 export const SHARE_MAX_URL = 2000;
@@ -31,7 +32,8 @@ type Compact = {
   v: number;
   n: string; p?: string; l: [number, number, string?]; c?: string;
   a: [number, string]; cu: string; b: [number, number]; i?: [string, number, string][]; y: number;
-  ir: [string, number]; lb: string; ua?: string[]; mc?: string[]; f: string; pr: string; bo?: [string, string];
+  // lb (labor) and pr (single priority) are read-only legacy fields from links made before the weight sliders
+  ir: [string, number]; lb?: string; ua?: string[]; mc?: string[]; f: string; pr?: string; pw?: number[]; bo?: [string, string];
   h?: (string | number | null)[][]; fz?: (string | number | null)[][];
   so?: [string, number?, number?]; po?: Record<string, number | null>; sy?: 1; w?: [number, number];
 };
@@ -45,7 +47,8 @@ function compact(sc: FarmScenario, w: WhatIf, opts: Detail): Compact {
   const c: Compact = {
     v: SHARE_VERSION, n: sc.name, l: [round(sc.location.lat, 4), round(sc.location.lon, 4)],
     a: [sc.area, sc.areaUnit], cu: sc.currency, b: [sc.availableFunds, sc.reserve], y: sc.firstSeasonYear,
-    ir: [sc.irrigation, sc.irrigationCapacityMm || 0], lb: sc.laborAvailable, f: flags(sc), pr: sc.priority,
+    ir: [sc.irrigation, sc.irrigationCapacityMm || 0], f: flags(sc),
+    pw: (['delta', ...PRIORITY_KEYS] as const).map((k) => { const v = sc.weights?.[k]; return round(isNum(v) ? v : DEFAULT_WEIGHTS[k], 2); }),
   };
   if (sc.location.label) c.l[2] = sc.location.label;
   if (sc.regionPackId) c.p = sc.regionPackId;
@@ -184,10 +187,16 @@ function validate(c: any, ids: Ids = {}): { scenario: FarmScenario; whatIf: What
     confirmedInflows: (c.i == null ? [] : arr(c.i, 'inflows', 30)).map((r, k) => { const x = arr(r, 'inflow', 3); return { id: id(ids.i?.[k], `i${k + 1}`), date: isoDate(x[0], 'inflow date') ?? fail('inflow date'), amount: amount(x[1], 'inflow amount'), label: str(x[2], 'inflow label', 120) }; }),
     firstSeasonYear: num(c.y, 'first season year', 1990, 2200),
     irrigation: oneOf(ir[0], ['yes', 'no', 'unknown'] as const, 'irrigation'), irrigationCapacityMm: amount(ir[1] ?? 0, 'irrigation capacity', 0, 5000),
-    laborAvailable: oneOf(c.lb, ['low', 'medium', 'high'] as const, 'labor'),
     unavailableCrops: crops(c.ua, 'unavailable crops'), marketCrops: crops(c.mc, 'market crops'),
     needsResidue: fl[0] === '1', allowFallow: fl[1] === '1',
-    priority: oneOf(c.pr, ['cost', 'climate', 'continuity', 'return', 'soil'] as const, 'priority'),
+    weights: c.pw != null
+      ? (() => {
+        // [delta, cost, climate, continuity, soil]
+        const x = arr(c.pw, 'priority weights', PRIORITY_KEYS.length + 1);
+        if (x.length !== PRIORITY_KEYS.length + 1) fail('priority weights');
+        return { delta: amount(x[0], 'discount factor', DELTA_RANGE[0], DELTA_RANGE[1]), ...Object.fromEntries(PRIORITY_KEYS.map((k, i) => [k, amount(x[i + 1], 'priority weight', 0, 1)])) } as FarmScenario['weights'];
+      })()
+      : c.pr != null ? weightsFromPriority(oneOf(c.pr, ['cost', 'climate', 'continuity', 'return', 'soil'] as const, 'priority')) : { ...DEFAULT_WEIGHTS },
     baselineOverride: bo && bo.length === 2 && bo.every(hasCrop) ? [bo[0], bo[1]] : null,
     history: history.filter((h) => hasCrop(h.cropId)),
     fertilizer: fertilizer.filter((f) => !f.cropSeasonId || history.some((h) => h.id === f.cropSeasonId && hasCrop(h.cropId))),
@@ -220,7 +229,7 @@ export type SanitizeResult = { ok: true; scenario: FarmScenario } | { ok: false;
 const DEFAULTS = {
   confirmedInflows: [], unavailableCrops: [], marketCrops: [], history: [], fertilizer: [], priceOverrides: {},
   soil: { texture: 'unknown' }, needsResidue: false, allowFallow: false, synthetic: false, irrigation: 'unknown', irrigationCapacityMm: 0,
-  laborAvailable: 'medium', priority: 'cost', baselineOverride: null, firstSeasonYear: new Date().getFullYear() + 1, reserve: 0,
+  baselineOverride: null, firstSeasonYear: new Date().getFullYear() + 1, reserve: 0,
 } as const;
 
 function placeholder(x: unknown): FarmScenario['budgetPlaceholder'] {
@@ -241,6 +250,10 @@ export function sanitizeScenario(raw: unknown, opts: { keepIds?: boolean } = {})
     const src: Record<string, unknown> = {};
     for (const k of Object.keys(r)) if (k !== '__proto__' && k !== 'constructor' && k !== 'prototype') src[k] = r[k];
     for (const [k, v] of Object.entries(DEFAULTS)) if (src[k] == null && !(k === 'baselineOverride' && k in src)) src[k] = structuredClone(v);
+    // farms saved before the weight sliders carry one `priority`; anything else falls back to the balanced default
+    if (!src.weights || typeof src.weights !== 'object' || Array.isArray(src.weights)) {
+      src.weights = typeof src.priority === 'string' ? weightsFromPriority(src.priority) : { ...DEFAULT_WEIGHTS };
+    }
     if (!src.location || typeof src.location !== 'object') fail('location');
     for (const k of ['history', 'fertilizer', 'confirmedInflows', 'unavailableCrops', 'marketCrops'] as const) if (!Array.isArray(src[k])) fail(k);
     for (const k of ['history', 'fertilizer', 'confirmedInflows'] as const) if (!(src[k] as unknown[]).every((e) => e && typeof e === 'object' && !Array.isArray(e))) fail(k);

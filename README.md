@@ -17,7 +17,7 @@ Field Shift helps a farmer (or the extension worker sitting with them) answer on
 
 > *“Given what I grew and applied before, my resources now and the conditions experienced here, which next two-season plans can I realistically consider — and afford?”*
 
-It fuses **25 years of NASA Earth observations** with **what the farmer knows** — crop and fertilizer history, soil, budget, labor, seed and market constraints — and compares the farmer’s usual plan with up to two feasible alternatives. Every number is traceable to an input, a formula or a sourced rule, and every option carries its cost, cash timing, modeled climate risk and reasons. **It informs rather than decides.**
+It fuses **25 years of NASA Earth observations** with **what the farmer knows** — crop and fertilizer history, soil, budget, seed and market constraints — and compares the farmer’s usual plan with up to two feasible alternatives. Every number is traceable to an input, a formula or a sourced rule, and every option carries its cost, cash timing, modeled climate risk and reasons. **It informs rather than decides.**
 
 ---
 
@@ -55,8 +55,9 @@ Search a place, click the map, use GPS, or pick one of 15 example farming region
 |---|---|
 | **Overview** | Story, live summary of the current scenario, NASA seasonal-variability chart, data-source map. |
 | **1 · Farm & history** | Map pin (search, GPS or click), area & units, auto-detected regional pack, last 1–3 crops with dates/outcomes, detailed fertilizer & manure records (normalized; unknowns stay unknown), farmer soil texture + SoilGrids profile. |
-| **2 · Resources** | Funds, reserve, dated confirmed inflows, irrigation (with seasonal water cap), labor, unavailable seed, sellable crops, residue need, fallow option, one priority, baseline override, full **editable price & yield pack**. |
+| **2 · Resources** | Funds, reserve, dated confirmed inflows, irrigation (with seasonal water cap), unavailable seed, sellable crops, residue need, fallow option, ranking sliders (cash now ↔ later discount, bad-year caution, cash in hand, familiar crops, soil benefit), baseline override, full **editable price & yield pack**. |
 | **3 · Compare plans** | Usual plan + ≤2 ranked feasible alternatives (the usual plan is always shown, flagged): cash cost, headroom, upfront need, season split, modeled harvest range, modeled net, severe-stress risk, reason codes with source chips; cost-by-category chart vs budget; water-limited yield screening for every crop; “See why” with cost lines, cash timeline and 25-season replay; every excluded rotation with its blocking reason. **What-if climate stress test** (rain −30…+20 %, +0…+3 °C as a delta change on the 2001–2025 NASA POWER record; “Drier & hotter” = −15 % rain, +2 °C) re-runs the 24-season-pair replay live in ~30–50 ms. **Share** button: the scenario is encoded in the URL hash (validated, size-limited). New farms get a clearly labeled placeholder budget (spendable ≈ 90 % of the usual plan’s cash cost). |
+| **Multi-year & soil N** | 2–5-year rotations including cereal–legume mixtures, simulated season by season with a soil mineral-N balance (what a legume leaves, what a cereal draws down, fertilizer N by balance sheet, N₂O + manufacture CO₂e). Three sliders (cash now ↔ later, soil health, low-input & climate) re-rank instantly; Pareto flags; comparison with repeating your usual plan. Uses the same farm, NASA climate, prices and rotation rules as Compare. Compare also gets a **Soil & nitrogen** tab. |
 | **4 · Evidence** | NASA climate record (monthly climatology, ET₀, season totals, dry runs, heat days, provenance), **this season so far** vs history + onset + NASA soil wetness, **16-day forecast** & planting-readiness, **NASA satellite layers** (MODIS NDVI, SMAP L4 soil moisture, GPM IMERG, MODIS LST, true colour, with date & −1-year compare), **past-season review** (descriptive, never causal), fertilizer nutrient timeline, and a **hindcast vs real FAOSTAT national yields**. |
 | **Report** | Printable / PDF plan summary with sources; export, import and delete-all-data controls. |
 | **Methods** | Pipeline, formulas, reason codes, rule packs (with review status), crop parameters, full evidence register, privacy & AI disclosure. |
@@ -74,6 +75,7 @@ Search a place, click the map, use GPS, or pick one of 15 example farming region
 | **NASA values at the field pixel** (decoded from GIBS tiles + colormaps): MODIS Terra NDVI 16-day 2000→now, MODIS IGBP land cover, SMAP L4 root-zone soil moisture, GRACE/GRACE-FO water storage | NASA | Field greenness history, model-vs-satellite check (r), cropland check, soil moisture vs normal, groundwater trend, past-season review |
 | **NASA EONET** natural events | NASA | Wildfires, floods, storms, drought, dust within ~300 km |
 | **FAOSTAT** (FAO): producer prices, exchange rates, cropland nutrient budget, temperature change — from the team's Drive data index | non-NASA | Real crop prices (a price more than 3× off the global median is replaced by the median, labeled) & local currency for 240 countries; national N-budget and warming context |
+| **INRAE cereal–legume trials** (Gaudio et al. 2024, v2.0.0, CC-BY 4.0): 607 plots, 37 experiments | non-NASA | Trains the soil-N / rotation models (yield and N uptake response to soil N, pre-crop, mixtures; N fixation; N harvest index) |
 | Farmer records (history, fertilizer, budget, constraints, prices) | non-NASA | Everything farm-specific — stored only in the browser |
 | **ISRIC SoilGrids 2.0** (texture, SOC, pH, N, CEC, 0–60 cm) | non-NASA | Available water capacity via Saxton & Rawls (2006); pH warnings |
 | Regional rule packs (16 regional packs plus global screening) | non-NASA | Crop calendars, return intervals, disease groups, legume/fallow benefits — each rule with source IDs and review status |
@@ -90,7 +92,8 @@ Search a place, click the map, use GPS, or pick one of 15 example farming region
 * **Rotation rules**: monocultures are excluded (`MONOCULTURE`, G-R6), the same family gets a warning (`SAME_FAMILY`), break crops get a bonus (`BREAK_CROP`).
 * **Hindcast** (Evidence page): modeled water-limited yield vs detrended FAOSTAT national yields (bulk download, retrieved 2026-11-15). Kazakhstan wheat r = 0.59 (n = 24); Senegal millet r = 0.18 and groundnut r = 0.20 (n = 24). Weak by design of the comparison: one grid cell against a whole country. All four known drought years (Senegal 2002, 2011; Kazakhstan 2010, 2012) fall in the model’s driest third.
 * **Replay data**: only NASA POWER is replayed through the water balance. MODIS, SMAP, IMERG, GRACE and EONET are context layers shown next to the result, not inputs to the replay.
-* **Ranking**: eligible & affordable plans only, by the chosen priority with a documented deterministic tie-break; baseline always shown; 0–2 alternatives, never invented.
+* **Soil-N & multi-year layer** (Multi-year page, Compare tab — not used by the two-season ranking): two gradient-boosted tree models (XGBoost) trained on the INRAE trials, evaluated in the browser (parity-tested against Python). Yield *level* comes from the NASA water-balance replay above; the trial models only supply relative effects (soil N, pre-crop, mixture), N uptake and N fixation. Cross-validated on unseen sites: yield R² 0.45 (crop-average baseline 0.32), N uptake R² 0.35 (0.12). Calibrated to the farmer's recorded past yields (each compared with the NASA replay for the same crop and year, shrunk toward no adjustment). Fertilizer N by balance sheet; N₂O by IPCC Tier 1. Training pipeline: [`ml/`](ml/README.md).
+* **Ranking**: eligible & affordable plans only. Rotation rules first (a repeat never outranks an alternation, G-R9), then **discounted expected profit**: every cost is discounted from its due date and every harvest from its sale date by the farmer's “cash now ↔ later” factor δ, so sooner money counts more. Four sliders adjust the value in money: bad-year caution, the cost of tying up cash, a learning haircut on unfamiliar crops, and the fertilizer value of rotation benefits. Every plan card shows its expected profit (average, bad and good year). Deterministic tie-break; baseline always shown; 0–2 alternatives, never invented.
 
 ---
 
@@ -135,7 +138,7 @@ npm run build
 
 ## Verification
 
-`npm test` runs 135 tests across 8 files: the acceptance tests from the planning pack plus world-coverage, what-if, share-link, rotation-rule and security tests (FAOSTAT lookups, currency conversion, two-season scheduling, GIBS colormap decoding). The acceptance tests include:
+`npm test` runs 214 tests across 12 files: the acceptance tests from the planning pack plus world-coverage, what-if, share-link, rotation-rule, security and soil-N / multi-year tests (Python↔browser model parity, N balance, rule compliance of every simulated rotation) (FAOSTAT lookups, currency conversion, two-season scheduling, GIBS colormap decoding). The acceptance tests include:
 
 * 100 kg / 2 ha = 50 kg/ha; 46 % N label → 23 kg applied N/ha; unknown manure composition stays unknown; unknown treated area never becomes the whole field.
 * Budget boundary: funds 1,000 − reserve 100 → 900 passes, 900.01 fails; synthetic fixture baseline 1,120 excluded, A/B/C headroom 40/120/210; cash-timing violation detected; missing price → not verified.
@@ -154,11 +157,13 @@ src/
   domain/      types, units & fertilizer normalization, dates
   weather/     NASA POWER adapter & cache, indicators, FAO-56 ET₀, water balance, forecast/geocoder
   soil/        SoilGrids adapter, texture, Saxton–Rawls AWC
-  engine/      replay (sowing + climate risk), budget, plan (rules, ranking, reasons), past-season review
+  engine/      replay (sowing + climate risk), budget, plan (rules, ranking, reasons), past-season review,
+               agrioptima/ (soil-N state transition, multi-year optimizer, browser tree evaluator)
   data/        crop library, regional rule & price packs, fertilizer library, evidence register, bundled demo data
   state/       app context, local persistence (localStorage + IndexedDB), demo scenarios
   ui/          pages (Overview, Farm, Resources, Compare, Evidence, Report, Methods, Pitch) & components
 tests/         acceptance tests
+ml/            INRAE data pipeline + model training/export (Python)
 data/archive/  raw NASA POWER / SoilGrids responses used for regression
 docs/          pitch kit, review log
 ```
@@ -171,7 +176,7 @@ docs/          pitch kit, review log
 * No fertilizer dosing, no soil-nutrient inference from purchases, no causal diagnosis of past failures, no profit guarantees.
 * Input-cost templates are synthetic for every region; crop prices are national FAOSTAT averages, not farm-gate quotes.
 * GIBS-decoded values are quantized by the colormap and sit on 300 m–25 km pixels; land cover may misclassify small fields.
-* The team's `All_data_with_climate` trial dataset (cereal–legume field trials with NASA POWER weather) is not yet used. It is the obvious next step for validating yields.
+* The team's cereal–legume trial dataset (INRAE) now drives the soil-N / multi-year layer, which covers only its crops (wheat, barley, pea, faba bean, lentil, chickpea and mixtures). Elsewhere, e.g. the Sahel, it says so instead of guessing. Trial sites are temperate European, so other climates are flagged as extrapolation. Its pre-crop, carry-over and emission factors are literature priors, not local calibration.
 
 ## Privacy
 

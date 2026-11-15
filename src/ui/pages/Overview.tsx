@@ -124,7 +124,7 @@ export function Overview({ go }: { go: (r: Route) => void }) {
         <div className="cols">
           {([
             ['Farm & history', 'Pin the field, set the area, add the last crops and fertilizer. Unknowns stay unknown.', 'farm'],
-            ['Resources', 'Cash, reserve, inflows, labor, seed and market limits, one priority.', 'resources'],
+            ['Resources', 'Cash, reserve, inflows, seed and market limits, and how much each goal matters.', 'resources'],
             ['Compare plans', 'Your usual plan against up to two feasible alternatives, with reasons.', 'compare'],
             ['Evidence', 'NASA climate record, season so far, forecast and satellite layers.', 'evidence'],
           ] as const).map(([t, d, r], i) => (

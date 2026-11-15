@@ -66,7 +66,7 @@ for (const site of SITES) {
 }
 { // Karnal farms are almost all irrigated (rice–wheat system): the same farm with irrigation and family labor
   const k = scenarios.find((x) => x.name.includes('Karnal'))!;
-  let sc: FarmScenario = { ...k.sc, irrigation: 'yes', irrigationCapacityMm: 500, laborAvailable: 'high' };
+  let sc: FarmScenario = { ...k.sc, irrigation: 'yes', irrigationCapacityMm: 500 };
   sc = { ...sc, ...initialPlaceholder(sc, detectPack(sc.location.lat, sc.location.lon, sc.countryIso2)) };
   scenarios.push({ name: 'My farm · Karnal, irrigated', sc, s: k.s, soil: null });
 }

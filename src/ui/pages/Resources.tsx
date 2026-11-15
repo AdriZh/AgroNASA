@@ -3,19 +3,12 @@ import { CropIcon } from '../components/CropIcon';
 import type { Route } from '../../App';
 import { ArrowLeft, ArrowRight, Plus, RotateCcw, Tags, Target, Tractor, Trash2, Wallet } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
-import type { Priority } from '../../domain/types';
+import { PrioritySliders } from '../components/PrioritySliders';
 import { CROPS, cropName } from '../../data/crops';
 import { fmtMoney } from '../../domain/units';
 import { fmtDate } from '../../domain/dates';
 import { CardTitle, Disclaimer, Field, Money, NumInput, Seg, Stat, Tag, uid } from '../components/common';
 
-const PRIORITIES: { v: Priority; label: string; d: string }[] = [
-  { v: 'cost', label: 'Lower cost', d: 'Cheapest feasible plans first; keeps the most cash in hand.' },
-  { v: 'climate', label: 'Lower climate risk', d: 'Fewest severe-stress seasons in the 25-year NASA replay.' },
-  { v: 'continuity', label: 'Continuity', d: 'Stay close to crops you already grow and know.' },
-  { v: 'return', label: 'Higher return', d: 'Highest median modeled net (uses your prices; not a guarantee).' },
-  { v: 'soil', label: 'Soil benefit', d: 'Legumes, break crops and rest first: residual nitrogen and pest breaks (rule-pack benefits).' },
-];
 
 export function ResourcesPage({ go }: { go: (r: Route) => void }) {
   const { scenario: sc, update, engine } = useApp();
@@ -31,7 +24,6 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
     if (v === undefined) delete o[k]; else o[k] = v;
     return { ...s, priceOverrides: o };
   });
-  const prio = PRIORITIES.find((p) => p.v === sc.priority) ?? PRIORITIES[0];
   const sellable = crops.filter((c) => c !== 'fallow');
 
   return (
@@ -79,9 +71,6 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
               <Seg label="Irrigation" value={sc.irrigation} options={[{ v: 'no', label: 'No' }, { v: 'yes', label: 'Yes' }, { v: 'unknown', label: 'Unknown' }]} onChange={(v) => update((s) => ({ ...s, irrigation: v, irrigationCapacityMm: v === 'yes' && !s.irrigationCapacityMm ? 150 : s.irrigationCapacityMm }))} />
             </Field>
             {sc.irrigation === 'yes' && <Field label="Usable irrigation water per season (mm)" hint="1 mm on 1 ha = 10 m³. The FAO-56 model irrigates when soil water falls below the readily-available level, up to this cap."><NumInput value={sc.irrigationCapacityMm} min={0} onChange={(v) => update((s) => ({ ...s, irrigationCapacityMm: Math.max(0, v ?? 0) }))} /></Field>}
-            <Field label="Labor available at peak times">
-              <Seg label="Labor" value={sc.laborAvailable} options={[{ v: 'low', label: 'Low' }, { v: 'medium', label: 'Medium' }, { v: 'high', label: 'High' }]} onChange={(v) => update((s) => ({ ...s, laborAvailable: v }))} />
-            </Field>
             <div className="stack-sm" style={{ gap: 0 }}>
               <label className="check"><input type="checkbox" checked={sc.needsResidue} onChange={(e) => update((s) => ({ ...s, needsResidue: e.target.checked }))} /> I need crop residue for livestock</label>
               <label className="check"><input type="checkbox" checked={sc.allowFallow} onChange={(e) => update((s) => ({ ...s, allowFallow: e.target.checked }))} /> Consider a fallow or rest season</label>
@@ -102,9 +91,8 @@ export function ResourcesPage({ go }: { go: (r: Route) => void }) {
       </div>
 
       <section className="card section">
-        <div className="card-head"><div><CardTitle icon={<Target />}>What matters most this time?</CardTitle><p className="mini">One choice. It only orders the feasible options; it never overrides a rule or the budget.</p></div></div>
-        <Seg label="Priority" value={sc.priority} options={PRIORITIES.map(({ v, label }) => ({ v, label }))} onChange={(v) => update((s) => ({ ...s, priority: v }))} />
-        <p style={{ marginTop: 8 }}>{prio.d}</p>
+        <div className="card-head"><div><CardTitle icon={<Target />}>What matters to you this time?</CardTitle><p className="mini">Set how much each goal matters. The options are ranked by the weighted mix; it only orders feasible plans and never overrides a rule or the budget.</p></div></div>
+        <PrioritySliders />
         <div className="row group">
           <h4>Usual plan (baseline):</h4>
           {[0, 1].map((k) => (

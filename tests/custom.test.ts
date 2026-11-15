@@ -120,7 +120,7 @@ describe('near misses: smallest verified change', () => {
       expect(m.plan.feasible).toBe(false);
       expect(m.blocks.length).toBeGreaterThan(0);
       expect(m.blocks.some((b) => ['MONOCULTURE', 'RETURN_INTERVAL', 'DISEASE_GROUP'].includes(b.code))).toBe(false);
-      if (m.change == null) expect(m.blocks.some((b) => !['BUDGET_EXCEEDED', 'CASH_TIMING', 'SEED_UNAVAILABLE', 'MARKET_CONSTRAINT', 'LABOR_LIMIT'].includes(b.code))).toBe(true);
+      if (m.change == null) expect(m.blocks.some((b) => !['BUDGET_EXCEEDED', 'CASH_TIMING', 'SEED_UNAVAILABLE', 'MARKET_CONSTRAINT'].includes(b.code))).toBe(true);
     }
     const climate = out.excluded.find((x) => x.reasons.some((r) => r.code === 'CLIMATE_UNSUITABLE'));
     if (climate) expect(smallestChange(KZ, climate).change).toBeNull();

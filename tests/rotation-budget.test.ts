@@ -14,7 +14,7 @@ import kostanay from '../src/data/demo/kostanay.json';
 
 const S = (bambey as any).series;
 const soil = effectiveSoil('loam', null);
-const sc = (o: Partial<FarmScenario>): FarmScenario => ({ ...structuredClone(DEMO_SENEGAL), history: [], fertilizer: [], availableFunds: 1e9, reserve: 0, laborAvailable: 'high', allowFallow: false, irrigation: 'no', needsResidue: false, ...o });
+const sc = (o: Partial<FarmScenario>): FarmScenario => ({ ...structuredClone(DEMO_SENEGAL), history: [], fertilizer: [], availableFunds: 1e9, reserve: 0, allowFallow: false, irrigation: 'no', needsResidue: false, ...o });
 const codes = (out: EngineOutput, id: string) => out.allPlans.concat(out.baseline).find((p) => p.id === id)!.reasons.map((r) => `${r.code}:${r.severity}`);
 
 describe('rotation rule: no monoculture in the options', () => {
@@ -64,18 +64,23 @@ describe('demo farms keep their headline results', () => {
     const out = run(DEMO_SENEGAL, bambey);
     expect(out.baseline.id).toBe('groundnut→millet');
     expect(out.baseline.budget.headroom).toBe(-74500);
-    expect(out.alternatives.map((p) => p.id)).toEqual(['sesame→millet', 'sesame→sorghum']);
+    // ranked by discounted expected profit (demo: cash a year later worth 70 %, keep cash in hand high)
+    expect(out.alternatives.map((p) => p.id)).toEqual(['sesame→cowpea', 'sesame→millet']);
+    for (const p of out.alternatives) expect(p.finance.expectedProfit).toBeGreaterThan(0);
   });
   it('Kostanay: usual wheat → wheat is flagged as a monoculture; options are break-crop rotations', () => {
     const out = run(DEMO_KAZAKHSTAN, kostanay);
     expect(out.baseline.reasons.some((r) => r.code === 'MONOCULTURE' && r.refs.includes('G-R6'))).toBe(true);
     expect(out.baseline.budget.status).toBe('unaffordable');
     expect(out.alternatives).toHaveLength(2);
-    // Risk numbers changed with the soil-water fixes (off-season snow/autumn recharge, FAO-56 ch. 7 bare-soil
-    // evaporation, FAO-33 growth-period Ky): sunflower is now riskier and fallow → wheat — the classic
-    // steppe fallow rotation (KZ-R1, R28) — ranks second. Every option still breaks the wheat monoculture.
-    expect(out.alternatives.map((p) => p.id)).toEqual(['fallow→rapeseed', 'fallow→wheat']);
+    // Ranked by discounted expected profit with strong bad-year caution: chickpea → fallow earns the most even
+    // in a bad year at FAOSTAT chickpea prices. Every option still breaks the wheat monoculture.
+    expect(out.alternatives.map((p) => p.id)).toEqual(['chickpea→fallow', 'flax→lentil']);
     for (const p of out.alternatives) expect(p.crops.filter((c) => c === 'wheat').length).toBeLessThan(2);
+  });
+  it('Bambey: the sliders re-rank — valuing familiar crops puts the known millet first', () => {
+    expect(run({ ...DEMO_SENEGAL, weights: { ...DEMO_SENEGAL.weights, continuity: 1 } }, bambey).alternatives[0].id).toBe('sesame→millet');
+    expect(run({ ...DEMO_SENEGAL, weights: { ...DEMO_SENEGAL.weights, continuity: 0 } }, bambey).alternatives[0].id).toBe('sesame→cowpea');
   });
 });
 

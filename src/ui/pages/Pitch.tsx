@@ -15,7 +15,8 @@ import { BrandMark } from '../components/Logo';
 import { OrbitVisual } from '../components/OrbitVisual';
 import { Seg, ThemeToggle } from '../components/common';
 import { CAT_TOKEN, SeasonRainChart, useChartTheme } from '../components/charts';
-import { BEST_FIT, CASH_CAPTION, PlanCard, PRIORITY_LABEL, tradeOffText } from './Compare';
+import { BEST_FIT, CASH_CAPTION, PlanCard, tradeOffText } from './Compare';
+import { weightsSummary } from '../components/PrioritySliders';
 import { HindcastChart } from '../components/Hindcast';
 import { allHindcasts } from '../../data/hindcast/hindcast';
 import { TEAM } from '../../data/team';
@@ -334,7 +335,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
             ['Rotations screened', engine.allPlans.length + 1, 'every 2-season pair in the pack'],
             ['Pass rotation & constraint rules', engine.allPlans.filter((p) => p.eligible).length, 'return intervals, disease groups, seed, labor, climate'],
             ['Affordable at every due date', engine.allPlans.filter((p) => p.feasible).length, 'funds − reserve + confirmed inflows'],
-            ['Shown, ranked by your priority', engine.alternatives.length, `plus your usual plan, always shown`],
+            ['Shown, ranked by your priorities', engine.alternatives.length, `plus your usual plan, always shown`],
           ]} />}
         </div>
       </>
@@ -342,7 +343,7 @@ export function PitchPage({ go }: { go: (r: Route) => void }) {
     { id: 'result', kicker: `Live result · ${scenario.name}`, icon: <BadgeCheck size={14} />, body: (
       <>
         <motion.h2 {...up(0.1)}>{engine?.baseline.budget.status === 'affordable' ? 'The usual plan fits, and here is how the alternatives compare.' : 'The usual plan doesn’t fit the budget. Two that do:'}</motion.h2>
-        <motion.div {...fade(0.2)} className="plan-row slide-plans" style={{ flex: 1, alignContent: 'center' }}>{plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Your usual plan' : k === 1 ? BEST_FIT : p.label} sub={k === 1 ? `ranked by ${PRIORITY_LABEL[scenario.priority]}` : undefined} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} showNet />)}</motion.div>
+        <motion.div {...fade(0.2)} className="plan-row slide-plans" style={{ flex: 1, alignContent: 'center' }}>{plans.map((p, k) => <PlanCard key={p.id} p={p} cur={cur} label={p.isBaseline ? 'Your usual plan' : k === 1 ? BEST_FIT : p.label} sub={k === 1 ? `ranked by ${weightsSummary(scenario.weights)}` : undefined} tone={k === 1 ? 'brand' : undefined} best={k === 1} compact risk={stress?.get(p.id) ?? null} showNet />)}</motion.div>
         <motion.p {...fade(0.3)} className="muted" style={{ fontSize: 14, lineHeight: 1.4, margin: '8px 0' }}>{CASH_CAPTION}{engine && tradeOffText(engine.alternatives, cur) ? ` ${tradeOffText(engine.alternatives, cur)}` : ''}</motion.p>
         <motion.div {...up(0.4)} className="row" style={{ gap: 24, fontSize: 15 }}>
           <span className="row" style={{ gap: 6 }}><Check size={16} className="good-t" /> Change a price, the budget or seed availability and results update instantly</span>

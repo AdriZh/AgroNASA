@@ -1,22 +1,24 @@
-import { Fragment, useRef, useState, type ReactNode } from 'react';
+import { Fragment, lazy, Suspense, useRef, useState, type ReactNode } from 'react';
 import { CropIcon, CropPair } from '../components/CropIcon';
 import type { Route } from '../../App';
 import { ArrowDown, ArrowLeft, ArrowRight, Ban, CloudSunRain, Coins, Pencil } from 'lucide-react';
 import { useApp } from '../../state/AppContext';
-import type { EngineOutput, PlanResult } from '../../engine/plan';
+import { planValue, type EngineOutput, type PlanResult } from '../../engine/plan';
 import { CROPS, cropName } from '../../data/crops';
 import { fmtApprox, fmtMoney, fmtNum } from '../../domain/units';
 import { fmtDayMonth, fmtDate } from '../../domain/dates';
 import { CashTimeline, CostChart, RangeBar, ReplayChart } from '../components/charts';
-import { BudgetBar, CardTitle, Callout, Disclaimer, Money, NasaLoading, pct, ReasonList, Ref, Seg, StatRows, StatusBadge, Tag } from '../components/common';
+import { BudgetBar, CardTitle, Callout, Disclaimer, Loading, Money, NasaLoading, pct, ReasonList, Ref, Seg, StatRows, StatusBadge, Tag } from '../components/common';
 import { WhatIfPanel } from '../components/WhatIf';
 import { FieldWindowPanel } from '../components/FieldWindow';
 import { WeatherError } from '../components/NetStatus';
 import { RiskRow } from '../components/stress';
 import { CustomPlan, NearMisses } from '../components/CustomPlan';
+import { PrioritySliders, weightsSummary } from '../components/PrioritySliders';
+// Soil-N tab is code-split: it (and the INRAE model) load only when the tab is opened.
+const CompareSoilTab = lazy(() => import('../components/SoilN').then((m) => ({ default: m.CompareSoilTab })));
 import type { PlanStress } from '../../engine/whatif';
 
-export const PRIORITY_LABEL = { cost: 'lowest cost', climate: 'lowest climate exposure', continuity: 'continuity', return: 'modeled return', soil: 'soil benefit' };
 /** The top-ranked alternative is "Best fit" everywhere (landing, Compare, slides, what-if text). */
 export const BEST_FIT = 'Best fit';
 /** Caption that defends the cash-cost headline (Compare header, landing card, slide 5). */
@@ -67,6 +69,50 @@ export function harvestText(p: PlanResult) {
   return parts.join(' + ');
 }
 
+/**
+ * Expected profit, shown on every plan card: average-year profit (mean NASA-replay revenue − cash cost), the bad-to-good
+ * year range (20th–80th percentile of replayed season pairs) and the discounted value that the ranking uses.
+ */
+export function ProfitBlock({ p, cur, compact }: { p: PlanResult; cur: string; compact?: boolean }) {
+  const { scenario } = useApp();
+  const e = p.finance?.expectedProfit;
+  if (e == null) return <div className="plan-profit muted"><span className="caption">Expected profit</span><span className="mini">needs every price and cost — set them in Resources</span></div>;
+  const v = planValue(p, scenario.weights).value;
+  const net = p.outcome.net;
+  return (
+    <div className={`plan-profit ${e >= 0 ? 'pos' : 'neg'} ${compact ? 'compact' : ''}`}>
+      <span className="caption">Expected profit · average year</span>
+      <span className="profit-num">{e >= 0 ? '' : '−'}<Money v={Math.abs(e)} cur={cur} /></span>
+      {net && <span className="sub">bad year {fmtApprox(net.p20, cur)} · good year {fmtApprox(net.p80, cur)}</span>}
+      {!compact && Number.isFinite(v) && <span className="sub" title="Present value at your discount factor, after your adjustments for bad years, cash, unfamiliar crops and soil benefit. Plans are ranked by this.">Ranking value (discounted, your settings): <b>{fmtApprox(v, cur)}</b></span>}
+    </div>
+  );
+}
+
+/** How the ranking value is built: discounted cash flows, then each concern as a money adjustment. */
+function ValueBreakdown({ p, cur }: { p: PlanResult; cur: string }) {
+  const { scenario } = useApp();
+  const v = planValue(p, scenario.weights);
+  if (!Number.isFinite(v.value)) return null;
+  // signed, approximate: "≈ −47,900 XOF" / "≈ +9,830 XOF"
+  const adj = (x: number) => (Math.abs(x) < 0.5 ? '—' : fmtApprox(x, cur).replace(/^≈ (?!−)/, '≈ +'));
+  return (
+    <div>
+      <div className="spread" style={{ marginBottom: 8 }}><span className="caption">Ranking value, discounted</span><Tag t="modeled" /></div>
+      <StatRows rows={[
+        ['Harvest revenue, discounted to today', fmtApprox(v.revenuePV, cur)],
+        ['Cash costs, discounted to today', fmtApprox(-v.costPV, cur)],
+        ['Bad-year caution', adj(v.climateAdj)],
+        ['Cost of tying up cash', adj(v.liquidityAdj)],
+        ['Unfamiliar crops', adj(v.continuityAdj)],
+        ['Soil benefit (fertilizer N saved next season)', adj(v.soilAdj)],
+        [<b>Ranking value</b>, <b>{fmtApprox(v.value, cur)}</b>],
+      ]} />
+      <p className="mini" style={{ marginTop: 8 }}>Each cost is discounted from its due date and each harvest from its sale date at {Math.round(scenario.weights.delta * 100)}% per year: cash that comes sooner counts more. Set the sliders above.</p>
+    </div>
+  );
+}
+
 /** The plan card: one hero number (cash cost), budget bar, three stat rows, sowing lines. Used by Compare, Overview and Report. */
 export function PlanCard({ p, cur, label, sub, tone, best, onWhy, selected, compact, risk, showNet }: { p: PlanResult; cur: string; label: string; sub?: string; tone?: 'brand'; best?: boolean; onWhy?: () => void; selected?: boolean; compact?: boolean; risk?: PlanStress | null; showNet?: boolean }) {
   const severe = Math.round(p.outcome.pSevereAny * p.outcome.pairs);
@@ -82,13 +128,13 @@ export function PlanCard({ p, cur, label, sub, tone, best, onWhy, selected, comp
         <BudgetBar cost={p.budget.totalCash} cap={p.budget.cap + p.budget.inflowsTotal} status={p.budget.status} />
         <BudgetLine p={p} cur={cur} />
       </div>
+      <ProfitBlock p={p} cur={cur} compact={compact} />
       {compact && risk !== undefined && <RiskRow p={p} s={risk} net={showNet ? fmtApprox(p.outcome.net?.median, cur) : undefined} />}
       {!compact && <>
         <div className="group" style={{ marginTop: 0 }}>
           <StatRows rows={[
             ['Due before first sowing', fmtMoney(p.budget.upfront, cur)],
             ['Harvest, typical year', harvestText(p)],
-            ['Net, typical year', fmtApprox(p.outcome.net?.median, cur)],
             ['Severe stress', `${severe} of ${p.outcome.pairs} season pairs`],
           ]} />
         </div>
@@ -120,10 +166,10 @@ export function disclaimerText(engine: EngineOutput, edited: boolean) {
   return `Demo results: ${list}. Climate risk is a replay of past seasons, not a forecast.`;
 }
 
-type DetailTab = 'reasons' | 'cash' | 'replay' | 'lines';
+type DetailTab = 'reasons' | 'cash' | 'replay' | 'lines' | 'soil';
 
 export function ComparePage({ go }: { go: (r: Route) => void }) {
-  const { engine, engineError, scenario: sc, data, update } = useApp();
+  const { engine, engineError, scenario: sc, data } = useApp();
   const [sel, setSel] = useState<string | null>(null);
   const [tab, setTab] = useState<DetailTab>('reasons');
   const [openLine, setOpenLine] = useState<number | null>(null);
@@ -135,7 +181,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
       <div>
         <span className="caption">Step 3 of 4</span>
         <h1>Compare two-season plans</h1>
-        {engine && <p>{engine.areaHa.toFixed(2)} ha · {engine.baseline.seasons[0].year === engine.baseline.seasons[1].year ? `${engine.baseline.seasons[0].year} ${engine.windows.map((w) => w.label).join(' + ')}` : `${engine.baseline.seasons[0].year}–${engine.baseline.seasons[1].year}`} · {fmtMoney(engine.baseline.budget.cap, sc.currency)} spendable{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, sc.currency)} confirmed inflows` : ''} · ranked by{' '}<select className="goal-select" aria-label="Ranking goal" value={sc.priority} onChange={(e) => update((s) => ({ ...s, priority: e.target.value as typeof sc.priority }))}>{(Object.keys(PRIORITY_LABEL) as (keyof typeof PRIORITY_LABEL)[]).map((k) => <option key={k} value={k}>{PRIORITY_LABEL[k]}</option>)}</select>{engine.notes.some((n) => n.code === 'BUDGET_PLACEHOLDER') && <>{' '}<button type="button" className="badge warn budget-chip" onClick={() => go('resources')} title="This budget is a placeholder, not your money. Enter the cash you really have in Resources."><Pencil />Placeholder budget · set yours</button></>}</p>}
+        {engine && <p>{engine.areaHa.toFixed(2)} ha · {engine.baseline.seasons[0].year === engine.baseline.seasons[1].year ? `${engine.baseline.seasons[0].year} ${engine.windows.map((w) => w.label).join(' + ')}` : `${engine.baseline.seasons[0].year}–${engine.baseline.seasons[1].year}`} · {fmtMoney(engine.baseline.budget.cap, sc.currency)} spendable{engine.baseline.budget.inflowsTotal ? ` + ${fmtMoney(engine.baseline.budget.inflowsTotal, sc.currency)} confirmed inflows` : ''} · ranked by {weightsSummary(sc.weights)}{engine.notes.some((n) => n.code === 'BUDGET_PLACEHOLDER') && <>{' '}<button type="button" className="badge warn budget-chip" onClick={() => go('resources')} title="This budget is a placeholder, not your money. Enter the cash you really have in Resources."><Pencil />Placeholder budget · set yours</button></>}</p>}
         {engine && <p className="mini">{CASH_CAPTION}</p>}
       </div>
       <div className="page-actions"><button className="btn" onClick={() => go('resources')}><ArrowLeft /> Edit resources</button><button className="btn primary" onClick={() => go('evidence')}>Review evidence <ArrowRight /></button></div>
@@ -174,6 +220,11 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
     <div>
       {head}
       <Disclaimer details={notesDetails}>{disclaimerText(engine, edited)}</Disclaimer>
+
+      <section className="card section" aria-label="What matters to you">
+        <div className="card-head"><span className="caption">What matters to you — drag to re-rank the options</span></div>
+        <PrioritySliders compact />
+      </section>
 
       {engine.alternatives.length === 0 && (
         <div style={{ marginTop: 16 }}>
@@ -231,7 +282,7 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
             {[engine.baseline, ...engine.alternatives, ...engine.allPlans.filter((p) => !p.isBaseline && !engine.alternatives.some((a) => a.id === p.id))].map((p) => <option key={p.id} value={p.id}>{p.isBaseline ? 'Usual: ' : p.label ? `${p.label}: ` : p.feasible ? '' : '✕ '}{cropName(p.crops[0])} → {cropName(p.crops[1])}</option>)}
           </select>
         </div>
-        <Seg label="Detail" role="tablist" value={tab} onChange={setTab} options={[{ v: 'reasons', label: 'Reasons' }, { v: 'cash', label: 'Cash' }, { v: 'replay', label: 'Climate replay' }, { v: 'lines', label: 'Cost lines' }]} />
+        <Seg label="Detail" role="tablist" value={tab} onChange={setTab} options={[{ v: 'reasons', label: 'Reasons' }, { v: 'cash', label: 'Cash' }, { v: 'replay', label: 'Climate replay' }, { v: 'lines', label: 'Cost lines' }, { v: 'soil', label: 'Soil & nitrogen' }]} />
         <div style={{ marginTop: 24 }}>
           {tab === 'reasons' && (
             <div className="grid g2" style={{ gap: 32 }}>
@@ -240,9 +291,11 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
                   ['Season 1 cash cost', fmtMoney(chosen.budget.bySeason[0], cur)],
                   ['Season 2 cash cost', fmtMoney(chosen.budget.bySeason[1], cur)],
                   ['Due before first sowing', fmtMoney(chosen.budget.upfront, cur)],
+                  chosen.finance?.expectedProfit != null && ['Expected profit, average year', fmtApprox(chosen.finance.expectedProfit, cur)],
                   chosen.outcome.net && ['Modeled net, typical year', fmtApprox(chosen.outcome.net.median, cur)],
                   chosen.outcome.net && ['Modeled net, bad year', fmtApprox(chosen.outcome.net.p20, cur)],
                 ]} />
+                <ValueBreakdown p={chosen} cur={cur} />
                 <div>
                   <div className="spread" style={{ marginBottom: 8 }}><span className="caption">Harvest, whole field</span><Tag t="modeled" /></div>
                   <StatRows rows={chosen.seasons.map((s, k) => {
@@ -264,6 +317,15 @@ export function ComparePage({ go }: { go: (r: Route) => void }) {
               <p className="chart-cap" style={{ marginTop: 0 }}>Cumulative cash out against cash available, {cur}. Harvest income and credit are not assumed.</p>
               {chosen.budget.timingViolation && <Callout tone="bad">By {fmtDate(chosen.budget.timingViolation.date)} you would need {fmtMoney(chosen.budget.timingViolation.needed, cur)} but only {fmtMoney(chosen.budget.timingViolation.available, cur)} is available.</Callout>}
             </div>
+          )}
+          {tab === 'soil' && (
+            <Suspense fallback={<Loading text="Loading the soil-N model…" />}>
+              <CompareSoilTab
+                plan={{ crops: chosen.crops, label: chosen.isBaseline ? 'Your usual plan' : chosen.label || 'Selected plan' }}
+                others={plans.map((p, i) => ({ crops: p.crops, label: labelOf(p, i) }))}
+                onMultiYear={() => go('rotation')}
+              />
+            </Suspense>
           )}
           {tab === 'replay' && (
             <div>

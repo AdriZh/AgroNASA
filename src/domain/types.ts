@@ -10,8 +10,14 @@ export type SourceTag =
   | 'synthetic';  // illustrative demo value — not a real quote
 
 export type AreaUnit = 'ha' | 'acre' | 'm2';
-export type Priority = 'cost' | 'climate' | 'continuity' | 'return' | 'soil';
-export type LaborLevel = 'low' | 'medium' | 'high';
+/**
+ * Ranking = present value of each plan's expected cash flows (profit is always the objective), discounted by
+ * `delta` per year from the date each cost is paid or each harvest is sold. The four other sliders (0–1) turn the
+ * farmer's concerns into money adjustments of that value: bad-year caution (climate), the cost of tying up cash
+ * (cost), a learning haircut on unfamiliar crops (continuity) and the fertilizer value of rotation benefits (soil).
+ */
+export type Priority = 'cost' | 'climate' | 'continuity' | 'soil';
+export type PriorityWeights = Record<Priority, number> & { delta: number };
 export type Tri = 'yes' | 'no' | 'unknown';
 export type SoilTexture = 'sand' | 'loamy-sand' | 'sandy-loam' | 'loam' | 'silt-loam' | 'clay-loam' | 'clay' | 'unknown';
 
@@ -80,12 +86,11 @@ export interface FarmScenario {
   firstSeasonYear: number;    // year of the first planned season
   irrigation: Tri;
   irrigationCapacityMm: number; // usable seasonal irrigation water (mm) if irrigation = yes
-  laborAvailable: LaborLevel;
   unavailableCrops: string[]; // seed not obtainable
   marketCrops: string[];      // crops the farmer can sell/use (empty = no restriction)
   needsResidue: boolean;      // livestock residue needs
   allowFallow: boolean;       // consider a fallow / rest season as an option
-  priority: Priority;
+  weights: PriorityWeights;   // importance of each ranking criterion, 0–1 (sliders)
   baselineOverride?: [string, string] | null;
   history: CropSeason[];
   fertilizer: FertilizerApplication[];
@@ -126,7 +131,6 @@ export interface CropDef {
   phRange: [number, number];
   minReturnSeasons: number;   // seasons that must pass before the same crop again
   diseaseGroups: string[];    // shared pathogen groups (e.g. sclerotinia)
-  labor: LaborLevel;
   residueForLivestock: boolean;
   irrigationRequired: boolean;
   sources: string[];          // evidence ids
@@ -243,7 +247,7 @@ export type ReasonCode =
   | 'BUDGET_EXCEEDED' | 'BUDGET_OK' | 'PRICE_MISSING' | 'CASH_TIMING'
   | 'PRIOR_CROP_RULE' | 'RETURN_INTERVAL' | 'DISEASE_GROUP' | 'LEGUME_BENEFIT' | 'FALLOW_BENEFIT'
   | 'MONOCULTURE' | 'SAME_FAMILY' | 'BREAK_CROP' | 'ALTERNATION' | 'BUDGET_PLACEHOLDER' | 'PRICE_IMPLAUSIBLE'
-  | 'IRRIGATION_REQUIRED' | 'SEED_UNAVAILABLE' | 'MARKET_CONSTRAINT' | 'LABOR_LIMIT' | 'RESIDUE_NEED'
+  | 'IRRIGATION_REQUIRED' | 'SEED_UNAVAILABLE' | 'MARKET_CONSTRAINT' | 'RESIDUE_NEED'
   | 'CLIMATE_UNSUITABLE' | 'CLIMATE_RISK_HIGH' | 'HEAT_EXPOSURE' | 'FROST_RISK' | 'SOIL_PH'
   | 'SEASON_OVERLAP' | 'HISTORY_INCOMPLETE' | 'CLIMATE_CONTEXT_ONLY' | 'UNREVIEWED_RULES' | 'SYNTHETIC_PRICES'
   | 'OUT_OF_CALENDAR';

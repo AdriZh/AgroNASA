@@ -8,8 +8,10 @@ export const DEMO_SENEGAL: FarmScenario = {
   location: { lat: 14.71, lon: -16.46, label: 'Bambey, Diourbel, Senegal' }, countryIso2: 'SN',
   area: 1.5, areaUnit: 'ha', currency: 'XOF',
   availableFunds: 420000, reserve: 40000, confirmedInflows: [], firstSeasonYear: 2027,
-  irrigation: 'no', irrigationCapacityMm: 0, laborAvailable: 'high',
-  unavailableCrops: [], marketCrops: [], needsResidue: true, allowFallow: false, priority: 'cost', baselineOverride: null,
+  irrigation: 'no', irrigationCapacityMm: 0,
+  unavailableCrops: [], marketCrops: [], needsResidue: true, allowFallow: false, baselineOverride: null,
+  // cash-constrained smallholder: strong preference for cash now, keeps cash in hand
+  weights: { delta: 0.7, cost: 1, climate: 0.2, continuity: 0.2, soil: 0.2 },
   history: [
     { id: 'h1', cropId: 'millet', year: 2024, plantedOn: '2024-07-08', harvestedOn: '2024-10-05', approximateDate: true, outcome: 'good', residueUse: 'grazed' },
     { id: 'h2', cropId: 'groundnut', year: 2025, plantedOn: '2025-07-03', harvestedOn: '2025-10-01', approximateDate: true, outcome: 'average', residueUse: 'removed' },
@@ -32,8 +34,10 @@ export const DEMO_KAZAKHSTAN: FarmScenario = {
   availableFunds: 33000000, reserve: 3000000,
   confirmedInflows: [{ id: 'in1', date: '2027-06-15', amount: 4000000, label: 'Confirmed state input subsidy' }],
   firstSeasonYear: 2027,
-  irrigation: 'no', irrigationCapacityMm: 0, laborAvailable: 'medium',
-  unavailableCrops: [], marketCrops: [], needsResidue: false, allowFallow: true, priority: 'climate', baselineOverride: null,
+  irrigation: 'no', irrigationCapacityMm: 0,
+  unavailableCrops: [], marketCrops: [], needsResidue: false, allowFallow: true, baselineOverride: null,
+  // drought-prone steppe: strong caution about bad years
+  weights: { delta: 0.85, cost: 0.2, climate: 1, continuity: 0.2, soil: 0.2 },
   history: [
     { id: 'k1', cropId: 'wheat', year: 2024, plantedOn: '2024-05-18', harvestedOn: '2024-09-05', approximateDate: false, outcome: 'good', residueUse: 'left' },
     { id: 'k2', cropId: 'wheat', year: 2025, plantedOn: '2025-05-20', harvestedOn: '2025-09-08', approximateDate: false, outcome: 'average', residueUse: 'left' },

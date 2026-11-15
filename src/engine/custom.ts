@@ -1,7 +1,7 @@
 // "Try my own plan" and "Near misses": the farmer's own rotation, and the rotations that just missed, evaluated
 // through the very same buildPlan() as the ranked plans (costing, rule checks, NASA replay, budget verdict).
 // Nothing here re-implements a check; suggested changes are only shown after the engine re-runs with them applied.
-import type { DailySeries, FarmScenario, LaborLevel, Reason, RegionPack, SoilProfile } from '../domain/types';
+import type { DailySeries, FarmScenario, Reason, RegionPack, SoilProfile } from '../domain/types';
 import type { BudgetResult } from './budget';
 import { buildPlan, engineContext, rankComparator, type EngineContext, type EngineOutput, type PlanResult } from './plan';
 import { perturbSeries, type PlanStress, type WhatIf } from './whatif';
@@ -71,7 +71,7 @@ export function budgetShortfall(b: BudgetResult): number | null {
   return Math.ceil(Math.round(gap * 100) / 100);
 }
 
-export type FixKind = 'budget' | 'seed' | 'market' | 'labor';
+export type FixKind = 'budget' | 'seed' | 'market';
 export interface NearMiss {
   plan: PlanResult;
   blocks: Reason[];            // the blocking reasons as the engine states them
@@ -80,8 +80,7 @@ export interface NearMiss {
   shortfall: number | null;    // extra budget needed (only when budget is among the blocks)
 }
 
-const LABOR: LaborLevel[] = ['low', 'medium', 'high'];
-const FIXABLE = new Set(['BUDGET_EXCEEDED', 'CASH_TIMING', 'SEED_UNAVAILABLE', 'MARKET_CONSTRAINT', 'LABOR_LIMIT']);
+const FIXABLE = new Set(['BUDGET_EXCEEDED', 'CASH_TIMING', 'SEED_UNAVAILABLE', 'MARKET_CONSTRAINT']);
 // rotation rules the farmer cannot change; such plans are not "near"
 const RULE_BLOCKS = new Set(['MONOCULTURE', 'RETURN_INTERVAL', 'DISEASE_GROUP']);
 const fmtCur = (x: number, cur: string) => `${Math.round(x).toLocaleString('en-US')} ${cur}`;
@@ -110,11 +109,6 @@ export function smallestChange(inputs: EngineInputs, p: PlanResult): Pick<NearMi
     patch.marketCrops = [...sc.marketCrops, ...crops];
     fixes.push({ kind: 'market', text: `add ${crops.map(cropName).join(' and ')} to the crops you can sell in Resources` });
   }
-  if (codes.has('LABOR_LIMIT')) {
-    const need = planned.reduce((m, c) => Math.max(m, LABOR.indexOf(CROPS[c].labor)), 0);
-    patch.laborAvailable = LABOR[need];
-    fixes.push({ kind: 'labor', text: `needs ${LABOR[need]} labor: set it in Resources` });
-  }
   // budget last: the other fixes do not change costs, but verify the cash gap on the patched scenario
   let q = Object.keys(patch).length ? evaluateWith(inputs, p.crops, patch) : p;
   if (q.budget.status === 'unaffordable' || q.budget.status === 'timing') {
@@ -136,11 +130,10 @@ export function smallestChange(inputs: EngineInputs, p: PlanResult): Pick<NearMi
  */
 export function nearMisses(inputs: EngineInputs, out: EngineOutput, n = 3): NearMiss[] {
   const offered = new Set(out.alternatives.map((p) => [...p.crops].sort().join('+')));
-  const cmp = rankComparator(inputs.sc.priority);
-  const pool = out.excluded
+  const candidates = out.excluded
     .filter((p) => !p.isBaseline)
-    .filter((p) => !p.reasons.some((r) => r.severity === 'block' && RULE_BLOCKS.has(r.code)))
-    .sort(cmp);
+    .filter((p) => !p.reasons.some((r) => r.severity === 'block' && RULE_BLOCKS.has(r.code)));
+  const pool = [...candidates].sort(rankComparator(inputs.sc.weights));
   const fixable: NearMiss[] = [], reasonOnly: NearMiss[] = [];
   const seen = new Set(offered);
   for (const p of pool) {

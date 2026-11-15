@@ -4,8 +4,7 @@ import { DEMOS, DEMO_SENEGAL, bundledFor, loadBundled, startBundledPreload } fro
 import { detectPack, packById } from '../data/regionPacks';
 import { fetchPower, powerGridCell } from '../weather/power';
 import { effectiveSoil, fetchSoil } from '../soil/soil';
-import { baselineCrops, initialPlaceholder, refreshPlaceholder, runEngine, type EngineOutput } from '../engine/plan';
-import { cropFor } from '../data/crops';
+import { DEFAULT_WEIGHTS, initialPlaceholder, refreshPlaceholder, runEngine, type EngineOutput } from '../engine/plan';
 import { reviewSeason, type SeasonReview } from '../engine/review';
 import { fetchForecast, reverseCountry, type Forecast } from '../weather/forecast';
 import { countryInfo, faostatReady, fxFactor, loadFaostat } from '../data/countries';
@@ -79,14 +78,10 @@ export function blankScenario(at?: { lat: number; lon: number; label?: string; i
     location: at ? { lat: at.lat, lon: at.lon, label: at.label } : structuredClone(DEMO_SENEGAL.location),
     countryIso2: at ? at.iso2 : 'SN', currency: c?.currency ?? (at ? 'USD' : 'XOF'), area: 1, areaUnit: 'ha',
     history: [], fertilizer: [], confirmedInflows: [], priceOverrides: {}, unavailableCrops: [], marketCrops: [],
-    availableFunds: 0, reserve: 0, baselineOverride: null, soil: { texture: 'unknown' }, laborAvailable: 'medium', allowFallow: false,
+    availableFunds: 0, reserve: 0, baselineOverride: null, soil: { texture: 'unknown' }, weights: { ...DEFAULT_WEIGHTS }, allowFallow: false,
     needsResidue: false, // unknown for a new farm: no livestock constraint until the farmer says so
   };
   const pack = detectPack(base.location.lat, base.location.lon, base.countryIso2);
-  // The farmer already manages the labor of their usual plan, so the default must not block it (at least 'medium').
-  const LABOR = ['low', 'medium', 'high'] as const;
-  const need = Math.max(1, ...baselineCrops(base, pack).map((c) => LABOR.indexOf(cropFor(pack, c).labor)));
-  base.laborAvailable = LABOR[need];
   return { ...base, ...initialPlaceholder(base, pack) };
 }
 

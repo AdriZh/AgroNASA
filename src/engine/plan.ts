@@ -1,6 +1,6 @@
 // Orchestrator: normalize → indicators → candidates → rules → costs → feasibility → rank → explain.
 // Pure and deterministic: identical inputs always give identical results (no LLM in this path).
-import type { BudgetPlaceholder, CostItemDef, DailySeries, FarmScenario, Reason, RegionPack, SoilProfile } from '../domain/types';
+import type { BudgetPlaceholder, CostItemDef, DailySeries, FarmScenario, Priority, PriorityWeights, Reason, RegionPack, SoilProfile } from '../domain/types';
 import { CROPS, cropFor, cropName } from '../data/crops';
 import { IRRIGATION_USD_PER_MM_HA } from '../data/regionPacks';
 import { countryInfo, cropPriceUsd, fxFactor, fxPerUsd, PRICE_PLAUSIBLE_FACTOR } from '../data/countries';
@@ -30,7 +30,17 @@ export interface PlanResult {
   budget: BudgetResult;
   outcome: PlanOutcome;
   newCrops: number;            // crops not present in farmer history (continuity)
+  finance: PlanFinance;
   rank?: number;
+}
+
+/** Cash-flow facts for the discounted-value ranking (whole field, scenario currency). */
+export interface PlanFinance {
+  seasons: { cropId: string; saleDate: string; revenueMean: number | null; revenueBad: number | null; isNew: boolean }[];
+  /** Fertilizer value of one rotation benefit for the crop after the plan (N credit × N price × area). */
+  nCreditValue: number;
+  /** Average-year profit over both seasons: mean replayed revenue − cash cost (null when a price is missing). */
+  expectedProfit: number | null;
 }
 
 export interface PriceInfo {
@@ -51,8 +61,7 @@ export interface EngineOutput {
   notes: Reason[];
 }
 
-const LABOR_RANK = { low: 0, medium: 1, high: 2 } as const;
-const HARD_DISEASE = new Set(['sclerotinia', 'fusarium-flax', 'groundnut-pests', 'solanaceae', 'pulse-root-rot', 'bean-root-rot', 'fusarium-pulse', 'cotton-wilt']);
+export const HARD_DISEASE = new Set(['sclerotinia', 'fusarium-flax', 'groundnut-pests', 'solanaceae', 'pulse-root-rot', 'bean-root-rot', 'fusarium-pulse', 'cotton-wilt']);
 
 /** Season window for a crop in a slot: fixed per slot in double-season packs, the crop's own season otherwise. */
 export function windowFor(pack: RegionPack, windows: SowingWindow[], slot: 0 | 1, cropId: string): SowingWindow {
@@ -61,7 +70,7 @@ export function windowFor(pack: RegionPack, windows: SowingWindow[], slot: 0 | 1
 }
 export const riskKey = (pack: RegionPack, w: SowingWindow, cropId: string) => (pack.mode === 'double' ? `${w.id}:${cropId}` : cropId);
 
-function historyOrder(sc: FarmScenario, pack: RegionPack) {
+export function historyOrder(sc: FarmScenario, pack: RegionPack) {
   const idx = (h: FarmScenario['history'][number]) => {
     const i = pack.seasons.findIndex((s) => s.id === h.seasonId);
     if (i >= 0) return i;
@@ -157,7 +166,6 @@ function ruleCheck(seq: string[], plannedFrom: number, sc: FarmScenario, pack: R
     if (c.id !== 'fallow') {
       if (sc.unavailableCrops.includes(c.id)) R.push({ code: 'SEED_UNAVAILABLE', severity: 'block', text: `${tag}: seed reported unavailable.`, refs: ['input:unavailableCrops'] });
       if (sc.marketCrops.length && !sc.marketCrops.includes(c.id)) R.push({ code: 'MARKET_CONSTRAINT', severity: 'block', text: `${tag}: not in the crops you can sell or use.`, refs: ['input:marketCrops'] });
-      if (LABOR_RANK[c.labor] > LABOR_RANK[sc.laborAvailable]) R.push({ code: 'LABOR_LIMIT', severity: 'block', text: `${tag}: needs ${c.labor} labor; ${sc.laborAvailable} available.`, refs: ['input:laborAvailable'] });
       if (c.irrigationRequired && sc.irrigation !== 'yes') R.push({ code: 'IRRIGATION_REQUIRED', severity: 'block', text: `${tag}: requires irrigation, which is not available.`, refs: ['input:irrigation'] });
       // climate screening from the NASA replay
       const r = plannedRisks[k - plannedFrom];
@@ -218,8 +226,32 @@ function outcomeFor(crops: [string, string], seasonRisks: [CropRisk | null, Crop
   return { pairs: rels.length, medianRel: median(rels), pSevereAny: severe.length ? severe.filter(Boolean).length / severe.length : NaN, revenue, net, yields: [yStats(r1, y1Att, isF1), yStats(r2, y2Att, isF2)] };
 }
 
+/** kg N/ha a grain legume, break crop or rest season saves the following cereal (Preissel et al. 2015, R44). */
+export const N_CREDIT_KG_HA = 40;
+/** Fertilizer N price used to value that credit (USD per kg N; urea ≈ 0.6 USD/kg at 46 % N). */
+export const N_PRICE_USD_KG = 1.3;
+
+function financeFor(seasons: [PlanSeason, PlanSeason], history: string[], pack: RegionPack, sc: FarmScenario, areaHa: number, budget: BudgetResult, prices: Record<string, PriceInfo>, toLocalPerUsd: number): PlanFinance {
+  const rows = seasons.map((ps) => {
+    const c = ps.cropId;
+    if (c === 'fallow') return { cropId: c, saleDate: ps.maturity, revenueMean: 0, revenueBad: 0, isNew: false };
+    const price = prices[c]?.perT ?? null;
+    const att = sc.priceOverrides[`${c}:yield`] ?? pack.economics[c]?.attainableYieldTHa ?? null;
+    const rel = ps.risk?.years.map((y) => y.relYield) ?? [];
+    if (price == null || att == null || !rel.length) return { cropId: c, saleDate: ps.maturity, revenueMean: null, revenueBad: null, isNew: !history.includes(c) };
+    const mean = rel.reduce((a, b) => a + b, 0) / rel.length;
+    return { cropId: c, saleDate: ps.maturity, revenueMean: mean * att * areaHa * price, revenueBad: quantile(rel, 0.2) * att * areaHa * price, isNew: !history.includes(c) };
+  });
+  const known = rows.every((r) => r.revenueMean != null) && budget.status !== 'unverified';
+  return {
+    seasons: rows,
+    nCreditValue: N_CREDIT_KG_HA * N_PRICE_USD_KG * toLocalPerUsd * areaHa,
+    expectedProfit: known ? rows.reduce((a, r) => a + r.revenueMean!, 0) - budget.totalCash : null,
+  };
+}
+
 /** Pack input costs (pack currency) → the scenario currency at the FAOSTAT exchange rate. */
-function costConverter(pack: RegionPack, sc: FarmScenario) {
+export function costConverter(pack: RegionPack, sc: FarmScenario) {
   const factor = fxFactor(pack.currency, sc.currency);
   return (it: CostItemDef): CostItemDef => (factor === 1 || it.unitPrice == null ? it : { ...it, unitPrice: Math.round(it.unitPrice * factor * 100) / 100 });
 }
@@ -450,9 +482,10 @@ export function buildPlan(ctx: EngineContext, crops: [string, string], isBaselin
   const newCrops = crops.filter((c) => c !== 'fallow' && !history.includes(c)).length;
   const prices: Record<string, PriceInfo> = {};
   for (const c of crops) { const p = priceOf(ctx, c); if (p) prices[c] = p; }
+  const finance = financeFor(seasons, history, pack, sc, areaHa, budget, prices, ctx.toLocalPerUsd ?? 1);
   return {
     id: crops.join('→'), label: isBaseline ? 'Your usual plan' : '', isBaseline, crops, seasons, reasons, eligible, feasible, budget,
-    outcome: outcomeFor(crops, [seasons[0].risk, seasons[1].risk], y2 - y1, record, pack, sc, areaHa, budget, prices), newCrops,
+    outcome: outcomeFor(crops, [seasons[0].risk, seasons[1].risk], y2 - y1, record, pack, sc, areaHa, budget, prices), newCrops, finance,
   };
 }
 
@@ -493,8 +526,7 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
     all.push(buildPlan(ctx, [a, b], false));
   }
   const feasible = all.filter((p) => p.feasible);
-  const cmp = rankComparator(sc.priority);
-  feasible.sort(cmp);
+  feasible.sort(rankComparator(sc.weights));
   // second option must differ in crop set from the first (no mirror-image duplicates)
   const picked: PlanResult[] = [];
   for (const p of feasible) {
@@ -508,7 +540,6 @@ export function runEngine(sc: FarmScenario, s: DailySeries, soil: SoilProfile, p
   return { pack, window: windows[0], windows, areaHa, risks, risksAfterFallow, prices, fx, baseline, alternatives, allPlans: all, excluded, notes };
 }
 
-const n0 = (x: number) => (Number.isFinite(x) ? x : 0);
 
 /**
  * Rotation quality used in ranking (lower = better): +2 per accepted-but-continuous crop (MONOCULTURE warn, G-R6),
@@ -530,30 +561,81 @@ export function isRepeat(p: PlanResult): boolean {
   return p.reasons.some((r) => r.code === 'MONOCULTURE' || r.code === 'SAME_FAMILY');
 }
 
-export function rankComparator(priority: FarmScenario['priority']) {
-  const byCost = (a: PlanResult, b: PlanResult) => a.budget.totalCash - b.budget.totalCash;
-  // climate score: share of replayed season pairs with severe water stress + 0.05 per climate warning
-  const CLIM = new Set(['CLIMATE_RISK_HIGH', 'HEAT_EXPOSURE', 'FROST_RISK']);
-  const climScore = (p: PlanResult) => n0(p.outcome.pSevereAny) + 0.05 * p.reasons.filter((r) => CLIM.has(r.code)).length;
-  const byClimate = (a: PlanResult, b: PlanResult) => climScore(a) - climScore(b) || n0(b.outcome.medianRel) - n0(a.outcome.medianRel);
-  const byReturn = (a: PlanResult, b: PlanResult) => (b.outcome.net?.median ?? -Infinity) - (a.outcome.net?.median ?? -Infinity);
-  const byGood = (a: PlanResult, b: PlanResult) => b.reasons.filter((r) => r.severity === 'good').length - a.reasons.filter((r) => r.severity === 'good').length;
-  const byWarn = (a: PlanResult, b: PlanResult) => a.reasons.filter((r) => r.severity === 'warn').length - b.reasons.filter((r) => r.severity === 'warn').length;
-  const tie = (a: PlanResult, b: PlanResult) => a.id.localeCompare(b.id);
-  // A repeat (same crop / same family) never outranks a feasible alternation; then lower rotation penalty first.
+export const PRIORITY_KEYS: Priority[] = ['cost', 'climate', 'continuity', 'soil'];
+export const DELTA_RANGE: [number, number] = [0.5, 0.99];
+/** Balanced default for a new farm: 15 % a year time preference, moderate caution on every concern. */
+export const DEFAULT_WEIGHTS: PriorityWeights = { delta: 0.85, cost: 0.3, climate: 0.5, continuity: 0.3, soil: 0.5 };
+/** A scenario saved with the old single "priority": that concern at 100 %, the others at 20 % ("return" = profit only). */
+export function weightsFromPriority(p: string): PriorityWeights {
+  const base: PriorityWeights = { delta: DEFAULT_WEIGHTS.delta, cost: 0.2, climate: 0.2, continuity: 0.2, soil: 0.2 };
+  return (PRIORITY_KEYS as string[]).includes(p) ? { ...base, [p]: 1 } : base;
+}
+
+/** Strongest adjustments at a slider's maximum. */
+export const LIQUIDITY_PREMIUM = 0.2;   // cash you put up is worth up to 20 % more to you than its face value
+export const NEW_CROP_HAIRCUT = 0.25;   // up to 25 % less revenue from a crop you have never grown (learning, market)
+
+export interface PlanValue {
+  /** Present value of the plan in the scenario currency: the ranking utility. −∞ when a price or cost is missing. */
+  value: number;
+  revenuePV: number; costPV: number;
+  climateAdj: number; liquidityAdj: number; continuityAdj: number; soilAdj: number;
+}
+
+const YEAR_DAYS = 365.25;
+
+/**
+ * Discounted cash-flow value of a plan. Every cash cost is discounted from its due date and every harvest from its
+ * sale (maturity) date, by `delta` per year from 1 January of the first planned year, so money that comes sooner
+ * is discounted less. Concerns are money adjustments, each scaled by its slider (0–1):
+ *   climate     revenue blends from the average year toward the bad year (20th percentile of the NASA replay)
+ *   cost        cash costs carry a liquidity premium of up to LIQUIDITY_PREMIUM
+ *   continuity  revenue from a crop not in your history is cut by up to NEW_CROP_HAIRCUT
+ *   soil        each rotation benefit is worth the fertilizer N it saves the next crop, discounted to after the plan
+ */
+export function planValue(p: PlanResult, w: PriorityWeights): PlanValue {
+  const delta = Math.min(DELTA_RANGE[1], Math.max(DELTA_RANGE[0], w.delta ?? DEFAULT_WEIGHTS.delta));
+  const origin = `${p.seasons[0].year}-01-01`;
+  const disc = (date: string) => delta ** (diffDays(origin, date) / YEAR_DAYS);
+  const f = p.finance;
+  const none: PlanValue = { value: -Infinity, revenuePV: NaN, costPV: NaN, climateAdj: 0, liquidityAdj: 0, continuityAdj: 0, soilAdj: 0 };
+  if (!f || f.expectedProfit == null) return none;
+  let revenuePV = 0, climateAdj = 0, continuityAdj = 0;
+  for (const s of f.seasons) {
+    const d = disc(s.saleDate);
+    const mean = s.revenueMean!, bad = s.revenueBad!;
+    const cautious = mean + w.climate * (bad - mean);
+    revenuePV += d * mean;
+    climateAdj += d * (cautious - mean);
+    if (s.isNew) continuityAdj -= d * cautious * NEW_CROP_HAIRCUT * w.continuity;
+  }
+  let costPV = 0;
+  for (const l of p.budget.lines) if (l.cash && l.total != null) costPV += disc(l.dueDate) * l.total;
+  const liquidityAdj = -costPV * LIQUIDITY_PREMIUM * w.cost;
+  const end = p.seasons.reduce((a, s) => (s.maturity > a ? s.maturity : a), p.seasons[0].maturity);
+  const soilAdj = w.soil * rotationBenefit(p) * f.nCreditValue * disc(end);
+  const value = revenuePV - costPV + climateAdj + liquidityAdj + continuityAdj + soilAdj;
+  return { value, revenuePV, costPV, climateAdj, liquidityAdj, continuityAdj, soilAdj };
+}
+
+/** How much a cash flow one year away is worth today at this discount factor, e.g. 0.85 → "85 %". */
+export const yearWeight = (w: PriorityWeights) => Math.min(DELTA_RANGE[1], Math.max(DELTA_RANGE[0], w.delta ?? DEFAULT_WEIGHTS.delta));
+
+/**
+ * Order plans for display. Rotation rules come first and are not a preference: a repeat (same crop / family) never
+ * outranks a feasible alternation, then lower rotation penalty (G-R9). Within that, the higher discounted value
+ * wins; plans whose value cannot be computed (missing price) come last; the plan id is the final tie-break.
+ */
+export function rankComparator(weights: PriorityWeights) {
+  const cache = new Map<string, number>();
+  const val = (p: PlanResult) => { let v = cache.get(p.id); if (v === undefined) { v = planValue(p, weights).value; cache.set(p.id, v); } return v; };
   const byPenalty = (a: PlanResult, b: PlanResult) => Number(isRepeat(a)) - Number(isRepeat(b)) || rotationPenalty(a) - rotationPenalty(b);
-  const byBenefit = (a: PlanResult, b: PlanResult) => rotationBenefit(b) - rotationBenefit(a);
-  const chain: Record<string, ((a: PlanResult, b: PlanResult) => number)[]> = {
-    cost: [byCost, byBenefit, byWarn, byClimate],
-    climate: [byClimate, byBenefit, byWarn, byCost],
-    continuity: [(a, b) => a.newCrops - b.newCrops, byBenefit, byWarn, byGood, byCost],
-    return: [byReturn, byBenefit, byClimate, byCost],
-    // soil benefit: legume / break-crop / fallow benefits first (G-R8), then climate, then cost
-    soil: [byBenefit, byGood, byClimate, byCost],
-  };
   return (a: PlanResult, b: PlanResult) => {
-    for (const f of [byPenalty, ...chain[priority]]) { const d = f(a, b); if (Math.abs(d) > 1e-9) return d; }
-    return tie(a, b);
+    const pen = byPenalty(a, b);
+    if (pen) return pen;
+    const va = val(a), vb = val(b);
+    if (va !== vb) return vb > va ? 1 : -1; // handles −∞ without NaN
+    return a.id.localeCompare(b.id);
   };
 }
 

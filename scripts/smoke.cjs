@@ -13,7 +13,7 @@ const OUT = pos[1] || '.smoke';
 const OFFLINE = flags.includes('--offline');
 const widthsFlag = flags.find((f) => f.startsWith('--widths='));
 const SIZES = (widthsFlag ? widthsFlag.slice(9) : '1440x900').split(',').map((s) => s.split('x').map(Number));
-const TABS = ['overview', 'farm', 'resources', 'compare', 'evidence', 'report', 'methods', 'pitch', 'video'];
+const TABS = ['overview', 'farm', 'resources', 'compare', 'rotation', 'evidence', 'report', 'methods', 'pitch', 'video'];
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });

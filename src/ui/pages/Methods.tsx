@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { loadModel, type ModelBundle } from '../../engine/agrioptima/model';
 import { PACKS } from '../../data/regionPacks';
 import { TEAM } from '../../data/team';
 import { CropIcon } from '../components/CropIcon';
@@ -14,7 +16,7 @@ const CODES: [string, string][] = [
   ['LEGUME_BENEFIT / FALLOW_BENEFIT', 'Legume or fallow before a cereal (G-R3 / SN-R1 / KZ-R1).'],
   ['MONOCULTURE · SAME_FAMILY', 'Same crop, or same family / shared pest group, in consecutive seasons, including last season → season 1 (G-R6 / G-R7). Never the top-ranked option while a feasible alternation exists.'],
   ['BREAK_CROP · ALTERNATION', 'Cereal → legume, or any other change of crop group (cereal ↔ legume ↔ oilseed ↔ tuber); credited in the ranking (G-R8 / G-R9).'],
-  ['SEED_UNAVAILABLE · MARKET_CONSTRAINT · LABOR_LIMIT · IRRIGATION_REQUIRED', 'Hard farmer constraints; never silently relaxed.'],
+  ['SEED_UNAVAILABLE · MARKET_CONSTRAINT · IRRIGATION_REQUIRED', 'Hard farmer constraints; never silently relaxed.'],
   ['CLIMATE_UNSUITABLE', 'Season mean temperature outside crop range in most years, or median water-limited yield < 35%.'],
   ['CLIMATE_RISK_HIGH · HEAT_EXPOSURE · FROST_RISK', 'Warnings from the NASA replay (≥35% severe years; ≥30% years with ≥3 hot days at flowering; ≥20% years with frost after emergence).'],
   ['SOIL_PH', 'SoilGrids or lab pH outside the crop’s usual range (warning only).'],
@@ -22,10 +24,28 @@ const CODES: [string, string][] = [
   ['HISTORY_INCOMPLETE · CLIMATE_CONTEXT_ONLY · UNREVIEWED_RULES · SYNTHETIC_PRICES', 'Transparency notes attached to every result.'],
 ];
 
+/** Cross-validated scores of the trial models, read from the (lazy) model bundle. */
+function ModelValidation() {
+  const [b, setB] = useState<ModelBundle | null>(null);
+  const [err, setErr] = useState(false);
+  useEffect(() => { loadModel().then(setB, () => setErr(true)); }, []);
+  if (err) return <p className="mini">Model validation scores could not be loaded.</p>;
+  if (!b) return <p className="mini">Loading model validation scores…</p>;
+  const rows = [['Seed yield', b.reports.yield_model, 't/ha', 2], ['Shoot N uptake', b.reports.nitrogen_model, 'kg N/ha', 0]] as const;
+  return (
+    <div className="table-wrap"><table>
+      <thead><tr><th>Model</th><th className="num">Plots</th><th className="num">Experiments</th><th className="num">R², unseen sites</th><th className="num">Mean error</th><th className="num">R², crop average only</th></tr></thead>
+      <tbody>{rows.map(([name, r, unit, d]) => (
+        <tr key={name}><td>{name}</td><td className="num">{r.rows}</td><td className="num">{r.experiments}</td><td className="num">{r.cv_grouped_by_experiment.r2.toFixed(2)}</td><td className="num">±{r.cv_grouped_by_experiment.mae.toFixed(d)} {unit}</td><td className="num">{r.baseline_species_mean.r2.toFixed(2)}</td></tr>
+      ))}</tbody>
+    </table><p className="mini">5-fold cross-validation grouped by experiment: each score comes from sites the model did not see in training.</p></div>
+  );
+}
+
 export function MethodsPage() {
   return (
     <div>
-      <div className="page-head"><div><span className="caption">Validity</span><h1>Methods, rules and sources</h1><p>A transparent, deterministic pipeline: no black-box model and no LLM in the recommendation path. Every visible “why” points to an input, a formula or a rule or evidence ID.</p></div></div>
+      <div className="page-head"><div><span className="caption">Validity</span><h1>Methods, rules and sources</h1><p>A transparent, deterministic pipeline with no LLM in the recommendation path. The two-season ranking uses only formulas and rules; the optional soil-N and multi-year layer (section 8) adds trial-trained tree models, validated below. Every visible “why” points to an input, a formula or a rule or evidence ID.</p></div></div>
 
       <article className="card">
         <div className="prose" style={{ margin: '0 auto' }}>
@@ -38,9 +58,10 @@ export function MethodsPage() {
             <li><b>Yield response.</b> FAO-66 seasonal Ky, below. Coherent consecutive year pairs (Y, Y+1) are replayed for two-season plans.</li>
             <li><b>Candidates and rules.</b> Every two-season pair from the pack (fallow optional) is checked against return intervals, disease groups, farmer constraints and climate screening, each with a reason code.</li>
             <li><b>Costs and feasibility.</b> Integer minor units; cumulative cash is checked at each due date with confirmed inflows only.</li>
-            <li><b>Rank feasible plans</b> by the chosen priority with a documented deterministic tie-break; always show the baseline; show 0, 1 or 2 alternatives and never invent one.</li>
+            <li><b>Rank feasible plans by discounted expected profit.</b> Profit is always the objective. Each cash cost is discounted from its due date and each harvest from its sale date by your “cash now ↔ later” factor δ per year, so money that comes sooner counts more. Four sliders adjust that value in money: bad-year caution (revenue moves toward the 20th-percentile year), cash in hand (up to 20 % cost on cash you put up), crops I know (up to 25 % less revenue from a crop you have not grown) and soil benefit (40 kg N/ha of fertilizer saved per rotation benefit, discounted to after the plan, R44). Rotation rules come first: a repeat never outranks an alternation (G-R9). Ties break deterministically. The baseline is always shown, with 0, 1 or 2 alternatives, never an invented one.</li>
           </ol>
           <div className="formula">{'1 − Ya/Ym = Ky × (1 − ΣETa / ΣETc)\nyield = attainable × Ya/Ym'}</div>
+          <div className="formula">{'value = Σ_harvests δ^t × revenue × (1 − w_new × 25 % if new crop) − (1 + w_cash × 20 %) × Σ_costs δ^t × cost + w_soil × benefits × N credit × δ^t_end\nrevenue = average year + w_bad × (bad year − average year)      t = years from 1 Jan of the first planned year'}</div>
           <div className="formula">{'cost      = qty/ha × area × unit price\nspendable = funds − reserve\nheadroom  = spendable + confirmed inflows − cash cost'}</div>
 
           <h2>2. Soil water</h2>
@@ -54,6 +75,7 @@ export function MethodsPage() {
           <div className="table-wrap"><table><tbody>
             <tr><td><Tag t="nasa" /></td><td className="wrap">Rain, temperature, humidity, wind, radiation, soil wetness (reanalysis)</td></tr>
             <tr><td><Tag t="modeled" /></td><td className="wrap">ET₀, sowing dates, soil-water balance, water-limited yield, revenue range</td></tr>
+            <tr><td><Tag t="modeled">INRAE trials</Tag></td><td className="wrap">Soil-N carry-over, N fixation, fertilizer N need, rotation and mixture effects, CO₂e (multi-year layer)</td></tr>
             <tr><td><Tag t="soilgrids" /></td><td className="wrap">Soil properties (modeled map)</td></tr>
             <tr><td><Tag t="farmer" /></td><td className="wrap">History, fertilizer, budget, constraints, prices you edit</td></tr>
             <tr><td><Tag t="synthetic" /></td><td className="wrap">Default prices, yields, demo farms</td></tr>
@@ -69,13 +91,28 @@ export function MethodsPage() {
           <h2>7. NASA values at the field pixel</h2>
           <p>GIBS serves lossless PNG tiles plus a published colormap for each product. Field Shift reads the pixel under the field (3×3 median for continuous layers) and maps its colour back to the data value: MODIS Terra NDVI 16-day (≈300 m, 2000→now), MODIS IGBP land cover, SMAP L4 root-zone soil moisture (≈9 km, 2015→now) and GRACE/GRACE-FO total water storage (mascons, 2002–2022). Values are quantized to the colormap bins (NDVI 0.005, SMAP 0.003 m³/m³, GRACE 0.25 cm). NDVI season peaks are correlated with the FAO-56 replay to check the model against observation. Natural events come from NASA EONET. <Ref id="R35" /> <Ref id="R36" /></p>
 
-          <h2>8. Privacy</h2>
+          <h2>8. Soil nitrogen and multi-year rotations</h2>
+          <p>The <b>Multi-year &amp; soil N</b> page and the <b>Soil &amp; nitrogen</b> tab on Compare carry soil mineral N from one season to the next. Field Shift’s ranking of two-season plans does not use them.</p>
+          <ol>
+            <li><b>Trial models.</b> Two gradient-boosted tree models (XGBoost, depth 5, learning rate 0.08) trained on the INRAE cereal–legume dataset predict stand seed yield and shoot N uptake from soil, growing-season NASA-POWER-type climate, N applied, crop or mixture and pre-crop. Each is a species-mix baseline times an environmental modifier. They run in your browser; inputs never leave the device. <Ref id="R42" /> <Ref id="R43" /></li>
+            <li><b>Yield level from Field Shift.</b> A crop’s yield level is the attainable yield × median water-limited share from the NASA water-balance replay. The trial models only supply <i>relative</i> changes (soil N, pre-crop, mixture), so European trial yields are never copied to other regions.</li>
+            <li><b>Your past yields.</b> Each season with a recorded yield (Farm &amp; history) is compared with the NASA replay for the same crop and year. Log-ratios are pooled into a field factor and per-crop factors, shrunk toward 1 with two pseudo-seasons and capped at ×3 per season, then applied to the yield level. A yield you set in Resources is used as is.</li>
+            <li><b>Fertilizer N</b> by balance sheet: yield level × N need per tonne (wheat 30, barley 25 kg N/t) − soil mineral N at sowing; legumes none. It replaces the template’s urea/AN line in the cost.</li>
+            <li><b>Soil-N transition</b> per season, with N fixation and the N harvest index taken from the trials. Pre-crop, monoculture and organic-matter factors are priors. <Ref id="R44" /></li>
+            <li><b>Emissions:</b> 9.8 kg CO₂e per kg fertilizer N (manufacture + IPCC Tier-1 field N₂O) plus field operations. <Ref id="R45" /></li>
+            <li><b>Search:</b> every rotation that passes Field Shift’s rules (return interval, hard disease succession, monoculture, seed and market constraints) is simulated, and the season tree is pruned as it grows. Ranking: Σ δ<sup>year</sup> × [net cash + w<sub>soil</sub>·ΔN − w<sub>climate</sub>·CO₂e], with Pareto flags.</li>
+          </ol>
+          <div className="formula">{'N_fert  = max(0, yield level × N/t − soil N)\nN_next  = 0.55 × max(0, soil N + N_fert − (uptake − fixed)) + residue share × residue N + 25 × SOM\nyield   = Field Shift level × model(state) / model(reference) × pre-crop × monoculture × SOM'}</div>
+          <ModelValidation />
+          <p className="mini">Coverage: wheat, barley, pea, faba bean, lentil, chickpea and their mixtures. Climates outside the trial range (mostly temperate Europe) are flagged as extrapolation. Retrain with <code>python ml/export_model.py</code>.</p>
+
+          <h2>9. Privacy</h2>
           <p>Crop history, fertilizer records, prices and budget are stored in this browser (localStorage); public datasets are cached in IndexedDB. Requests to NASA POWER, SoilGrids, Open-Meteo and the map and geocoder contain only coordinates or a place name; providers still see network information. Export, import and delete-all are on the Report page. No account, no tracking.</p>
 
-          <h2>9. Team</h2>
+          <h2>10. Team</h2>
           <p>{TEAM.join(' · ')}. Developed alongside the team's Fieldwise prototype, which inspired some ideas.</p>
 
-          <h2>10. AI disclosure and limits</h2>
+          <h2>11. AI disclosure and limits</h2>
           <p>AI-assisted: Claude (Anthropic) was used for research synthesis, documents, code, design and analysis; the 30-second video narration uses the Kokoro TTS AI voice and the video is labeled “AI-generated”. Recommendations are produced by fixed rules and published formulas, not by a language model. Not validated agronomic advice: rule packs await local review; no user tests or field validation are claimed. NASA data is credited; NASA does not endorse this project.</p>
         </div>
       </article>

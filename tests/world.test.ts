@@ -12,7 +12,7 @@ import { pearson, slopePerYear } from '../src/state/space';
 import bambey from '../src/data/demo/bambey.json';
 import kostanay from '../src/data/demo/kostanay.json';
 
-const sc = (o: object) => ({ ...structuredClone(DEMO_SENEGAL), history: [], fertilizer: [], availableFunds: 1e9, reserve: 0, laborAvailable: 'high' as const, allowFallow: false, irrigation: 'no' as const, ...o });
+const sc = (o: object) => ({ ...structuredClone(DEMO_SENEGAL), history: [], fertilizer: [], availableFunds: 1e9, reserve: 0, allowFallow: false, irrigation: 'no' as const, ...o });
 
 describe('FAOSTAT country data', () => {
   it('has currency, exchange rate and producer prices', () => {

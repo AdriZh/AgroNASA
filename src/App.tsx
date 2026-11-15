@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import {
-  BookOpen, ChevronRight, Clapperboard, FileText, LayoutDashboard, Menu, Presentation, RefreshCw,
+  BookOpen, ChevronRight, Clapperboard, FileText, LayoutDashboard, Menu, Presentation, RefreshCw, Sprout,
 } from 'lucide-react';
 import { useApp } from './state/AppContext';
 import { Overview } from './ui/pages/Overview';
@@ -15,6 +15,7 @@ const pages = {
   farm: () => import('./ui/pages/Farm'),
   resources: () => import('./ui/pages/Resources'),
   compare: () => import('./ui/pages/Compare'),
+  rotation: () => import('./ui/pages/Rotation'),
   evidence: () => import('./ui/pages/Evidence'),
   report: () => import('./ui/pages/Report'),
   methods: () => import('./ui/pages/Methods'),
@@ -24,6 +25,7 @@ const pages = {
 const FarmPage = lazy(() => pages.farm().then((m) => ({ default: m.FarmPage })));
 const ResourcesPage = lazy(() => pages.resources().then((m) => ({ default: m.ResourcesPage })));
 const ComparePage = lazy(() => pages.compare().then((m) => ({ default: m.ComparePage })));
+const RotationPage = lazy(() => pages.rotation().then((m) => ({ default: m.RotationPage })));
 const EvidencePage = lazy(() => pages.evidence().then((m) => ({ default: m.EvidencePage })));
 const ReportPage = lazy(() => pages.report().then((m) => ({ default: m.ReportPage })));
 const MethodsPage = lazy(() => pages.methods().then((m) => ({ default: m.MethodsPage })));
@@ -46,13 +48,14 @@ function RouteFallback({ full }: { full?: boolean }) {
   return <div className={`route-fallback ${full ? 'full' : ''}`} role="status" aria-label="Loading" />;
 }
 
-export type Route = 'overview' | 'farm' | 'resources' | 'compare' | 'evidence' | 'report' | 'methods' | 'pitch' | 'video' | 'video-render';
+export type Route = 'overview' | 'farm' | 'resources' | 'compare' | 'rotation' | 'evidence' | 'report' | 'methods' | 'pitch' | 'video' | 'video-render';
 type NavItem = { id: Route; label: string; step?: number; icon: ReactNode };
 const PLAN: NavItem[] = [
   { id: 'farm', label: 'Farm & history', step: 1, icon: null },
   { id: 'resources', label: 'Resources', step: 2, icon: null },
   { id: 'compare', label: 'Compare plans', step: 3, icon: null },
   { id: 'evidence', label: 'Evidence', step: 4, icon: null },
+  { id: 'rotation', label: 'Multi-year & soil N', icon: <Sprout size={16} /> },
 ];
 const MORE: NavItem[] = [
   { id: 'report', label: 'Report & export', icon: <FileText size={16} /> },
@@ -62,7 +65,7 @@ const SHOW: NavItem[] = [
   { id: 'pitch', label: 'Presentation', icon: <Presentation size={16} /> },
   { id: 'video', label: '30-second video', icon: <Clapperboard size={16} /> },
 ];
-const TITLES: Record<string, string> = { overview: 'Overview', farm: 'Farm & history', resources: 'Resources', compare: 'Compare plans', evidence: 'Evidence', report: 'Report & export', methods: 'Methods & sources', video: '30-second video' };
+const TITLES: Record<string, string> = { overview: 'Overview', farm: 'Farm & history', resources: 'Resources', compare: 'Compare plans', rotation: 'Multi-year & soil N', evidence: 'Evidence', report: 'Report & export', methods: 'Methods & sources', video: '30-second video' };
 
 function useRoute(): [Route, (r: Route) => void] {
   const read = () => ((window.location.hash.replace('#/', '').split('?')[0]) || 'overview') as Route;
@@ -153,6 +156,7 @@ export default function App() {
           {route === 'farm' && <FarmPage go={go} />}
           {route === 'resources' && <ResourcesPage go={go} />}
           {route === 'compare' && <ComparePage go={go} />}
+          {route === 'rotation' && <RotationPage go={go} />}
           {route === 'evidence' && <EvidencePage go={go} />}
           {route === 'report' && <ReportPage />}
           {route === 'methods' && <MethodsPage />}

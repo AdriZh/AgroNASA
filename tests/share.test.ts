@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { FarmScenario } from '../src/domain/types';
 import { decodeShare, encodeShare, getWhatIf, keepWhatIfOnNextScenarioChange, onScenarioChange, sameScenario, setWhatIf, shareUrl, SHARE_MAX_URL, tokenFromHash } from '../src/state/share';
 import { DEMO_KAZAKHSTAN, DEMO_SENEGAL } from '../src/state/demo';
+import { sanitizeScenario } from '../src/state/shareCodec';
 
 const BASE = 'https://example.org/field-shift/';
 // null and missing both mean "unknown" for optional inputs, so compare with both removed
@@ -33,9 +34,9 @@ describe('share links', () => {
     expect(sameScenario(r.scenario, demo)).toBe(true);
   });
 
-  it('keeps edits: budget, area, crops, priority, inflows, prices, soil and the usual-plan override', () => {
+  it('keeps edits: budget, area, crops, priority weights, inflows, prices, soil and the usual-plan override', () => {
     const edited: FarmScenario = {
-      ...structuredClone(DEMO_SENEGAL), name: 'Édité · ферма 🌾', area: 3.25, areaUnit: 'acre', availableFunds: 250000, reserve: 0, priority: 'return',
+      ...structuredClone(DEMO_SENEGAL), name: 'Édité · ферма 🌾', area: 3.25, areaUnit: 'acre', availableFunds: 250000, reserve: 0, weights: { delta: 0.8, cost: 0.1, climate: 0.9, continuity: 0.35, soil: 0 },
       unavailableCrops: ['sesame'], marketCrops: ['millet', 'groundnut', 'cowpea'], allowFallow: true, needsResidue: false,
       confirmedInflows: [{ id: 'zz', date: '2027-08-01', amount: 50000, label: 'Cooperative advance' }],
       priceOverrides: { 'millet:price': 260000, 'groundnut:seed': null }, soil: { texture: 'sandy-loam', labPh: 5.6 },
@@ -48,7 +49,7 @@ describe('share links', () => {
     expect(r.scenario.area).toBe(3.25);
     expect(r.scenario.areaUnit).toBe('acre');
     expect(r.scenario.availableFunds).toBe(250000);
-    expect(r.scenario.priority).toBe('return');
+    expect(r.scenario.weights).toEqual({ delta: 0.8, cost: 0.1, climate: 0.9, continuity: 0.35, soil: 0 });
     expect(r.scenario.unavailableCrops).toEqual(['sesame']);
     expect(r.scenario.marketCrops).toEqual(['millet', 'groundnut', 'cowpea']);
     expect(r.scenario.confirmedInflows).toEqual([{ id: 'i1', date: '2027-08-01', amount: 50000, label: 'Cooperative advance' }]);
@@ -121,5 +122,38 @@ describe('what-if on farm switch', () => {
     expect(getWhatIf()).toEqual({ rainScale: 0.9, dT: 1 });
     onScenarioChange();                       // the exception applies once only
     expect(getWhatIf()).toEqual({ rainScale: 1, dT: 0 });
+  });
+});
+
+describe('links and saved farms from before the weight sliders and the labor removal', () => {
+  it('an old link with a single priority (pr) and labor (lb) still opens, as weights', () => {
+    const token = encodeShare(structuredClone(DEMO_SENEGAL), { rainScale: 1, dT: 0 });
+    const json = JSON.parse(Buffer.from(token.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    delete json.pw; json.pr = 'soil'; json.lb = 'low';
+    const legacy = Buffer.from(JSON.stringify(json), 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const r = decodeShare(legacy);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.scenario.weights).toEqual({ delta: 0.85, cost: 0.2, climate: 0.2, continuity: 0.2, soil: 1 });
+    expect('laborAvailable' in r.scenario).toBe(false);
+  });
+  it('a farm saved on this device with priority and laborAvailable is kept and migrated', () => {
+    const old = { ...structuredClone(DEMO_SENEGAL), priority: 'climate', laborAvailable: 'low' } as Record<string, unknown>;
+    delete old.weights;
+    const r = sanitizeScenario(old, { keepIds: true });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.scenario.weights.climate).toBe(1);
+    expect(r.scenario.weights.cost).toBe(0.2);
+    expect('laborAvailable' in r.scenario).toBe(false);
+  });
+  it('discount factor and concern weights from a link are clamped and a malformed list is rejected', () => {
+    const json = JSON.parse(Buffer.from(encodeShare(structuredClone(DEMO_SENEGAL), { rainScale: 1, dT: 0 }).replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    const pack = (o: object) => Buffer.from(JSON.stringify(o), 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    // [delta, cost, climate, continuity, soil]: delta is clamped to 0.5–0.99, the concerns to 0–1
+    const big = decodeShare(pack({ ...json, pw: [5, -1, 0.5, 2, 0.5] }));
+    expect(big.ok && big.scenario.weights).toEqual({ delta: 0.99, cost: 0, climate: 0.5, continuity: 1, soil: 0.5 });
+    expect(decodeShare(pack({ ...json, pw: [1, 2] })).ok).toBe(false);
+    expect(decodeShare(pack({ ...json, pw: ['x', 0, 0, 0, 0] })).ok).toBe(false);
   });
 });

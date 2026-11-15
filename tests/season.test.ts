@@ -96,7 +96,7 @@ describe('season length at the demo locations', () => {
     for (const c of out.screen.crops) {
       expect(c.items.some((i) => i.reason.code === 'SEASON_TOO_SHORT' || i.reason.code === 'FROST_RISK'), c.cropId).toBe(false);
       expect(out.risks[c.cropId].season?.frostFree).toBe(true);
-      expect(c.line.startsWith('frost-free location')).toBe(true);
+      expect(c.line.startsWith('no frost (Tmin ≤ 0 °C) in most years')).toBe(true);
     }
   });
 });
@@ -136,5 +136,15 @@ describe('demo headlines are unchanged by the screen', () => {
     expect(out.baseline.id).toBe('wheat→wheat');
     expect(out.baseline.budget.status).toBe('unaffordable');
     expect(out.baseline.reasons.some((r) => r.code === 'MONOCULTURE')).toBe(true);
+  });
+});
+
+describe('FAOSTAT "commonly grown" context on the screen', () => {
+  it('marks Kazakh wheat and Senegalese groundnut, not pearl millet in Kazakhstan', () => {
+    const kz = run(DEMO_KAZAKHSTAN, kostanay);
+    expect(screenOf(kz, 'wheat').grown!.ha).toBeGreaterThan(1e6);
+    const kzg = run({ ...DEMO_KAZAKHSTAN, history: [] }, kostanay, GLOBAL);
+    expect(screenOf(kzg, 'millet').grown).toBeNull();
+    expect(screenOf(run(DEMO_SENEGAL, bambey), 'groundnut').grown).not.toBeNull();
   });
 });

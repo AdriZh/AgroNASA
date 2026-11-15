@@ -3,7 +3,7 @@
 import type { BudgetPlaceholder, CostItemDef, CropDef, DailySeries, FarmScenario, Reason, RegionPack, SoilProfile } from '../domain/types';
 import { CROPS, cropFor, cropName } from '../data/crops';
 import { IRRIGATION_USD_PER_MM_HA } from '../data/regionPacks';
-import { countryInfo, cropPriceUsd, fxFactor, fxPerUsd, PRICE_PLAUSIBLE_FACTOR } from '../data/countries';
+import { commonlyGrown, countryInfo, cropPriceUsd, fxFactor, fxPerUsd, PRICE_PLAUSIBLE_FACTOR } from '../data/countries';
 import { toHectares } from '../domain/units';
 import { addDays, diffDays } from '../domain/dates';
 import { completeYears, median, quantile } from '../weather/indicators';
@@ -60,6 +60,8 @@ export interface CropScreen {
   items: ScreenItem[];         // the findings behind the verdict (cropScreenItems)
   line: string;                // one-line NASA-based summary, e.g. "matures before frost in 23/25 years; water-limited yield 71%"
   refs: string[];
+  /** FAOSTAT: commonly grown in the farm's country (harvested area), or null. Context only; never changes `ok`. */
+  grown: ReturnType<typeof commonlyGrown>;
 }
 export interface LocationScreen {
   crops: CropScreen[];
@@ -381,7 +383,7 @@ export function screenCrop(ctx: EngineContext, w: SowingWindow, cropId: string):
   else {
     const ss = r.season;
     const parts: string[] = [];
-    if (ss?.frostFree) parts.push('frost-free location');
+    if (ss?.frostFree) parts.push('no frost (Tmin ≤ 0 °C) in most years');
     else if (ss?.applicable) parts.push(`matures before frost in ${ss.okYears}/${ss.years} years`);
     else if (ss) parts.push('autumn-sown, overwinters');
     if (r.meanSeasonT != null) parts.push(`season mean ${r.meanSeasonT.toFixed(0)} °C`);
@@ -389,7 +391,7 @@ export function screenCrop(ctx: EngineContext, w: SowingWindow, cropId: string):
     line = [...parts, ...warns.map((i) => i.short)].join('; ');
     refs.unshift(...(ss?.applicable && !ss.frostFree ? ['R17', 'R40', 'R8'] : ['R17', 'R8']));
   }
-  return { cropId, seasonId: w.id, seasonLabel: w.label, ok: !blocks.length, items, line, refs: uniq(refs) };
+  return { cropId, seasonId: w.id, seasonLabel: w.label, ok: !blocks.length, items, line, refs: uniq(refs), grown: commonlyGrown(ctx.sc.countryIso2, cropId) };
 }
 
 /** Every crop of the pack calendar (fallow excluded), screened in each window it can be sown in. */

@@ -373,8 +373,7 @@ details[open] > summary::after { transform: rotate(-135deg); }
 .loading-banner .bar i { display: block; height: 100%; width: 40%; border-radius: 6px; background: linear-gradient(90deg, #3b82f6, #10b981); animation: slide 1.4s ease-in-out infinite; }
 @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
 
-/* ==========================================================================
-   BEGIN what-if climate stress test + share link (WhatIf.tsx, ShareButton.tsx)
+/* ===================================================================   BEGIN what-if climate stress test + share link (WhatIf.tsx, ShareButton.tsx)
    Uses existing tokens only; safe to restyle.
    ========================================================================== */
 .whatif { position: relative; overflow: hidden; }
@@ -455,3 +454,6 @@ details[open] > summary::after { transform: rotate(-135deg); }
 .share-toast .btn.ghost:hover { background: var(--space-3); color: #fff; }
 @keyframes share-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 /* END what-if climate stress test + share link */
+=======
+/* Suspense placeholder for code-split routes and the map */
+.route-fallback { border-radius: 16px; background: var(--surface-3); animation: pulse 1.2s ease-in-out infinite; }

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import type { Route } from '../../App';
 import { useApp } from '../../state/AppContext';
-import { seasonEndOf } from './Evidence';
+import { seasonEndOf } from './season';
 import { cropEmoji, cropName, CROPS } from '../../data/crops';
 import { fmtMoney } from '../../domain/units';
 import { addDays, dayIndex, fmtDayMonth } from '../../domain/dates';

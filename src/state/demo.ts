@@ -1,4 +1,5 @@
-import type { FarmScenario } from '../domain/types';
+import type { DailySeries, FarmScenario, SoilProfile } from '../domain/types';
+import { powerGridCell } from '../weather/power';
 
 // Synthetic demonstration farms. Histories, budgets and prices are illustrative — not real farmers.
 
@@ -47,3 +48,40 @@ export const DEMO_KAZAKHSTAN: FarmScenario = {
 };
 
 export const DEMOS = [DEMO_SENEGAL, DEMO_KAZAKHSTAN];
+
+// ---------- Bundled (archived) NASA POWER + SoilGrids snapshots for the demo farms ----------
+// Each snapshot is its own lazily loaded chunk (~125 kB gzip). index.html modulepreloads the one the visitor
+// is about to see (see vite.config.ts), and startBundledPreload() starts it before React mounts.
+
+export interface BundledSnapshot { series: DailySeries; soil: SoilProfile | null; quality?: unknown }
+export interface BundledDef { key: 'bambey' | 'kostanay'; lat: number; lon: number; load: () => Promise<unknown> }
+
+export const BUNDLED: BundledDef[] = [
+  { key: 'bambey', lat: 14.71, lon: -16.46, load: () => import('../data/demo/bambey.json') },
+  { key: 'kostanay', lat: 53.0, lon: 64.0, load: () => import('../data/demo/kostanay.json') },
+];
+
+/** The bundled snapshot covering this point's NASA POWER grid cell, if any. */
+export function bundledFor(lat: number, lon: number): BundledDef | undefined {
+  const cell = powerGridCell(lat, lon);
+  return BUNDLED.find((b) => { const c = powerGridCell(b.lat, b.lon); return c.cLat === cell.cLat && c.cLon === cell.cLon; });
+}
+
+const snapCache = new Map<string, Promise<BundledSnapshot>>();
+/** Load (once) the archived snapshot; a failed chunk download is forgotten so it can be retried. */
+export function loadBundled(def: BundledDef): Promise<BundledSnapshot> {
+  let p = snapCache.get(def.key);
+  if (!p) {
+    p = def.load().then((m: any) => (m.default ?? m) as BundledSnapshot);
+    p.catch(() => snapCache.delete(def.key));
+    snapCache.set(def.key, p);
+  }
+  return p;
+}
+
+/** Start downloading the snapshot for the farm the visitor sees first (saved active farm, else the default demo). */
+export function startBundledPreload(scenarios: FarmScenario[], activeId: string | null): void {
+  const s = scenarios.find((x) => x.id === activeId) ?? scenarios[0];
+  const def = s ? bundledFor(s.location.lat, s.location.lon) : undefined;
+  if (def) loadBundled(def).catch(() => { /* retried by the data loader */ });
+}

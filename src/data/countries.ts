@@ -1,7 +1,5 @@
 // FAOSTAT country context: currency & exchange rate (PE), producer prices (PP),
 // cropland nutrient budget (ESB) and temperature change (ET). Built by scripts/build-faostat.py.
-import faostat from './faostat/countries.json';
-
 export interface CountryInfo {
   iso2: string; name: string; m49: string;
   currency?: string; currencyName?: string; lcuPerUsd?: number; fxYear?: number;
@@ -10,18 +8,38 @@ export interface CountryInfo {
   nutrientsYear?: number;
   warming?: { meanC: number; from: number; to: number; series: Record<string, number> };
 }
-const DATA = faostat as unknown as { countries: Record<string, CountryInfo>; globalMedianUsdPerT: Record<string, { usdPerT: number; n: number }>; retrieved: string };
+type FaoData = { countries: Record<string, CountryInfo>; globalMedianUsdPerT: Record<string, { usdPerT: number; n: number }>; retrieved: string };
 
-export const COUNTRIES = DATA.countries;
-export const FAOSTAT_RETRIEVED = DATA.retrieved;
+// The FAOSTAT table (~230 kB) is code-split out of the main bundle and loaded once at startup, in parallel
+// with the app (see loadFaostat / AppContext). Until it arrives every lookup below returns "unknown".
+let DATA: FaoData = { countries: {}, globalMedianUsdPerT: {}, retrieved: '' };
+const FX: Record<string, number> = { USD: 1 };
+let loaded: Promise<void> | null = null;
+let ready = false;
+
+function install(d: FaoData) {
+  DATA = d;
+  for (const c of Object.values(DATA.countries)) if (c.currency && c.lcuPerUsd && !FX[c.currency]) FX[c.currency] = c.lcuPerUsd;
+  // Senegal's FAOSTAT rate defines XOF; keep the pack currencies anchored to their reference countries.
+  if (DATA.countries.SN?.lcuPerUsd) FX.XOF = DATA.countries.SN.lcuPerUsd;
+  if (DATA.countries.KZ?.lcuPerUsd) FX.KZT = DATA.countries.KZ.lcuPerUsd;
+  ready = true;
+}
+
+/** Load the FAOSTAT country table (idempotent; a failed chunk load can be retried). */
+export function loadFaostat(): Promise<void> {
+  if (!loaded) {
+    loaded = import('./faostat/countries.json').then((m: any) => install((m.default ?? m) as FaoData));
+    loaded.catch(() => { loaded = null; });
+  }
+  return loaded;
+}
+export const faostatReady = () => ready;
+
+export const countries = () => DATA.countries;
+export const faostatRetrieved = () => DATA.retrieved;
 export const countryInfo = (iso2?: string): CountryInfo | undefined => (iso2 ? DATA.countries[iso2.toUpperCase()] : undefined);
 export const countryList = () => Object.values(DATA.countries).filter((c) => c.currency).sort((a, b) => a.name.localeCompare(b.name));
-
-const FX: Record<string, number> = { USD: 1 };
-for (const c of Object.values(DATA.countries)) if (c.currency && c.lcuPerUsd && !FX[c.currency]) FX[c.currency] = c.lcuPerUsd;
-// Senegal's FAOSTAT rate defines XOF; keep the pack currencies anchored to their reference countries.
-if (DATA.countries.SN?.lcuPerUsd) FX.XOF = DATA.countries.SN.lcuPerUsd;
-if (DATA.countries.KZ?.lcuPerUsd) FX.KZT = DATA.countries.KZ.lcuPerUsd;
 
 /** Local currency units per USD (FAOSTAT, latest annual), or undefined if unknown. */
 export const fxPerUsd = (currency: string) => FX[currency.toUpperCase()];

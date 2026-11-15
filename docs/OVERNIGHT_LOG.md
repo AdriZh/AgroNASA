@@ -129,3 +129,11 @@ The owner's other session relayed two high-priority items (no matching file on t
 1. Distinct per-crop icons + never a same-crop/same-family repeat at the top of the ranking (alternation preferred, baseline kept).
 2. "When is your field free?" — fit short-cycle cash crops, cover/catch crops or fallow into an exact window using the NASA POWER replay (GDD, first frost, water), with "matured in time in X of 25 past seasons".
 Both run on side branches; each ships only if complete and verified — otherwise it is cut and logged here. `main` stays at the verified `a929b06` until then.
+
+### Owner relay #3 (17:33 UTC) — plan
+
+Feature freeze **20:00 UTC**; after that only fixes, live re-check and docs. Owner's main complaint: Kazakhstan looks like a dead end (wheat/barley only, same icon). Running in parallel, each merged only if complete and verified:
+1. crop icons + alternation ranking (hard stop 19:15);
+2. "+ Try my own plan" (any crop per season through the same engine) + "near misses" with the smallest verifiable change + wider Kazakhstan crop list (hard stop 19:40);
+3. "When is your field free?" window fitting (hard stop 19:40).
+Deferred unless time remains: goal selector (5); intercropping evidence card (6) — likely cut, logged as such.

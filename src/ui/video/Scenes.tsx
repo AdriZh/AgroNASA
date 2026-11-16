@@ -154,7 +154,7 @@ const NASA_TILES: [ReactNode, string, string][] = [
   [<Satellite size={34} />, 'GPM IMERG', 'satellite rainfall'],
 ];
 const FARM_TILES: [ReactNode, string, string][] = [
-  [<FlaskConical size={34} />, '30,000+', 'field observations · 37 experiments'],
+  [<FlaskConical size={34} />, '30k+ observations', '37 field experiments'],
   [<Cpu size={34} />, 'XGBoost model', 'trained offline · in-browser'],
   [<Shovel size={34} />, 'SoilGrids', 'water the root zone holds'],
   [<Wallet size={34} />, 'FAOSTAT prices', 'local currency · 240 countries'],
@@ -289,8 +289,8 @@ function SceneClose({ t }: { t: number }) {
     <>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 250, textAlign: 'center' }}>
         <div style={{ display: 'inline-block', transform: `scale(${Math.max(0.01, k)})` }}><LogoMark size={190} /></div>
-        <div style={{ fontFamily: display, fontWeight: 800, fontSize: 136, letterSpacing: '-.045em', color: '#fff', marginTop: 20, ...enter(t, t0 + 0.4, 0.6, 30) }}>Field Shift</div>
-        <div style={{ fontSize: 46, fontFamily: display, fontWeight: 700, marginTop: 6, ...grad, ...enter(t, t0 + 0.8) }}>From space to soil.</div>
+        <div style={{ fontFamily: display, fontWeight: 800, fontSize: 136, lineHeight: 1.1, letterSpacing: '-.045em', color: '#fff', marginTop: 20, ...enter(t, t0 + 0.4, 0.6, 30) }}>Field Shift</div>
+        <div style={{ fontSize: 46, lineHeight: 1.3, fontFamily: display, fontWeight: 700, marginTop: 6, ...grad, ...enter(t, t0 + 0.8) }}>From space to soil.</div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 48, ...enter(t, t0 + 1.3) }}>
           {([[<Satellite size={22} />, 'NASA POWER · SMAP · MODIS · IMERG'], [<WifiOff size={22} />, 'Works offline'], [<Globe2 size={22} />, 'Anywhere on Earth'], [<BookMarked size={22} />, 'Explainable']] as const).map(([i, x]) => <span key={x} style={{ padding: '12px 20px', borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.12)', color: '#e2e8f0', fontSize: 24, fontWeight: 600, display: 'inline-flex', gap: 10, alignItems: 'center' }}>{i}{x}</span>)}
         </div>
@@ -318,11 +318,30 @@ function Captions({ t }: { t: number }) {
   );
 }
 
+/** Burned-in overlay: logo + live URL, the AI disclosure, and a QR to the live app on the closing scene. */
+function Watermark({ t }: { t: number }) {
+  const q = easeOut(prog(t, scene('close').start, scene('close').start + 0.6));
+  const pill: CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 12, borderRadius: 999, background: 'rgba(3,7,15,.6)', border: '1px solid rgba(255,255,255,.14)', color: '#e2e8f0' };
+  return (
+    <>
+      <div style={{ position: 'absolute', right: 42, top: 36, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+        <div style={{ ...pill, padding: '10px 20px 10px 12px', fontSize: 24 }}><LogoMark size={36} glow={false} /><b style={{ color: '#fff' }}>Field Shift</b><span style={{ color: '#64748b' }}>·</span>adrizh.github.io/AgroNASA</div>
+        <div style={{ ...pill, padding: '6px 16px', fontSize: 18 }}><b style={{ color: '#fbbf24' }}>AI-generated</b> · made with Claude (Anthropic) · AI voice: Kokoro TTS</div>
+      </div>
+      <div style={{ position: 'absolute', right: 60, top: 320, width: 268, padding: '18px 18px 14px', borderRadius: 24, background: 'rgba(3,7,15,.6)', border: '1px solid rgba(255,255,255,.14)', textAlign: 'center', opacity: q, transform: `scale(${0.9 + 0.1 * q})` }}>
+        <div style={{ color: '#fff', fontWeight: 800, fontSize: 24, marginBottom: 12 }}>Scan to try it live</div>
+        <div style={{ background: '#fff', borderRadius: 14, padding: 12 }}><img src={`${import.meta.env.BASE_URL}media/qr-live.svg`} alt="" width={208} height={208} style={{ display: 'block' }} /></div>
+        <div style={{ color: '#94a3b8', fontSize: 17, marginTop: 10 }}>adrizh.github.io/AgroNASA</div>
+      </div>
+    </>
+  );
+}
+
 /** One 1920×1080 frame of the 30-second film at time t (seconds). */
 export function VideoFrame({ t, captions = true }: { t: number; captions?: boolean }) {
   const bgShift = easeInOut(clamp(t / 30));
   return (
-    <div style={{ width: W, height: H, position: 'relative', overflow: 'hidden', fontFamily: 'Inter, system-ui, sans-serif', background: `radial-gradient(1200px 700px at ${80 - bgShift * 40}% -10%, rgba(37,99,235,.38), transparent 60%), radial-gradient(1000px 600px at ${bgShift * 30}% 115%, rgba(16,185,129,.32), transparent 60%), #050a14` }}>
+    <div style={{ width: W, height: H, position: 'relative', overflow: 'hidden', lineHeight: 1.25, fontFamily: 'Inter, system-ui, sans-serif', background: `radial-gradient(1200px 700px at ${80 - bgShift * 40}% -10%, rgba(37,99,235,.38), transparent 60%), radial-gradient(1000px 600px at ${bgShift * 30}% 115%, rgba(16,185,129,.32), transparent 60%), #050a14` }}>
       <Stars t={t} />
       {t > scene('title').end - 0.2 && t < scene('close').start + 0.2 && (
         <div style={{ position: 'absolute', left: 60, top: 46, display: 'flex', alignItems: 'center', gap: 14, opacity: 0.85 }}>
@@ -335,6 +354,7 @@ export function VideoFrame({ t, captions = true }: { t: number; captions?: boole
       <Layer id="fusion" t={t}><SceneFusion t={t} /></Layer>
       <Layer id="result" t={t}><SceneResult t={t} /></Layer>
       <Layer id="close" t={t}><SceneClose t={t} /></Layer>
+      <Watermark t={t} />
       {captions && <Captions t={t} />}
       <div style={{ position: 'absolute', left: 0, bottom: 0, height: 5, width: `${(t / 30) * 100}%`, background: 'linear-gradient(90deg,#10b981,#3b82f6)', opacity: 0.8 }} />
     </div>

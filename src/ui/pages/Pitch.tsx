@@ -29,7 +29,7 @@ function Slide({ n, total, kicker, icon, title, children }: { n: number; total: 
     <div className={`slide ${title ? 'title-slide' : ''}`}>
       <motion.div className="kicker" {...up(0)}>{icon}{kicker}</motion.div>
       {children}
-      <div className="foot"><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><BrandMark size={18} /> Field Shift · NASA Space Apps 2026 · AI-assisted · built with Claude (Anthropic)</span><span>{n} / {total}</span></div>
+      <div className="foot"><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><BrandMark size={18} /> Field Shift · NASA Space Apps 2026</span><span>{n} / {total}</span></div>
     </div>
   );
 }

@@ -1,16 +1,12 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { BookMarked, Check, CloudRain, Droplets, FlaskConical, Leaf, NotebookPen, Satellite, Shovel, Wallet, WifiOff, Globe2, Sparkles, X } from 'lucide-react';
+import { BookMarked, Check, CloudRain, Cpu, Droplets, FlaskConical, Leaf, Repeat, Satellite, Shovel, SlidersHorizontal, UserCheck, Wallet, WifiOff, Globe2, Sparkles, X } from 'lucide-react';
 import { LogoMark } from '../components/Logo';
 import timing from './timing.json';
-import { clamp, easeBack, easeInOut, easeOut, enter, fmtInt, lerp, pop, prog, rng, sceneAlpha } from './anim';
+import { clamp, easeBack, easeInOut, easeOut, enter, lerp, pop, prog, rng, sceneAlpha } from './anim';
 
 // ---------- real data used on screen ----------
 // NASA POWER PRECTOTCORR, 1 Jun–31 Oct, Bambey-area grid cell (archived D1 query, 05_Climate_Indicators CSV).
 const RAIN: [number, number][] = [[2001, 362.72], [2002, 308.92], [2003, 525.84], [2004, 496.58], [2005, 778.78], [2006, 654.74], [2007, 667.49], [2008, 967.04], [2009, 975.63], [2010, 783.65], [2011, 584.63], [2012, 675.37], [2013, 683.15], [2014, 588.49], [2015, 685.63], [2016, 480.42], [2017, 503.45], [2018, 483.83], [2019, 498.84], [2020, 824.38], [2021, 644.88], [2022, 823.87], [2023, 687.43], [2024, 682.83], [2025, 657.42]];
-// Field Shift engine output for the Senegal demo farm (synthetic prices): FAO-56 replay of pearl millet, % of attainable.
-const MILLET_REPLAY = [83, 60, 92, 95, 100, 73, 96, 100, 99, 100, 89, 100, 100, 74, 97, 96, 96, 93, 67, 100, 79, 100, 96, 99, 100];
-const CAP = 380000, BASE = 454500;
-const BASE_SPLIT: [string, number, string][] = [['Seed', 85500, '#10b981'], ['Fertilizer', 123750, '#8b5cf6'], ['Labor', 180000, '#f59e0b'], ['Land prep', 45000, '#a16207'], ['Other', 20250, '#94a3b8']];
 
 const W = 1920, H = 1080;
 const display = "'Plus Jakarta Sans', Inter, system-ui, sans-serif";
@@ -82,7 +78,7 @@ function SceneRain({ t }: { t: number }) {
   return (
     <>
       <div style={{ position: 'absolute', left: 200, top: 120 }}>
-        <div style={enter(t, t0 + 0.1)}><Kicker><Satellite size={24} /> NASA POWER · Bambey, Senegal</Kicker></div>
+        <div style={enter(t, t0 + 0.1)}><Kicker><Satellite size={24} /> NASA POWER · 25 years of daily data · Bambey, Senegal</Kicker></div>
         <Title style={{ marginTop: 14, ...enter(t, t0 + 0.25) }}>Same field. <span style={grad}>A different sky every year.</span></Title>
       </div>
       <svg width={W} height={H} style={{ position: 'absolute', inset: 0 }}>
@@ -124,54 +120,44 @@ function SceneRain({ t }: { t: number }) {
   );
 }
 
-// ---------- scene 3: cash gap ----------
+// ---------- scene 3: your budget, your priorities, your call ----------
 function SceneCash({ t }: { t: number }) {
   const s = scene('cash'), t0 = s.start;
-  const x0 = 260, wMax = 1400, scale = wMax / 500000;
-  const grow = easeOut(prog(t, t0 + 0.5, t0 + 2.0));
-  const total = BASE * grow;
-  let acc = 0;
-  const over = clamp(prog(t, t0 + 1.7, t0 + 2.1));
-  const shake = over > 0 && over < 1 ? Math.sin(t * 60) * 6 * (1 - over) : 0;
+  const cards: [ReactNode, string, ReactNode, number][] = [
+    [<Wallet size={44} />, 'Your budget', <><b style={{ color: '#fff' }}>380,000 XOF</b> to spend</>, t0 + 0.25],
+    [<SlidersHorizontal size={44} />, 'Your priorities', 'cash · climate · soil · familiar crops', t0 + 0.95],
+    [<UserCheck size={44} />, 'Your call', 'Field Shift advises. The farmer decides.', t0 + 1.65],
+  ];
   return (
     <>
-      <div style={{ position: 'absolute', left: 260, top: 150 }}>
-        <div style={enter(t, t0 + 0.05)}><Kicker><Wallet size={24} /> The cash gap</Kicker></div>
-        <Title style={{ marginTop: 14, maxWidth: 1400, ...enter(t, t0 + 0.2) }}>The usual plan costs <span style={{ color: '#fca5a5' }}>more than the cash on hand.</span></Title>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 150, textAlign: 'center' }}>
+        <div style={enter(t, t0 + 0.05)}><Kicker><Sparkles size={24} /> Tailored to each farmer</Kicker></div>
       </div>
-      <div style={{ position: 'absolute', left: x0, top: 520, width: wMax, height: 150, transform: `translateX(${shake}px)` }}>
-        <div style={{ position: 'absolute', inset: 0, borderRadius: 24, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)' }} />
-        {BASE_SPLIT.map(([label, v, c]) => {
-          const start = acc; acc += v;
-          const visible = clamp((total - start) / v);
-          if (visible <= 0) return null;
-          return <div key={label} style={{ position: 'absolute', top: 18, height: 114, left: start * scale, width: v * scale * visible, background: c, borderRadius: 14, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.25)', display: 'flex', alignItems: 'center', paddingLeft: 18, color: '#04130d', fontWeight: 800, fontSize: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{visible > 0.6 && v * scale > 150 ? label : ''}</div>;
-        })}
-        <div style={{ position: 'absolute', left: CAP * scale, top: -60, bottom: -60, width: 4, background: '#fff', borderRadius: 4, boxShadow: '0 0 24px rgba(255,255,255,.6)' }} />
-        <div style={{ position: 'absolute', left: CAP * scale - 220, top: -112, width: 440, textAlign: 'center', color: '#fff', fontSize: 28, fontWeight: 700 }}>Spendable cash · {fmtInt(CAP)} XOF</div>
-        <div style={{ position: 'absolute', left: CAP * scale + 4, top: 10, height: 130, width: Math.max(0, (total - CAP) * scale), background: 'repeating-linear-gradient(135deg, rgba(248,113,113,.45) 0 14px, rgba(248,113,113,.2) 14px 28px)', borderRadius: '0 16px 16px 0', border: over > 0 ? '3px solid #f87171' : 'none' }} />
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 300, display: 'flex', justifyContent: 'center', gap: 40 }}>
+        {cards.map(([icon, title, sub, at], i) => (
+          <div key={i} style={{ width: 500, height: 420, borderRadius: 32, padding: '44px 40px', background: i === 2 ? 'linear-gradient(180deg, rgba(16,185,129,.2), rgba(16,185,129,.05))' : 'rgba(255,255,255,.05)', border: `2px solid ${i === 2 ? 'rgba(52,211,153,.7)' : 'rgba(255,255,255,.1)'}`, display: 'flex', flexDirection: 'column', gap: 22, ...pop(t, at, 0.5) }}>
+            <div style={{ width: 92, height: 92, borderRadius: 26, display: 'grid', placeItems: 'center', background: 'rgba(110,231,183,.14)', color: '#6ee7b7' }}>{icon}</div>
+            <div style={{ fontFamily: display, fontWeight: 800, fontSize: 60, letterSpacing: '-.03em', color: '#fff', lineHeight: 1.05 }}>{title}</div>
+            <div style={{ color: '#cbd5e1', fontSize: 30, lineHeight: 1.3 }}>{sub}</div>
+          </div>
+        ))}
       </div>
-      <div style={{ position: 'absolute', left: x0, top: 730, display: 'flex', gap: 60, alignItems: 'baseline' }}>
-        <div style={enter(t, t0 + 0.6)}><div style={{ color: '#94a3b8', fontSize: 24 }}>Usual plan · Groundnut → Millet</div><div style={{ fontFamily: display, fontWeight: 800, fontSize: 64, color: '#fff' }}>{fmtInt(total)} XOF</div></div>
-        <div style={pop(t, t0 + 2.1)}><div style={{ color: '#fca5a5', fontSize: 24 }}>Over budget</div><div style={{ fontFamily: display, fontWeight: 800, fontSize: 64, color: '#f87171' }}>−{fmtInt(BASE - CAP)} XOF</div></div>
-      </div>
-      <div style={{ position: 'absolute', left: x0, bottom: 120, color: '#64748b', fontSize: 20, ...enter(t, t0 + 1) }}>Senegal demo farm · 1.5 ha · two seasons · synthetic prices · no harvest income or credit assumed</div>
     </>
   );
 }
 
 // ---------- scene 4: data fusion ----------
 const NASA_TILES: [ReactNode, string, string][] = [
-  [<CloudRain size={34} />, 'NASA POWER', 'rain · heat · wind · sun'],
+  [<CloudRain size={34} />, 'NASA POWER', 'daily weather since 2001'],
   [<Droplets size={34} />, 'SMAP L4', 'root-zone soil moisture'],
   [<Leaf size={34} />, 'MODIS NDVI', 'vegetation greenness'],
   [<Satellite size={34} />, 'GPM IMERG', 'satellite rainfall'],
 ];
 const FARM_TILES: [ReactNode, string, string][] = [
-  [<NotebookPen size={34} />, 'Crop history', 'last seasons & outcomes'],
-  [<FlaskConical size={34} />, 'Fertilizer', 'what was applied'],
-  [<Shovel size={34} />, 'Soil', 'texture · SoilGrids'],
-  [<Wallet size={34} />, 'Budget & crops', 'cash, reserve, allowed crops'],
+  [<FlaskConical size={34} />, '30,000+', 'field observations · 37 experiments'],
+  [<Cpu size={34} />, 'XGBoost model', 'trained offline · in-browser'],
+  [<Shovel size={34} />, 'SoilGrids', 'water the root zone holds'],
+  [<Wallet size={34} />, 'FAOSTAT prices', 'local currency · 240 countries'],
 ];
 function SceneFusion({ t }: { t: number }) {
   const s = scene('fusion'), t0 = s.start;
@@ -190,12 +176,12 @@ function SceneFusion({ t }: { t: number }) {
     );
   };
   const ring = t * 40;
-  const coreK = easeBack(prog(t, t0 + 3.4, t0 + 4.1));
+  const coreK = easeBack(prog(t, t0 + 4.0, t0 + 4.7));
   return (
     <>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 110, textAlign: 'center' }}>
-        <div style={enter(t, t0 + 0.05)}><Kicker><Sparkles size={24} /> Field Shift fuses</Kicker></div>
-        <Title style={{ marginTop: 12, fontSize: 76, ...enter(t, t0 + 0.2) }}><span style={{ color: '#93c5fd' }}>NASA Earth data</span> + <span style={{ color: '#fcd34d' }}>what farmers know</span></Title>
+        <div style={enter(t, t0 + 0.05)}><Kicker><Sparkles size={24} /> NASA is the engine</Kicker></div>
+        <Title style={{ marginTop: 12, fontSize: 76, ...enter(t, t0 + 0.2) }}><span style={{ color: '#93c5fd' }}>Daily satellite data</span> + <span style={{ color: '#fcd34d' }}>field science</span></Title>
       </div>
       <svg width={W} height={H} style={{ position: 'absolute', inset: 0 }}>
         {[0, 1, 2, 3].map((i) => ['l', 'r'].map((side) => {
@@ -219,9 +205,9 @@ function SceneFusion({ t }: { t: number }) {
         </g>
       </svg>
       {coreK > 0.05 && <div style={{ position: 'absolute', left: cx - 48, top: cy - 70, transform: `scale(${coreK})`, transformOrigin: '48px 70px', textAlign: 'center' }}><LogoMark size={96} /></div>}
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 820, textAlign: 'center', ...enter(t, t0 + 4) }}>
-        <div style={{ color: '#fff', fontFamily: display, fontWeight: 800, fontSize: 38 }}>25 years · 9,446 days of NASA data · any location on Earth</div>
-        <div style={{ color: '#94a3b8', fontSize: 24, marginTop: 6 }}>FAO-56 water balance · rain-onset sowing · rotation rules · cash-timing checks</div>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 820, textAlign: 'center', ...enter(t, t0 + 4.4) }}>
+        <div style={{ color: '#fff', fontFamily: display, fontWeight: 800, fontSize: 38 }}>One lightweight model · ≈ 3 MB · offline, in the browser</div>
+        <div style={{ color: '#94a3b8', fontSize: 24, marginTop: 6 }}>NASA POWER daily → FAO-56 water balance → XGBoost soil-N → your ranking · any location on Earth</div>
       </div>
       {NASA_TILES.map((x, i) => tile('l', i, x))}
       {FARM_TILES.map((x, i) => tile('r', i, x))}
@@ -233,7 +219,7 @@ function SceneFusion({ t }: { t: number }) {
 function PlanCard({ t, at, title, seq, budget, profit, score, good, highlight, w = 760 }: { t: number; at: number; title: string; seq: string; budget: string; profit: string; score: number; good: boolean; highlight?: boolean; w?: number }) {
   const k = easeOut(prog(t, at, at + 0.6));
   const glow = highlight ? clamp(prog(t, at + 0.8, at + 1.4)) : 0;
-  const n = Math.round(score * easeOut(prog(t, at + 0.3, at + 1.2)));
+  const n = Math.round(score * easeOut(prog(t, at + 0.3, at + 1.0)));
   return (
     <div style={{ width: w, padding: '18px 28px', borderRadius: 26, opacity: k, transform: `translateX(${(1 - k) * 80}px) scale(${1 + glow * 0.03})`, background: highlight ? 'linear-gradient(180deg, rgba(16,185,129,.18), rgba(16,185,129,.05))' : 'rgba(255,255,255,.05)', border: `2px solid ${highlight ? `rgba(52,211,153,${0.4 + glow * 0.6})` : good ? 'rgba(255,255,255,.1)' : 'rgba(248,113,113,.35)'}`, boxShadow: highlight ? `0 0 ${60 * glow}px rgba(16,185,129,.45)` : 'none', display: 'grid', gridTemplateColumns: '1fr 120px', alignItems: 'center', columnGap: 20 }}>
       <div>
@@ -253,32 +239,42 @@ function PlanCard({ t, at, title, seq, budget, profit, score, good, highlight, w
 }
 function SceneResult({ t }: { t: number }) {
   const s = scene('result'), t0 = s.start;
-  const gx = 170, gy = 320, cell = 80;
+  // climate resilience slides low → high; the scores follow (live engine output for the Senegal demo)
+  const m = easeInOut(prog(t, t0 + 2.4, t0 + 3.6));
+  const sliders: [ReactNode, string, number][] = [
+    [<Wallet size={24} />, 'Keep cash in hand', 1],
+    [<CloudRain size={24} />, 'Climate resilience', lerp(0.25, 1, m)],
+    [<Repeat size={24} />, 'Crops I know', 0.25],
+    [<Leaf size={24} />, 'Soil benefit', 0.25],
+  ];
   return (
     <>
       <div style={{ position: 'absolute', left: 170, top: 110 }}>
-        <div style={enter(t, t0 + 0.05)}><Kicker><Sparkles size={24} /> Replay every past season</Kicker></div>
-        <Title style={{ marginTop: 12, fontSize: 76, ...enter(t, t0 + 0.2) }}>Plans they can <span style={grad}>actually afford.</span></Title>
+        <div style={enter(t, t0 + 0.05)}><Kicker><SlidersHorizontal size={24} /> Dynamic, live</Kicker></div>
+        <Title style={{ marginTop: 12, fontSize: 76, ...enter(t, t0 + 0.2) }}>Slide what matters. <span style={grad}>The ranking follows.</span></Title>
       </div>
-      <div style={{ position: 'absolute', left: gx, top: gy }}>
-        <div style={{ color: '#94a3b8', fontSize: 22, marginBottom: 14, ...enter(t, t0 + 0.4) }}>Pearl millet · modeled water-limited yield, 2001–2025</div>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(5, ${cell}px)`, gap: 12 }}>
-          {MILLET_REPLAY.map((v, i) => {
-            const k = easeOut(prog(t, t0 + 0.6 + i * 0.06, t0 + 0.9 + i * 0.06));
-            const c = v >= 85 ? '#10b981' : v >= 70 ? '#f59e0b' : '#ef4444';
-            return <div key={i} style={{ width: cell, height: cell, borderRadius: 18, background: `${c}${k > 0 ? '' : '00'}`, opacity: 0.25 + 0.75 * k, transform: `scale(${0.7 + 0.3 * k})`, display: 'grid', placeItems: 'center', color: '#04130d', fontWeight: 800, fontSize: 22, fontFamily: display, backgroundColor: k > 0 ? c : 'rgba(255,255,255,.06)' }}>
-              <div style={{ textAlign: 'center', lineHeight: 1.05 }}><div style={{ fontSize: 15, opacity: 0.75 }}>{2001 + i}</div>{Math.round(v * k)}%</div>
-            </div>;
-          })}
-        </div>
+      <div style={{ position: 'absolute', left: 170, top: 330, width: 640, padding: '30px 36px', borderRadius: 28, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', display: 'flex', flexDirection: 'column', gap: 30, ...enter(t, t0 + 0.4) }}>
+        <div style={{ color: '#6ee7b7', fontSize: 20, fontWeight: 800, letterSpacing: '.14em' }}>WHAT MATTERS TO YOU</div>
+        {sliders.map(([icon, label, v], i) => {
+          const hot = i === 1 && m > 0 && m < 1;
+          return (
+            <div key={label}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: '#e2e8f0', fontSize: 28, fontWeight: 700, marginBottom: 14 }}><span style={{ color: '#94a3b8', display: 'inline-flex' }}>{icon}</span>{label}<span style={{ marginLeft: 'auto', color: '#94a3b8', fontSize: 22, fontFamily: 'ui-monospace, monospace' }}>{v > 0.7 ? 'high' : v > 0.35 ? 'medium' : 'low'}</span></div>
+              <div style={{ position: 'relative', height: 12, borderRadius: 6, background: 'rgba(255,255,255,.12)' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${v * 100}%`, borderRadius: 6, background: 'linear-gradient(90deg,#10b981,#6ee7b7)' }} />
+                <div style={{ position: 'absolute', left: `calc(${v * 100}% - 15px)`, top: -9, width: 30, height: 30, borderRadius: 15, background: '#fff', boxShadow: hot ? '0 0 0 10px rgba(110,231,183,.3)' : '0 2px 8px rgba(0,0,0,.4)' }} />
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <div style={{ position: 'absolute', right: 150, top: 290, display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <PlanCard t={t} at={t0 + 1.6} title="Your usual plan" seq="🥜 Groundnut → 🌾 Pearl millet" budget="74,500 XOF over" profit="≈ 489,000" score={57} good={false} />
-        <PlanCard t={t} at={t0 + 2.2} title="Best fit" seq="🌱 Sesame → 🫘 Cowpea" budget="26,800 XOF under" profit="≈ 744,000" score={100} good highlight />
-        <PlanCard t={t} at={t0 + 2.7} title="Option B" seq="🌱 Sesame → 🌾 Pearl millet" budget="53,000 XOF under" profit="≈ 684,000" score={96} good />
+      <div style={{ position: 'absolute', right: 150, top: 310, display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <PlanCard t={t} at={t0 + 0.8} title="Your usual plan" seq="🥜 Groundnut → 🌾 Pearl millet" budget="74,500 XOF over" profit="≈ 489,000" score={lerp(57, 54, m)} good={false} />
+        <PlanCard t={t} at={t0 + 1.2} title="Best fit" seq="🌱 Sesame → 🫘 Cowpea" budget="26,800 XOF under" profit="≈ 744,000" score={100} good highlight />
+        <PlanCard t={t} at={t0 + 1.6} title="Option B" seq="🌱 Sesame → 🌾 Pearl millet" budget="53,000 XOF under" profit="≈ 684,000" score={lerp(96, 98, m)} good />
       </div>
-      <div style={{ position: 'absolute', left: 170, top: 850, display: 'flex', gap: 14, ...enter(t, t0 + 3.6) }}>
-        {['Climate resilience from 24 real season pairs', 'Re-ranked live by what matters to you'].map((x) => <span key={x} style={{ padding: '10px 18px', borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#e2e8f0', fontSize: 22, fontWeight: 600, display: 'inline-flex', gap: 8, alignItems: 'center' }}><Check size={20} color="#6ee7b7" /> {x}</span>)}
+      <div style={{ position: 'absolute', left: 170, top: 880, display: 'flex', gap: 14, ...enter(t, t0 + 3.8) }}>
+        {['Climate resilience from 24 real season pairs', 'Advice, not orders: the farmer decides'].map((x) => <span key={x} style={{ padding: '10px 18px', borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#e2e8f0', fontSize: 22, fontWeight: 600, display: 'inline-flex', gap: 8, alignItems: 'center' }}><Check size={20} color="#6ee7b7" /> {x}</span>)}
       </div>
     </>
   );

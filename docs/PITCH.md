@@ -14,12 +14,15 @@ The problem and solution slides use **live data from whichever farm is selected*
 
 | Time | Scene | Narration |
 |---|---|---|
-| 0.0 s | Hook — Earth & satellite | “Every season, farmers bet their savings on the weather.” |
-| 3.4 s | NASA POWER rain bars, Bambey 2001–2025 | “Near Bambey, Senegal, NASA records show season rain swinging from three hundred to nearly a thousand millimetres.” |
-| 10.2 s | Cash gap bar vs spendable line | “And the usual plan often costs more than the cash on hand.” |
-| 13.6 s | Data fusion: NASA tiles + farmer tiles → engine | “Field Shift fuses twenty-five years of NASA Earth data with what farmers know: their crops, soil and budget.” |
-| 20.1 s | 25-season replay grid + plan cards | “It replays every past season to find rotations they can actually afford, and explains why.” |
-| 26.2 s | Logo close | “Field Shift. From space to soil.” |
+| 0.3 s | Hook — Earth & satellite | “Every season, farmers bet their savings on the weather.” |
+| 3.9 s | NASA POWER rain bars, Bambey 2001–2025 | “NASA has watched that weather for twenty-five years.” |
+| 7.0 s | (same, 3.2× swing) | “Field Shift turns it into a plan.” |
+| 9.3 s | NASA is the engine: NASA tiles + field science → engine | “Daily satellite data. Over thirty thousand field observations. One lightweight model, offline, in the browser.” |
+| 17.3 s | Your budget / priorities / call | “Your budget. Your priorities. Your call.” |
+| 20.5 s | Live sliders re-rank the plans (57 → 54, 96 → 98) | “Slide what matters, and the ranking follows.” |
+| 26.8 s | Logo close | “Field Shift. From space to soil.” |
+
+Voice: Kokoro-82M `am_michael` (AI text-to-speech), labeled AI-generated on screen.
 
 The Space Apps submission guide (checked 14 Nov 2026) allows **a video ≤ 30 s or a deck of ≤ 7 slides** including the title.
 Re-check the current guide before submitting.

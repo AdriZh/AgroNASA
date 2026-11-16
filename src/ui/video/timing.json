@@ -5,69 +5,75 @@
   {
    "id": "title",
    "start": 0,
-   "end": 3.4
+   "end": 3.6
   },
   {
    "id": "rain",
-   "start": 3.4,
-   "end": 10.2
-  },
-  {
-   "id": "cash",
-   "start": 10.2,
-   "end": 13.55
+   "start": 3.6,
+   "end": 9.0
   },
   {
    "id": "fusion",
-   "start": 13.55,
-   "end": 20.1
+   "start": 9.0,
+   "end": 17.0
+  },
+  {
+   "id": "cash",
+   "start": 17.0,
+   "end": 20.2
   },
   {
    "id": "result",
-   "start": 20.1,
-   "end": 26.15
+   "start": 20.2,
+   "end": 26.5
   },
   {
    "id": "close",
-   "start": 26.15,
+   "start": 26.5,
    "end": 30.0
   }
  ],
  "lines": [
   {
    "key": "hook",
-   "start": 0.35,
-   "end": 3.169,
+   "start": 0.3,
+   "end": 3.474,
    "text": "Every season, farmers bet their savings on the weather."
   },
   {
-   "key": "rain",
-   "start": 3.5,
-   "end": 10.028,
-   "text": "Near Bambey, Senegal, NASA records show season rain swinging from three hundred to nearly a thousand millimetres."
+   "key": "nasa",
+   "start": 3.9,
+   "end": 6.628,
+   "text": "NASA has watched that weather for twenty-five years."
   },
   {
-   "key": "cash",
-   "start": 10.35,
-   "end": 13.342,
-   "text": "And the usual plan often costs more than the cash on hand."
+   "key": "plan",
+   "start": 6.95,
+   "end": 8.813,
+   "text": "Field Shift turns it into a plan."
   },
   {
-   "key": "fusion",
-   "start": 13.7,
-   "end": 19.934,
-   "text": "Field Shift fuses twenty-five years of NASA Earth data with what farmers know: their crops, soil and budget."
+   "key": "data",
+   "start": 9.3,
+   "end": 16.445,
+   "text": "Daily satellite data. Over thirty thousand field observations. One lightweight model, offline, in the browser."
   },
   {
-   "key": "result",
-   "start": 20.25,
-   "end": 25.592,
-   "text": "It replays every past season to find rotations they can actually afford, and explains why."
+   "key": "you",
+   "start": 17.25,
+   "end": 19.421,
+   "text": "Your budget. Your priorities. Your call."
+  },
+  {
+   "key": "slide",
+   "start": 20.5,
+   "end": 23.056,
+   "text": "Slide what matters, and the ranking follows."
   },
   {
    "key": "close",
-   "start": 26.55,
-   "end": 28.417,
+   "start": 26.8,
+   "end": 28.75,
    "text": "Field Shift. From space to soil."
   }
  ]

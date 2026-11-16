@@ -104,7 +104,7 @@ export function VideoPage({ go }: { go: (r: Route) => void }) {
           </div>
           <hr />
           <div className="mini stack">
-            <div className="row" style={{ gap: 8 }}><Mic size={15} /> Voice: Kokoro-82M neural TTS (af_heart, Apache-2.0), generated for this project.</div>
+            <div className="row" style={{ gap: 8 }}><Mic size={15} /> Voice: Kokoro-82M neural TTS (am_michael, Apache-2.0), generated for this project.</div>
             <div className="row" style={{ gap: 8 }}><Music2 size={15} /> Music & sound design: synthesized from scratch (no samples), ducked under the voice.</div>
             <div className="row" style={{ gap: 8 }}><Sparkles size={15} /> Visuals: deterministic React/SVG scenes rendered frame-by-frame; captions burned in for muted autoplay.</div>
           </div>

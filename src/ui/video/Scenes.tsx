@@ -171,7 +171,7 @@ const FARM_TILES: [ReactNode, string, string][] = [
   [<NotebookPen size={34} />, 'Crop history', 'last seasons & outcomes'],
   [<FlaskConical size={34} />, 'Fertilizer', 'what was applied'],
   [<Shovel size={34} />, 'Soil', 'texture · SoilGrids'],
-  [<Wallet size={34} />, 'Budget & prices', 'cash, reserve, quotes'],
+  [<Wallet size={34} />, 'Budget & crops', 'cash, reserve, allowed crops'],
 ];
 function SceneFusion({ t }: { t: number }) {
   const s = scene('fusion'), t0 = s.start;
@@ -230,16 +230,23 @@ function SceneFusion({ t }: { t: number }) {
 }
 
 // ---------- scene 5: results ----------
-function PlanCard({ t, at, title, seq, status, sub, good, highlight, w = 660 }: { t: number; at: number; title: string; seq: string; status: string; sub: string; good: boolean; highlight?: boolean; w?: number }) {
+function PlanCard({ t, at, title, seq, budget, profit, score, good, highlight, w = 760 }: { t: number; at: number; title: string; seq: string; budget: string; profit: string; score: number; good: boolean; highlight?: boolean; w?: number }) {
   const k = easeOut(prog(t, at, at + 0.6));
   const glow = highlight ? clamp(prog(t, at + 0.8, at + 1.4)) : 0;
+  const n = Math.round(score * easeOut(prog(t, at + 0.3, at + 1.2)));
   return (
-    <div style={{ width: w, padding: '20px 28px', borderRadius: 26, opacity: k, transform: `translateX(${(1 - k) * 80}px) scale(${1 + glow * 0.03})`, background: highlight ? 'linear-gradient(180deg, rgba(16,185,129,.18), rgba(16,185,129,.05))' : 'rgba(255,255,255,.05)', border: `2px solid ${highlight ? `rgba(52,211,153,${0.4 + glow * 0.6})` : good ? 'rgba(255,255,255,.1)' : 'rgba(248,113,113,.35)'}`, boxShadow: highlight ? `0 0 ${60 * glow}px rgba(16,185,129,.45)` : 'none' }}>
-      <div style={{ color: highlight ? '#6ee7b7' : '#94a3b8', fontSize: 20, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase' }}>{title}</div>
-      <div style={{ color: '#fff', fontFamily: display, fontSize: 36, fontWeight: 800, margin: '6px 0 12px', whiteSpace: 'nowrap' }}>{seq}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 999, fontWeight: 800, fontSize: 24, background: good ? 'rgba(52,211,153,.18)' : 'rgba(248,113,113,.18)', color: good ? '#6ee7b7' : '#fca5a5' }}>{good ? <Check size={22} /> : <X size={22} />}{status}</span>
-        <span style={{ color: '#94a3b8', fontSize: 22 }}>{sub}</span>
+    <div style={{ width: w, padding: '18px 28px', borderRadius: 26, opacity: k, transform: `translateX(${(1 - k) * 80}px) scale(${1 + glow * 0.03})`, background: highlight ? 'linear-gradient(180deg, rgba(16,185,129,.18), rgba(16,185,129,.05))' : 'rgba(255,255,255,.05)', border: `2px solid ${highlight ? `rgba(52,211,153,${0.4 + glow * 0.6})` : good ? 'rgba(255,255,255,.1)' : 'rgba(248,113,113,.35)'}`, boxShadow: highlight ? `0 0 ${60 * glow}px rgba(16,185,129,.45)` : 'none', display: 'grid', gridTemplateColumns: '1fr 120px', alignItems: 'center', columnGap: 20 }}>
+      <div>
+        <div style={{ color: highlight ? '#6ee7b7' : '#94a3b8', fontSize: 20, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase' }}>{title}</div>
+        <div style={{ color: '#fff', fontFamily: display, fontSize: 34, fontWeight: 800, margin: '4px 0 10px', whiteSpace: 'nowrap' }}>{seq}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 22 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 999, fontWeight: 800, background: good ? 'rgba(52,211,153,.18)' : 'rgba(248,113,113,.18)', color: good ? '#6ee7b7' : '#fca5a5' }}>{good ? <Check size={20} /> : <X size={20} />}{budget}</span>
+          <span style={{ color: '#cbd5e1' }}>profit <b style={{ color: '#fff' }}>{profit}</b></span>
+        </div>
+      </div>
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ color: '#94a3b8', fontSize: 18, fontWeight: 800, letterSpacing: '.12em' }}>SCORE</div>
+        <div style={{ fontFamily: display, fontWeight: 800, fontSize: 64, lineHeight: 1, color: highlight ? '#6ee7b7' : '#fff' }}>{n}</div>
       </div>
     </div>
   );
@@ -266,12 +273,12 @@ function SceneResult({ t }: { t: number }) {
         </div>
       </div>
       <div style={{ position: 'absolute', right: 150, top: 290, display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <PlanCard t={t} at={t0 + 1.6} title="Usual plan" seq="🥜 Groundnut → 🌾 Millet" status="Over budget" sub="−74,500 XOF" good={false} />
-        <PlanCard t={t} at={t0 + 2.2} title="Option A · best fit" seq="🌱 Sesame → 🌾 Millet" status="Fits" sub="+53,000 XOF · 0% severe stress" good highlight />
-        <PlanCard t={t} at={t0 + 2.7} title="Option B" seq="🌱 Sesame → 🌾 Sorghum" status="Fits" sub="+42,800 XOF · 4% severe stress" good />
+        <PlanCard t={t} at={t0 + 1.6} title="Your usual plan" seq="🥜 Groundnut → 🌾 Pearl millet" budget="74,500 XOF over" profit="≈ 489,000" score={57} good={false} />
+        <PlanCard t={t} at={t0 + 2.2} title="Best fit" seq="🌱 Sesame → 🫘 Cowpea" budget="26,800 XOF under" profit="≈ 744,000" score={100} good highlight />
+        <PlanCard t={t} at={t0 + 2.7} title="Option B" seq="🌱 Sesame → 🌾 Pearl millet" budget="53,000 XOF under" profit="≈ 684,000" score={96} good />
       </div>
       <div style={{ position: 'absolute', left: 170, top: 850, display: 'flex', gap: 14, ...enter(t, t0 + 3.6) }}>
-        {['36 rotations screened', '21 excluded, each with a reason'].map((x) => <span key={x} style={{ padding: '10px 18px', borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#e2e8f0', fontSize: 22, fontWeight: 600, display: 'inline-flex', gap: 8, alignItems: 'center' }}><Check size={20} color="#6ee7b7" /> {x}</span>)}
+        {['Climate resilience from 24 real season pairs', 'Re-ranked live by what matters to you'].map((x) => <span key={x} style={{ padding: '10px 18px', borderRadius: 999, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#e2e8f0', fontSize: 22, fontWeight: 600, display: 'inline-flex', gap: 8, alignItems: 'center' }}><Check size={20} color="#6ee7b7" /> {x}</span>)}
       </div>
     </>
   );
